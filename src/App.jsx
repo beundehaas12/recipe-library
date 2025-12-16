@@ -442,7 +442,14 @@ function Home() {
                     <span>{t.settings}</span>
                   </button>
                   <button
-                    onClick={signOut}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        await signOut();
+                      } catch (error) {
+                        console.error('Logout error:', error);
+                      }
+                    }}
                     className="w-full text-left px-4 py-2.5 hover:bg-red-500/10 text-red-400 flex items-center gap-3 transition-colors text-sm font-medium"
                   >
                     <LogOut size={16} />

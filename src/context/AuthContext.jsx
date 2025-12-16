@@ -8,9 +8,20 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Timeout fallback for mobile: if auth check takes too long, stop loading
+        const timeout = setTimeout(() => {
+            if (loading) {
+                console.warn('Auth check timed out, proceeding without session');
+                setLoading(false);
+            }
+        }, 5000);
+
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
+            setLoading(false);
+        }).catch((error) => {
+            console.error('Error getting session:', error);
             setLoading(false);
         });
 
@@ -22,7 +33,10 @@ export function AuthProvider({ children }) {
             }
         );
 
-        return () => subscription.unsubscribe();
+        return () => {
+            clearTimeout(timeout);
+            subscription.unsubscribe();
+        };
     }, []);
 
     const signUp = async (email, password) => {
@@ -50,10 +64,33 @@ export function AuthProvider({ children }) {
     };
 
     const signOut = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            console.error('Sign out error:', error.message);
-            throw error;
+        console.log('SignOut called');
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Sign out error:', error.message);
+            }
+        } catch (error) {
+            console.error('Sign out exception:', error);
+        } finally {
+            // Always clear user state
+            setUser(null);
+
+            // Manually clear all Supabase auth tokens from localStorage as fallback
+            if (typeof window !== 'undefined' && window.localStorage) {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => {
+                    console.log('Removing localStorage key:', key);
+                    localStorage.removeItem(key);
+                });
+            }
+            console.log('SignOut complete, user cleared');
         }
     };
 
