@@ -18,6 +18,7 @@ function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const navigate = useNavigate();
   const { scrollY } = useScroll();
 
@@ -358,7 +359,11 @@ function Home() {
           </div>
 
           {/* Mobile Search Icon */}
-          <button className="md:hidden p-2 text-white hover:bg-white/10 rounded-full transition-colors">
+          {/* Mobile Search Icon */}
+          <button
+            onClick={() => setShowMobileSearch(true)}
+            className="md:hidden p-2 text-white hover:bg-white/10 rounded-full transition-colors"
+          >
             <Search size={22} />
           </button>
 
@@ -510,6 +515,89 @@ function Home() {
         )}
       </AnimatePresence>
 
+      {/* Mobile Search Overlay */}
+      <AnimatePresence>
+        {showMobileSearch && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[70] bg-[#09090b] flex flex-col pt-safe"
+          >
+            <div className="flex items-center gap-4 p-4 border-b border-white/10 mt-safe-top">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder={t.searchPlaceholder}
+                  className="w-full bg-white/10 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setShowMobileSearch(false);
+                  if (!searchQuery) clearSearch();
+                }}
+                className="text-white font-medium px-2"
+              >
+                {t.cancel}
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* Mobile Search Results */}
+              {(instantFilteredRecipes || searchResults) && searchQuery && (
+                <div className="space-y-4 pb-20">
+                  {(instantFilteredRecipes || searchResults).length > 0 ? (
+                    (instantFilteredRecipes || searchResults).map(recipe => (
+                      <div
+                        key={recipe.id}
+                        onClick={() => {
+                          navigate(`/recipe/${recipe.id}`);
+                          setShowMobileSearch(false);
+                        }}
+                        className="flex items-center gap-4 p-3 bg-white/5 rounded-xl border border-white/5 active:bg-white/10"
+                      >
+                        {recipe.image_url ? (
+                          <img src={recipe.image_url} alt={recipe.title} className="w-16 h-16 rounded-lg object-cover" />
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-white/10 flex items-center justify-center">
+                            <ChefHat size={24} className="text-white/20" />
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-bold text-white line-clamp-1">{recipe.title}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            {recipe.cuisine && <span className="text-xs text-muted-foreground uppercase">{recipe.cuisine}</span>}
+                            {recipe.cook_time && <span className="text-xs text-muted-foreground">• {recipe.cook_time}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-10">
+                      {t.noResults} <span className="text-primary">"{searchQuery}"</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Hidden File Inputs */}
       <input
         type="file"
@@ -552,7 +640,7 @@ function Home() {
         {/* HERO SECTION - Single Featured Item Style */}
         {/* Only show Hero content if NOT searching */}
         {!searchQuery && (
-          <div className="relative w-full h-[85vh] md:h-[95vh] overflow-hidden">
+          <div className="relative w-full h-[85dvh] md:h-[95dvh] overflow-hidden">
             {/* Background */}
             <motion.div style={{ scale: heroScale, opacity: heroOpacity }} className="absolute inset-0">
               {heroRecipe?.image_url ? (
@@ -572,7 +660,7 @@ function Home() {
             </motion.div>
 
             {/* Hero Content */}
-            <div className="absolute bottom-0 left-0 max-w-4xl p-8 md:p-16 z-30 flex flex-col items-start gap-6 pb-40 md:pb-56">
+            <div className="absolute bottom-0 left-0 max-w-4xl p-6 md:p-16 z-30 flex flex-col items-start gap-6 pb-40 md:pb-56">
               {heroRecipe ? (
                 <>
                   <motion.div

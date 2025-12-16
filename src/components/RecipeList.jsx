@@ -55,7 +55,7 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
     // Horizontal "Shelf" View
     return (
         <div className="relative group/shelf py-8">
-            <div className="flex items-center justify-between px-8 md:px-16 mb-4">
+            <div className="flex items-center justify-between px-6 md:px-16 mb-4">
                 <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide flex items-center gap-2">
                     {t.myCookbook}
                     <span className="text-sm font-normal text-muted-foreground ml-2 hidden md:inline-block">({recipes.length})</span>
@@ -80,7 +80,7 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
 
             <div
                 ref={scrollContainerRef}
-                className="flex overflow-x-auto gap-4 md:gap-6 px-8 md:px-16 pb-12 snap-x snap-mandatory scrollbar-hide mask-fade-sides"
+                className="flex overflow-x-auto gap-4 md:gap-6 px-6 md:px-16 pb-12 snap-x snap-mandatory scrollbar-hide"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {recipes.map((recipe, index) => (
@@ -95,8 +95,9 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
                 ))}
 
                 {/* Spacer for end of list */}
-                <div className="w-6 shrink-0" />
+                <div className="w-6 md:w-16 shrink-0" />
             </div>
         </div>
     );
 }
+
