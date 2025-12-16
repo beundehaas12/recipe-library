@@ -24,8 +24,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     const y = useTransform(scrollY, [0, 500], [0, 200]);
     const opacity = useTransform(scrollY, [0, 400], [1, 0]);
     const headerTitleOpacity = useTransform(scrollY, [300, 400], [0, 1]);
-    const headerBgColor = useTransform(scrollY, [0, 200], ['rgba(9, 9, 11, 0)', 'rgba(9, 9, 11, 0.4)']);
-    const headerBlurFilter = useTransform(scrollY, [0, 200], ['blur(0px)', 'blur(8px)']);
 
     useEffect(() => {
         if (recipe?.servings) {
@@ -116,18 +114,8 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                     <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-black/30" />
                 </motion.div>
 
-                {/* Floating Nav Actions with Gradient Blur Background */}
+                {/* Floating Nav Actions */}
                 <div className="fixed top-0 left-0 right-0 z-50 p-6 flex justify-between items-start pointer-events-none">
-                    {/* Gradient Blur Background Layer */}
-                    <motion.div
-                        style={{
-                            backgroundColor: headerBgColor,
-                            backdropFilter: headerBlurFilter,
-                            WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
-                            maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)'
-                        }}
-                        className="absolute top-0 left-0 right-0 h-32 -z-10"
-                    />
                     <Link to="/" className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto">
                         <ArrowLeft size={20} />
                     </Link>

@@ -1,23 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
-import { extractRecipeFromImage, extractRecipeFromText, translateRecipe } from './lib/gemini';
-import { translations } from './lib/translations';
-import CameraCapture from './components/CameraCapture';
+import { extractRecipeFromImage, extractRecipeFromText } from './lib/gemini';
+import { translations as t } from './lib/translations';
+import { useAuth } from './context/AuthContext';
+import LoginScreen from './components/LoginScreen';
 import RecipeList from './components/RecipeList';
 import RecipeCard from './components/RecipeCard';
-import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Globe } from 'lucide-react'; // Added Globe
-import { motion, AnimatePresence } from 'framer-motion';
+import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 
-function Home({ language, setLanguage, t }) {
+function Home() {
+  const { user, signOut } = useAuth();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+  const { scrollY } = useScroll();
+
+  const headerBgColor = useTransform(scrollY, [0, 200], ['rgba(9, 9, 11, 0)', 'rgba(9, 9, 11, 0.4)']);
+  const headerBlurFilter = useTransform(scrollY, [0, 200], ['blur(0px)', 'blur(8px)']);
+  const heroScale = useTransform(scrollY, [0, 500], [1, 1.1]);
+  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0.3]);
 
   useEffect(() => {
-    fetchRecipes();
-  }, []);
+    if (user) {
+      fetchRecipes();
+    }
+  }, [user]);
 
   async function fetchRecipes() {
     try {
@@ -35,6 +48,94 @@ function Home({ language, setLanguage, t }) {
     }
   }
 
+  // Debounce timer ref for database search
+  const searchTimeoutRef = useRef(null);
+
+  // Client-side instant filter (runs immediately on every keystroke)
+  const instantFilteredRecipes = useMemo(() => {
+    if (!searchQuery.trim()) return null;
+    const query = searchQuery.toLowerCase();
+    return recipes.filter(recipe => {
+      // Check basic text fields
+      if (recipe.title?.toLowerCase().includes(query)) return true;
+      if (recipe.description?.toLowerCase().includes(query)) return true;
+      if (recipe.author?.toLowerCase().includes(query)) return true;
+      if (recipe.cuisine?.toLowerCase().includes(query)) return true;
+
+      // Check ingredients array (objects have 'item' property)
+      if (Array.isArray(recipe.ingredients)) {
+        for (const ing of recipe.ingredients) {
+          if (typeof ing === 'string' && ing.toLowerCase().includes(query)) return true;
+          if (ing?.item?.toLowerCase().includes(query)) return true;
+        }
+      }
+
+      // Check tags array
+      if (Array.isArray(recipe.tags)) {
+        for (const tag of recipe.tags) {
+          if (typeof tag === 'string' && tag.toLowerCase().includes(query)) return true;
+        }
+      }
+
+      return false;
+    });
+  }, [searchQuery, recipes]);
+
+  async function handleSearch(query) {
+    setSearchQuery(query);
+
+    // Clear pending database search
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!query.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    // Debounce the database search (300ms delay)
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        // Use full-text search with plainto_tsquery
+        const { data, error } = await supabase
+          .from('recipes')
+          .select('*')
+          .textSearch('search_vector', query, {
+            type: 'websearch',
+            config: 'simple'
+          })
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          // Fallback to simple ILIKE if full-text fails
+          console.warn('Full-text search failed, falling back to ILIKE:', error);
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('recipes')
+            .select('*')
+            .or(`title.ilike.%${query}%,description.ilike.%${query}%,author.ilike.%${query}%`)
+            .order('created_at', { ascending: false });
+
+          if (fallbackError) throw fallbackError;
+          setSearchResults(fallbackData || []);
+        } else {
+          setSearchResults(data || []);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+  }
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults(null);
+  };
+
   const saveRecipeToDb = async (recipeData, sourceInfo = {}) => {
     try {
       const {
@@ -49,13 +150,16 @@ function Home({ language, setLanguage, t }) {
         cuisine,
         author,
         cookbook_name,
-        isbn
+        isbn,
+        source_language,
+        ai_tags
       } = recipeData;
 
       const { data: newRecipe, error: dbError } = await supabase
         .from('recipes')
         .insert([
           {
+            user_id: user.id,
             title,
             description,
             ingredients,
@@ -70,6 +174,8 @@ function Home({ language, setLanguage, t }) {
             isbn,
             source_url: sourceInfo.url || null,
             source_type: sourceInfo.type || 'manual',
+            source_language: source_language || 'en',
+            ai_tags: ai_tags || [],
             image_url: null,
             original_image_url: null,
           }
@@ -84,7 +190,7 @@ function Home({ language, setLanguage, t }) {
       navigate(`/recipe/${newRecipe.id}`);
     } catch (e) {
       console.error("DB Save failed:", e);
-      alert("Failed to save recipe: " + e.message);
+      alert("Opslaan mislukt: " + e.message);
       setIsProcessing(false);
     }
   };
@@ -92,15 +198,11 @@ function Home({ language, setLanguage, t }) {
   const handleCapture = async (file) => {
     setIsProcessing(true);
     try {
-      // 1. Extract data with Gemini (Directly from file)
       const recipeData = await extractRecipeFromImage(file);
-
-      // 2. Save via helper
       await saveRecipeToDb(recipeData, { type: 'image' });
-
     } catch (error) {
       console.error('Error processing recipe:', error);
-      alert('Failed to process recipe. See console for details.');
+      alert('Recept verwerken mislukt. Zie console voor details.');
       setIsProcessing(false);
     }
   };
@@ -108,6 +210,7 @@ function Home({ language, setLanguage, t }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlInputValue, setUrlInputValue] = useState("");
 
@@ -131,10 +234,9 @@ function Home({ language, setLanguage, t }) {
     setShowUrlInput(false);
     setIsProcessing(true);
 
-    // Helper to fetch text with timeout
     const fetchWithProxy = async (proxyUrl) => {
       const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      const id = setTimeout(() => controller.abort(), 10000);
       const res = await fetch(proxyUrl, { signal: controller.signal });
       clearTimeout(id);
       if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
@@ -144,15 +246,11 @@ function Home({ language, setLanguage, t }) {
     try {
       let htmlContent = "";
 
-      // Try Primary Proxy (corsproxy.io)
       try {
-        // direct fetch of the page content via proxy
         const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
         htmlContent = await fetchWithProxy(proxyUrl);
       } catch (e) {
         console.warn("Primary proxy failed, trying backup...", e);
-
-        // Try Backup Proxy (allorigins)
         const backupProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         const res = await fetch(backupProxy);
         const data = await res.json();
@@ -165,19 +263,16 @@ function Home({ language, setLanguage, t }) {
 
       if (!htmlContent) throw new Error("Could not retrieve content from URL");
 
-      // Limit content size to avoid overloading Gemini context window (approx 100k chars)
       const truncatedContent = htmlContent.substring(0, 100000);
-
       const recipeData = await extractRecipeFromText(truncatedContent);
       await saveRecipeToDb(recipeData, { type: 'url', url });
 
     } catch (error) {
       console.error("URL processing failed:", error);
-      alert(`Failed to extract from URL: ${error.message}`);
+      alert(`URL verwerken mislukt: ${error.message}`);
       setIsProcessing(false);
     }
   };
-
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -186,43 +281,98 @@ function Home({ language, setLanguage, t }) {
     }
   };
 
+  // Display logic: Prioritize instant filter for immediate feedback
+  // If DB search returns empty but instant filter has results, keep the instant results
+  const displayRecipes = useMemo(() => {
+    if (!searchQuery.trim()) return recipes;
 
-  // Hero Selection (Latest Recipe)
-  const heroRecipe = recipes.length > 0 ? recipes[0] : null;
+    // If we have instant results
+    if (instantFilteredRecipes && instantFilteredRecipes.length > 0) {
+      // If DB search completed with results, use those
+      if (searchResults && searchResults.length > 0) {
+        return searchResults;
+      }
+      // Otherwise keep showing instant results
+      return instantFilteredRecipes;
+    }
+
+    // If no instant results but DB has results
+    if (searchResults && searchResults.length > 0) {
+      return searchResults;
+    }
+
+    // No results from either source
+    return [];
+  }, [searchQuery, instantFilteredRecipes, searchResults, recipes]);
+
+  const heroRecipe = !searchQuery && recipes.length > 0 ? recipes[0] : null;
+  const isEmptyState = !loading && recipes.length === 0 && searchResults === null;
+  const isNoResults = searchQuery && displayRecipes.length === 0;
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20 selection:bg-primary selection:text-white" onClick={() => setShowAddMenu(false)}>
-      {/* Navbar Overlay */}
-      <header className="fixed top-0 left-0 right-0 z-50 p-6 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-        <div className="flex items-center gap-2 pointer-events-auto">
+    <div className="min-h-screen bg-background text-foreground pb-20 selection:bg-primary selection:text-white" onClick={() => { setShowAddMenu(false); setShowProfileMenu(false); }}>
+
+      {/* Cinematic Navbar */}
+      <header
+        className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between transition-colors duration-500"
+      >
+        {/* Gradient Blur Background Layer - Extended Height */}
+        <motion.div
+          style={{
+            backgroundColor: headerBgColor,
+            backdropFilter: headerBlurFilter,
+            WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
+            maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)'
+          }}
+          className="absolute top-0 left-0 right-0 h-32 -z-10 pointer-events-none"
+        />
+        <div className="flex items-center gap-3">
           <div className="bg-primary/20 backdrop-blur-md border border-primary/50 text-primary p-2 rounded-xl">
             <ChefHat size={24} />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md">
+          <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden md:block">
             {t.appTitle}
           </h1>
         </div>
 
-        {/* Header Actions */}
-        <div className="flex items-center gap-4 pointer-events-auto relative">
+        {/* Search Bar & Actions */}
+        <div className="flex items-center gap-4 flex-1 justify-end max-w-2xl">
+          {/* Search Input */}
+          <div className="relative w-full max-w-md hidden md:block group">
+            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-hover:text-white transition-colors" />
+            <input
+              type="text"
+              placeholder={t.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full h-11 bg-white/5 hover:bg-white/10 focus:bg-white/15 backdrop-blur-md border border-white/10 focus:border-white/20 rounded-full pl-10 pr-10 text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none transition-all placeholder:font-medium shadow-inner"
+            />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
 
-          {/* Language Toggle */}
-          <button
-            onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-white font-medium transition-all text-xs"
-          >
-            <Globe size={14} />
-            {language.toUpperCase()}
+          {/* Mobile Search Icon */}
+          <button className="md:hidden p-2 text-white hover:bg-white/10 rounded-full transition-colors">
+            <Search size={22} />
           </button>
 
+          {/* Add Recipe */}
           <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
-              onClick={() => setShowAddMenu(!showAddMenu)}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-white font-medium transition-all"
+              onClick={() => {
+                setShowAddMenu(!showAddMenu);
+                setShowProfileMenu(false);
+              }}
+              className="h-11 flex items-center gap-2 px-6 bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md text-white font-semibold rounded-full transition-all text-sm group whitespace-nowrap"
             >
-              <Plus size={18} />
+              <Plus size={18} className="text-primary group-hover:scale-110 transition-transform" />
               <span className="hidden md:inline">{t.addRecipe}</span>
-              <span className="md:hidden">Add</span>
             </button>
 
             <AnimatePresence>
@@ -232,25 +382,25 @@ function Home({ language, setLanguage, t }) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.1 }}
-                  className="absolute top-full right-0 mt-2 w-48 bg-card/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden py-1 z-50"
+                  className="absolute top-full right-0 mt-2 w-56 bg-[#18181b] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1.5 z-50 ring-1 ring-black/50"
                 >
                   <button
                     onClick={handleCameraClick}
-                    className="w-full text-left px-4 py-3 hover:bg-white/10 text-white flex items-center gap-3 transition-colors"
+                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-medium"
                   >
                     <CameraCaptureIcon size={18} />
                     <span>{t.takePhoto}</span>
                   </button>
                   <button
                     onClick={handleUploadClick}
-                    className="w-full text-left px-4 py-3 hover:bg-white/10 text-white flex items-center gap-3 transition-colors"
+                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-medium"
                   >
                     <UploadIcon size={18} />
                     <span>{t.uploadImage}</span>
                   </button>
                   <button
                     onClick={handleUrlClick}
-                    className="w-full text-left px-4 py-3 hover:bg-white/10 text-white flex items-center gap-3 transition-colors"
+                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-medium"
                   >
                     <LinkIcon size={18} />
                     <span>{t.fromUrl}</span>
@@ -260,7 +410,48 @@ function Home({ language, setLanguage, t }) {
             </AnimatePresence>
           </div>
 
-          <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 backdrop-blur-md" />
+          {/* User Avatar & Dropdown */}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => {
+                setShowProfileMenu(!showProfileMenu);
+                setShowAddMenu(false);
+              }}
+              className="h-11 w-11 shrink-0 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border border-white/10 flex items-center justify-center text-xs font-bold text-white shadow-inner hover:scale-105 hover:border-primary/50 transition-all"
+            >
+              {user?.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover rounded-full" alt="Avatar" />
+              ) : (
+                user?.email?.[0]?.toUpperCase() || '?'
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showProfileMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.1 }}
+                  className="absolute top-full right-0 mt-2 w-48 bg-[#18181b] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1.5 z-50 ring-1 ring-black/50"
+                >
+                  <button
+                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-medium cursor-default"
+                  >
+                    <Settings size={16} />
+                    <span>{t.settings}</span>
+                  </button>
+                  <button
+                    onClick={signOut}
+                    className="w-full text-left px-4 py-2.5 hover:bg-red-500/10 text-red-400 flex items-center gap-3 transition-colors text-sm font-medium"
+                  >
+                    <LogOut size={16} />
+                    <span>{t.logout}</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
 
@@ -271,35 +462,38 @@ function Home({ language, setLanguage, t }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
             onClick={() => setShowUrlInput(false)}
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-card w-full max-w-md p-6 rounded-3xl border border-white/10 shadow-2xl"
+              className="bg-[#1c1c1e] w-full max-w-md p-8 rounded-3xl border border-white/10 shadow-2xl"
               onClick={e => e.stopPropagation()}
             >
-              <h3 className="text-xl font-bold text-white mb-4">{t.pasteUrl}</h3>
+              <h3 className="text-2xl font-bold text-white mb-2">{t.pasteUrl}</h3>
+              <p className="text-muted-foreground text-sm mb-6">Plak een link van je favoriete receptensite.</p>
+
               <input
                 type="url"
-                placeholder="https://example.com/yummy-recipe"
-                className="w-full bg-muted/50 border border-white/10 rounded-xl px-4 py-3 text-white mb-6 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="https://example.com/lekker-recept"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-4 text-white mb-6 focus:outline-none focus:ring-2 focus:ring-primary/50 text-lg"
                 value={urlInputValue}
                 onChange={(e) => setUrlInputValue(e.target.value)}
+                autoFocus
               />
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowUrlInput(false)}
-                  className="flex-1 px-4 py-3 rounded-xl hover:bg-white/5 text-white/70 font-medium transition-colors translation-text"
+                  className="flex-1 px-4 py-3 rounded-xl hover:bg-white/5 text-white/70 font-medium transition-colors"
                 >
                   {t.cancel}
                 </button>
                 <button
                   onClick={() => processUrl(urlInputValue)}
                   disabled={!urlInputValue}
-                  className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-3 bg-white text-black rounded-xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t.analyzeUrl}
                 </button>
@@ -309,7 +503,7 @@ function Home({ language, setLanguage, t }) {
         )}
       </AnimatePresence>
 
-      {/* Hidden Global Inputs */}
+      {/* Hidden File Inputs */}
       <input
         type="file"
         ref={fileInputRef}
@@ -326,114 +520,139 @@ function Home({ language, setLanguage, t }) {
         capture="environment"
       />
 
-      {/* Global Processing Overlay */}
+      {/* Processing Overlay */}
       <AnimatePresence>
         {isProcessing && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
           >
-            <div className="bg-card border border-white/10 p-8 rounded-3xl flex flex-col items-center max-w-sm w-full shadow-2xl">
-              <div className="relative w-16 h-16 mb-6">
-                <div className="absolute inset-0 border-4 border-muted rounded-full" />
+            <div className="bg-[#1c1c1e] border border-white/10 p-10 rounded-3xl flex flex-col items-center max-w-sm w-full shadow-2xl text-center">
+              <div className="relative w-20 h-20 mb-8">
+                <div className="absolute inset-0 border-4 border-white/10 rounded-full" />
                 <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{t.analyzing}</h3>
-              <p className="text-muted-foreground text-center">{t.analyzingDesc}</p>
+              <h3 className="text-2xl font-bold text-white mb-3">{t.analyzing}</h3>
+              <p className="text-muted-foreground">{t.analyzingDesc}</p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <main className="relative">
-        {/* HERO SECTION */}
-        {heroRecipe && (
-          <div className="relative w-full h-[85vh] overflow-hidden">
-            {/* Background Image */}
-            <div className="absolute inset-0">
-              {heroRecipe.image_url ? (
+      <main className="relative min-h-screen">
+        {/* HERO SECTION - Single Featured Item Style */}
+        {/* Only show Hero content if NOT searching */}
+        {!searchQuery && (
+          <div className="relative w-full h-[85vh] md:h-[95vh] overflow-hidden">
+            {/* Background */}
+            <motion.div style={{ scale: heroScale, opacity: heroOpacity }} className="absolute inset-0">
+              {heroRecipe?.image_url ? (
                 <img
                   src={heroRecipe.image_url}
                   className="w-full h-full object-cover"
                   alt={heroRecipe.title}
                 />
               ) : (
-                <div className="w-full h-full bg-zinc-900" />
+                // Default Gradient if no recipe or image
+                <div className="w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-[#09090b] to-[#09090b]" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+
+              {/* Cinematic Vignettes */}
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-black/60" />
               <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
-            </div>
+            </motion.div>
 
             {/* Hero Content */}
-            <div className="absolute bottom-0 left-0 max-w-2xl p-8 pb-16 z-10 flex flex-col items-start gap-4">
-              <span className="px-3 py-1 rounded-full bg-primary text-white text-xs font-bold uppercase tracking-widest mb-2 shadow-lg shadow-primary/40">
-                {t.latestDiscovery}
-              </span>
-              <h2 className="text-5xl md:text-7xl font-playfair font-black text-white leading-[0.9] drop-shadow-2xl">
-                {heroRecipe.title}
-              </h2>
-              <p className="text-gray-200 text-lg line-clamp-2 max-w-lg drop-shadow-md font-medium">
-                {heroRecipe.description || t.descriptionPlaceholder}
-              </p>
+            <div className="absolute bottom-0 left-0 max-w-4xl p-8 md:p-16 z-30 flex flex-col items-start gap-6 pb-40 md:pb-56">
+              {heroRecipe ? (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex flex-wrap gap-3 items-center"
+                  >
+                    <span className="px-3 py-1 rounded-md bg-white/10 backdrop-blur-md border border-white/10 text-white/90 text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-lg">
+                      {t.latestDiscovery}
+                    </span>
+                    {heroRecipe.cuisine && (
+                      <span className="text-white/60 text-sm font-medium border-l border-white/20 pl-3 uppercase tracking-wider">
+                        {heroRecipe.cuisine}
+                      </span>
+                    )}
+                  </motion.div>
 
-              <div className="flex items-center gap-4 mt-6">
-                <button
-                  onClick={() => navigate(`/recipe/${heroRecipe.id}`)}
-                  className="px-8 py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
-                >
-                  <ChefHat size={20} />
-                  {t.startCooking}
-                </button>
-                <button className="px-8 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-white font-bold rounded-lg hover:bg-white/30 transition-colors">
-                  {t.moreInfo}
-                </button>
-              </div>
+                  <motion.h2
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] drop-shadow-2xl font-display max-w-3xl"
+                  >
+                    {heroRecipe.title}
+                  </motion.h2>
+
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="text-gray-200 text-lg md:text-xl line-clamp-3 max-w-xl drop-shadow-md font-medium leading-relaxed"
+                  >
+                    {heroRecipe.description || ''}
+                  </motion.p>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="flex items-center gap-4 mt-4"
+                  >
+                    <button
+                      onClick={() => navigate(`/recipe/${heroRecipe.id}`)}
+                      className="px-8 py-4 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-3 text-lg"
+                    >
+                      {t.startCooking}
+                      <ArrowRight size={20} />
+                    </button>
+
+                  </motion.div>
+                </>
+              ) : (
+                <div className="flex flex-col items-start gap-4">
+                  <h1 className="text-6xl font-black text-white mb-4 leading-tight">{t.appTitle}</h1>
+                  <p className="text-xl text-gray-400 max-w-md">Jouw culinaire reis begint hier. Scan recepten en ontdek nieuwe smaken.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Content Rows */}
-        <div className="relative z-20 -mt-10 space-y-12 pb-24">
-          {/* Row 1: Recipes */}
-          <div className="min-h-[50vh] bg-gradient-to-b from-transparent via-background/80 to-background pt-10">
-            {loading ? (
-              <div className="flex gap-4 px-4 overflow-x-hidden">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="w-72 h-[420px] bg-muted rounded-2xl animate-pulse shrink-0" />
-                ))}
-              </div>
-            ) : (
-              <RecipeList recipes={recipes} t={t} />
-            )}
-          </div>
+        {/* Content Area - Floating above hero bottom */}
+        {/* If searching, normalize top margin. If NOT searching, use negative margin to float over hero */}
+        <div className={`relative z-20 space-y-12 pb-24 bg-gradient-to-b from-transparent to-background ${searchQuery ? 'pt-32' : '-mt-32 md:-mt-48'}`}>
+          <RecipeList
+            recipes={displayRecipes}
+            isEmptyState={isEmptyState}
+            isNoResults={isNoResults}
+            searchQuery={searchQuery}
+          />
         </div>
       </main>
     </div>
   );
 }
 
-function RecipePage({ language, t }) {
+function RecipePage() {
+  const { user } = useAuth();
   const [recipe, setRecipe] = useState(null);
-  const [translatedRecipe, setTranslatedRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [translating, setTranslating] = useState(false);
   const navigate = useNavigate();
-  // We need to parse the ID from the URL manually if we don't use useParams (wrapper needed)
-  // But let's verify routing structure first.
-  // Actually, useParams is cleaner.
+  const id = window.location.pathname.split('/').pop();
 
-  // NOTE: In a real routing setup we use useParams. 
-  // Since I can't easily import useParams inside this function without the hook context 
-  // (which is present because it's a child of Router), I will use it.
-
-  const id = window.location.pathname.split('/').pop(); // Simple fallback
-
-  // 1. Fetch Original Recipe
   useEffect(() => {
     async function fetchRecipe() {
-      if (!id) return;
+      if (!id || !user) return;
       try {
         const { data, error } = await supabase
           .from('recipes')
@@ -443,7 +662,6 @@ function RecipePage({ language, t }) {
 
         if (error) throw error;
         setRecipe(data);
-        setTranslatedRecipe(data); // Default to original
       } catch (error) {
         console.error('Error fetching recipe:', error);
       } finally {
@@ -451,120 +669,44 @@ function RecipePage({ language, t }) {
       }
     }
     fetchRecipe();
-  }, [id]);
-
-  // 2. Handle Auto-Translation with Persistence
-  useEffect(() => {
-    async function doTranslation() {
-      if (!recipe || !language) return;
-
-      // A. If language is English (default), show Original
-      if (language === 'en') {
-        setTranslatedRecipe({ ...recipe });
-        return;
-      }
-
-      // B. Check if we already have this translation in the DB
-      if (recipe.translations && recipe.translations[language]) {
-        // Found cached translation!
-        const cached = recipe.translations[language];
-        setTranslatedRecipe({
-          ...cached,
-          id: recipe.id,
-          image_url: recipe.image_url,
-          created_at: recipe.created_at,
-          translations: recipe.translations
-        });
-        return;
-      }
-
-      // C. If not found, generate it
-      setTranslating(true);
-      try {
-        const translatedData = await translateRecipe(recipe, language);
-
-        // D. Save to DB (Persistence)
-        const newTranslations = {
-          ...(recipe.translations || {}),
-          [language]: translatedData
-        };
-
-        const { error } = await supabase
-          .from('recipes')
-          .update({ translations: newTranslations })
-          .eq('id', recipe.id);
-
-        if (error) {
-          console.warn("Failed to save translation to DB:", error);
-          // Continue anyway to show result to user
-        } else {
-          // Update local recipe state with new translation map so we don't fetch again
-          setRecipe(prev => ({ ...prev, translations: newTranslations }));
-        }
-
-        // Show result
-        setTranslatedRecipe({
-          ...translatedData,
-          id: recipe.id,
-          image_url: recipe.image_url,
-          created_at: recipe.created_at,
-          translations: newTranslations
-        });
-
-      } catch (e) {
-        console.warn("Translation failed", e);
-        setTranslatedRecipe(recipe);
-      } finally {
-        setTranslating(false);
-      }
-    }
-
-    doTranslation();
-  }, [language, recipe]);
-
+  }, [id, user]);
 
   const handleImageUpdate = async (file) => {
     if (!recipe) return;
     setLoading(true);
     try {
-      // DELETE OLD IMAGE IF EXISTS (Same logic as before)
       if (recipe.image_url) {
         try {
-          const oldUrl = recipe.image_url;
-          const oldFileName = oldUrl.split('/').pop();
+          const oldFileName = recipe.image_url.split('/').pop();
           if (oldFileName) await supabase.storage.from('recipe-images').remove([oldFileName]);
         } catch (err) { console.warn(err); }
       }
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('recipe-images')
-        .upload(filePath, file);
+        .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
         .from('recipe-images')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
-      const { data: updatedRows, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from('recipes')
         .update({ image_url: publicUrl })
-        .eq('id', recipe.id)
-        .select();
+        .eq('id', recipe.id);
 
       if (updateError) throw updateError;
-      if (!updatedRows || updatedRows.length === 0) throw new Error("Update failed");
 
       setRecipe(prev => ({ ...prev, image_url: publicUrl }));
-      setTranslatedRecipe(prev => ({ ...prev, image_url: publicUrl }));
 
     } catch (error) {
       console.error('Error updating image:', error);
-      alert(`Failed to update image: ${error.message}`);
+      alert(`Afbeelding bijwerken mislukt: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -572,7 +714,7 @@ function RecipePage({ language, t }) {
 
   const handleDelete = async () => {
     if (!recipe) return;
-    if (!window.confirm(t.deleteConfirm)) return; // Use translated confirm
+    if (!window.confirm(t.deleteConfirm)) return;
 
     setLoading(true);
     try {
@@ -600,98 +742,87 @@ function RecipePage({ language, t }) {
     setLoading(true);
 
     try {
-      const globalUpdates = {
-        author: updatedFields.author,
-        cookbook_name: updatedFields.cookbook_name,
-        isbn: updatedFields.isbn,
-        source_url: updatedFields.source_url
-      };
+      const { error } = await supabase
+        .from('recipes')
+        .update({
+          title: updatedFields.title,
+          description: updatedFields.description,
+          ingredients: updatedFields.ingredients,
+          instructions: updatedFields.instructions,
+          prep_time: updatedFields.prep_time,
+          cook_time: updatedFields.cook_time,
+          servings: updatedFields.servings,
+          cuisine: updatedFields.cuisine,
+          difficulty: updatedFields.difficulty,
+          author: updatedFields.author,
+          cookbook_name: updatedFields.cookbook_name,
+          isbn: updatedFields.isbn,
+          source_url: updatedFields.source_url
+        })
+        .eq('id', recipe.id);
 
-      const contentUpdates = {
-        title: updatedFields.title,
-        description: updatedFields.description,
-        ingredients: updatedFields.ingredients,
-        instructions: updatedFields.instructions,
-        prep_time: updatedFields.prep_time,
-        cook_time: updatedFields.cook_time,
-        servings: updatedFields.servings,
-        cuisine: updatedFields.cuisine,
-        difficulty: updatedFields.difficulty
-      };
-
-      let dbUpdate = {};
-
-      if (language === 'en') {
-        dbUpdate = { ...globalUpdates, ...contentUpdates };
-        const { error } = await supabase.from('recipes').update(dbUpdate).eq('id', recipe.id);
-        if (error) throw error;
-        setRecipe(prev => ({ ...prev, ...dbUpdate }));
-        setTranslatedRecipe(prev => ({ ...prev, ...dbUpdate }));
-      } else {
-        const { error: metaError } = await supabase.from('recipes').update(globalUpdates).eq('id', recipe.id);
-        if (metaError) throw metaError;
-
-        const currentTranslations = recipe.translations || {};
-        const newLangTranslation = { ...(currentTranslations[language] || {}), ...contentUpdates };
-        const newTranslationsMap = { ...currentTranslations, [language]: newLangTranslation };
-
-        const { error: transError } = await supabase.from('recipes').update({ translations: newTranslationsMap }).eq('id', recipe.id);
-        if (transError) throw transError;
-
-        setRecipe(prev => ({ ...prev, ...globalUpdates, translations: newTranslationsMap }));
-        setTranslatedRecipe(prev => ({ ...prev, ...globalUpdates, ...contentUpdates, translations: newTranslationsMap }));
-      }
+      if (error) throw error;
+      setRecipe(prev => ({ ...prev, ...updatedFields }));
 
     } catch (error) {
       console.error("Update failed:", error);
-      alert("Failed to save changes: " + error.message);
+      alert("Wijzigingen opslaan mislukt: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
-  if (!recipe) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">{t.recipeNotFound}</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
-  // Show translated recipe if available, or fall back to original
-  const displayRecipe = translatedRecipe || recipe;
+  if (!recipe) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+        {t.recipeNotFound}
+      </div>
+    );
+  }
 
   return (
-    <>
-      <RecipeCard
-        recipe={displayRecipe}
-        onImageUpdate={handleImageUpdate}
-        onDelete={handleDelete}
-        onUpdate={handleUpdate}
-        t={t}
-      />
+    <RecipeCard
+      recipe={recipe}
+      onImageUpdate={handleImageUpdate}
+      onDelete={handleDelete}
+      onUpdate={handleUpdate}
+    />
+  );
+}
 
-      {/* Translating Indicator */}
-      <AnimatePresence>
-        {translating && (
-          <motion.div
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg z-50 flex items-center gap-2 backdrop-blur-md"
-          >
-            <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-            <span className="text-sm font-medium">Translating to {language === 'nl' ? 'Dutch' : 'English'}...</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+function AuthenticatedApp() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/recipe/:id" element={<RecipePage />} />
+      </Routes>
+    </Router>
   );
 }
 
 export default function App() {
-  const [language, setLanguage] = useState('en'); // 'en' or 'nl'
-  const t = translations[language];
+  const { user, loading } = useAuth();
 
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home language={language} setLanguage={setLanguage} t={t} />} />
-        <Route path="/recipe/:id" element={<RecipePage language={language} t={t} />} />
-      </Routes>
-    </Router>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen />;
+  }
+
+  return <AuthenticatedApp />;
 }

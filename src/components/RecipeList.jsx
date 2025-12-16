@@ -1,69 +1,101 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, ChefHat, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, CookingPot, Camera, Link as LinkIcon, ChevronRight, ChevronLeft } from 'lucide-react';
+import { translations as t } from '../lib/translations';
+import RecipeThumbnail from './RecipeThumbnail';
 
-export default function RecipeList({ recipes, t }) {
-    if (recipes.length === 0) {
+export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQuery }) {
+    const scrollContainerRef = useRef(null);
+
+    const scroll = (direction) => {
+        if (scrollContainerRef.current) {
+            const { current } = scrollContainerRef;
+            const scrollAmount = direction === 'left' ? -current.offsetWidth : current.offsetWidth;
+            current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    };
+
+    // No recipes yet state
+    if (isEmptyState) {
         return (
-            <div className="text-center py-12 text-muted-foreground">
-                <p>{t?.noRecipes || "No recipes found. Capture one to get started!"}</p>
+            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
+                <div className="w-32 h-32 bg-secondary/30 rounded-full flex items-center justify-center mb-8 border border-white/5 shadow-2xl animate-pulse">
+                    <CookingPot size={64} className="text-muted-foreground/50" strokeWidth={1} />
+                </div>
+                <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">{t.noRecipes}</h3>
+                <p className="text-muted-foreground max-w-md mb-10 text-lg leading-relaxed">{t.noRecipesDesc}</p>
+
+                <div className="flex flex-wrap gap-4 justify-center">
+                    <div className="flex items-center gap-3 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white transition-all cursor-pointer backdrop-blur-md">
+                        <Camera size={20} className="text-primary" />
+                        <span className="font-medium">{t.takePhoto}</span>
+                    </div>
+                    <div className="flex items-center gap-3 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white transition-all cursor-pointer backdrop-blur-md">
+                        <LinkIcon size={20} className="text-primary" />
+                        <span className="font-medium">{t.fromUrl}</span>
+                    </div>
+                </div>
             </div>
         );
     }
 
+    // No search results state
+    if (isNoResults) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[40vh] text-center p-8">
+                <Search size={48} className="text-muted-foreground mb-4 opacity-50" strokeWidth={1} />
+                <h3 className="text-xl font-bold text-white mb-2">{t.noResults}</h3>
+                <p className="text-muted-foreground">
+                    {t.noResultsDesc} <span className="text-primary">"{searchQuery}"</span>
+                </p>
+            </div>
+        );
+    }
+
+    // Horizontal "Shelf" View
     return (
-        <div className="w-full relative">
-            <h2 className="text-lg font-bold text-foreground mb-4 px-4 sticky left-0">{t?.myCookbook || "My Cookbook"}</h2>
-            <div className="flex overflow-x-auto pb-8 gap-4 px-4 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="relative group/shelf py-8">
+            <div className="flex items-center justify-between px-8 md:px-16 mb-4">
+                <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide flex items-center gap-2">
+                    {t.myCookbook}
+                    <span className="text-sm font-normal text-muted-foreground ml-2 hidden md:inline-block">({recipes.length})</span>
+                </h2>
+
+                {/* Desktop Scroll Controls */}
+                <div className="hidden md:flex gap-2 opacity-0 group-hover/shelf:opacity-100 transition-opacity duration-300">
+                    <button
+                        onClick={() => scroll('left')}
+                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-colors"
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+                    <button
+                        onClick={() => scroll('right')}
+                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-colors"
+                    >
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+            </div>
+
+            <div
+                ref={scrollContainerRef}
+                className="flex overflow-x-auto gap-4 md:gap-6 px-8 md:px-16 pb-12 snap-x snap-mandatory scrollbar-hide mask-fade-sides"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
                 {recipes.map((recipe, index) => (
-                    <Link to={`/recipe/${recipe.id}`} key={recipe.id} className="snap-center shrink-0">
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className="group relative w-72 h-[420px] bg-card rounded-2xl overflow-hidden shadow-lg border border-white/5 transition-all duration-300 hover:scale-[1.03] hover:shadow-primary/20 hover:border-primary/50"
-                        >
-                            <div className="h-full w-full relative">
-                                {recipe.image_url ? (
-                                    <img
-                                        src={recipe.image_url}
-                                        alt={recipe.title}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">
-                                        <ChefHat size={40} />
-                                    </div>
-                                )}
-                                {/* Gradient Overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-
-                                {/* Content Overlay */}
-                                <div className="absolute bottom-0 left-0 right-0 p-5">
-                                    <h3 className="text-xl font-bold text-white mb-2 leading-tight line-clamp-2 drop-shadow-md">{recipe.title}</h3>
-
-                                    <div className="flex items-center gap-3 text-xs text-gray-300 font-medium opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                                        {recipe.prep_time && (
-                                            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-2 py-1 rounded-md">
-                                                <Clock size={12} />
-                                                <span>{recipe.prep_time}</span>
-                                            </div>
-                                        )}
-                                        {recipe.servings && (
-                                            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-2 py-1 rounded-md">
-                                                <Users size={12} />
-                                                <span>{recipe.servings} pp</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </Link>
+                    <motion.div
+                        key={recipe.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.05, duration: 0.4 }}
+                    >
+                        <RecipeThumbnail recipe={recipe} t={t} />
+                    </motion.div>
                 ))}
-                {/* Pad end of list */}
-                <div className="w-4 shrink-0" />
+
+                {/* Spacer for end of list */}
+                <div className="w-6 shrink-0" />
             </div>
         </div>
     );
