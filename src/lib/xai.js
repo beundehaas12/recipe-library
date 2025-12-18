@@ -94,14 +94,14 @@ export async function reviewRecipeWithAI(recipeData, sourceData) {
 }
 
 /**
- * Re-analyzes a recipe using its original stored image.
- * This performs a full vision extraction again, which is more powerful than a review
- * because it allows the AI to re-examine the visual source material.
+ * Re-analyzes a recipe using its original stored image with smart validation.
+ * Combines vision analysis with existing recipe data to validate and enrich.
  * 
  * @param {string} imagePath - The storage path or public URL of the original image
+ * @param {Object} recipeData - Existing recipe data to validate against
  * @returns {Promise<ExtractionResult>}
  */
-export async function reAnalyzeRecipeFromStoredImage(imagePath) {
+export async function reAnalyzeRecipeFromStoredImage(imagePath, recipeData = {}) {
     let path = imagePath;
 
     // If a full URL is provided, extract the storage path
@@ -122,6 +122,10 @@ export async function reAnalyzeRecipeFromStoredImage(imagePath) {
         throw new Error(`Kwaliteitsverbetering mislukt: ${signedError.message}`);
     }
 
-    // 2. Call the regular image extraction with the new signed URL
-    return extractRecipeFromImage(signedData.signedUrl);
+    // 2. Call vision_review with photo + existing recipe data for smart enrichment
+    return invokeEdgeFunction('extract-recipe', {
+        type: 'vision_review',
+        signedUrl: signedData.signedUrl,
+        recipeData
+    });
 }

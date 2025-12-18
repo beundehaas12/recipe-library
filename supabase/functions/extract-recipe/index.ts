@@ -106,6 +106,53 @@ OUTPUT: Geef ALLEEN de gecorrigeerde/verrijkte JSON:
 }
 [JSON_END]`;
             userContent = "Valideer en verrijk het recept. Geef de gecorrigeerde JSON.";
+        } else if (type === 'vision_review') {
+            // Vision-based review - re-examine photo with existing data context
+            systemPrompt = `Je bent een recept-validatie expert met visuele analyse. Je hebt toegang tot de ORIGINELE FOTO en de HUIDIGE geëxtraheerde data.
+
+HUIDIGE GEËXTRAHEERDE DATA:
+${JSON.stringify(recipeData, null, 2)}
+
+OPDRACHT:
+Bekijk de foto ZEER GRONDIG en vergelijk met de huidige data. Verbeter en verrijk waar nodig.
+
+FOCUS OP ALLE RECEPT-ONDERDELEN:
+1. **TITEL**: Is deze correct en volledig?
+2. **BESCHRIJVING**: Voeg context toe als deze ontbreekt
+3. **INGREDIËNTEN**: Controleer ELKE ingrediënt - hoeveelheid, eenheid, naam. Mis je iets?
+4. **INSTRUCTIES**: Zijn alle stappen aanwezig en in de juiste volgorde?
+5. **BEREIDINGSTIJD** (prep_time): Tijd voor voorbereiden (snijden, marineren, etc.)
+6. **KOOKTIJD** (cook_time): Tijd voor daadwerkelijk koken/bakken
+7. **PORTIES** (servings): Aantal personen/porties
+8. **MOEILIJKHEID** (difficulty): Easy/Medium/Hard - schat in op basis van technieken
+9. **KEUKEN** (cuisine): Italiaans, Nederlands, Aziatisch, etc.
+10. **AI TAGS**: Zoektags in het Nederlands
+
+BELANGRIJK:
+- Behoud wat CORRECT is
+- Corrigeer wat FOUT is
+- Vul aan wat ONTBREEKT
+- Wees GRONDIG - mis niets dat op de foto staat
+
+OUTPUT: Geef de verbeterde JSON:
+[JSON_START]
+{
+  "title": "...",
+  "description": "...",
+  "ingredients": [{"amount": number|null, "unit": "...", "item": "..."}],
+  "instructions": ["...", "..."],
+  "servings": number,
+  "prep_time": "...",
+  "cook_time": "...",
+  "difficulty": "Easy|Medium|Hard",
+  "cuisine": "...",
+  "ai_tags": ["..."]
+}
+[JSON_END]`;
+            userContent = [
+                { type: "text", text: "Analyseer deze foto GRONDIG. Vergelijk met de huidige data en verbeter waar nodig. Geef de complete, verbeterde JSON." },
+                { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
+            ];
         } else {
             userContent = `Voer OCR uit, redeneer over de data en extraheer het recept als JSON uit:\n\n${textContent}`;
         }

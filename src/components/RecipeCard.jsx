@@ -131,11 +131,12 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
             let freshRecipe, usage;
 
             if (isPhoto) {
-                // Path 1: Vision Re-analysis
+                // Path 1: Vision Re-analysis with smart validation
                 const imageSource = recipe.original_image_url || (recipe.source_url?.includes('/storage/v1/object/public/') ? recipe.source_url : null);
                 if (!imageSource) throw new Error("Originele foto niet gevonden.");
 
-                const result = await reAnalyzeRecipeFromStoredImage(imageSource);
+                // Pass existing recipe data for smart validation and enrichment
+                const result = await reAnalyzeRecipeFromStoredImage(imageSource, recipe);
                 freshRecipe = result.recipe;
                 usage = result.usage;
             } else {
