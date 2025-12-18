@@ -62,7 +62,7 @@ serve(async (req) => {
         console.log(`Processing ${type} request...`)
 
         const response = await xai.chat.completions.create({
-            model: "grok-4-1-fast",  // Fast vision model, lowest cost
+            model: "grok-2-vision-1212",  // Latest flagship vision model, better accuracy
             messages: [
                 { role: "system", content: FIXED_SYSTEM_PROMPT },  // CACHED by xAI
                 { role: "user", content: userContent }
