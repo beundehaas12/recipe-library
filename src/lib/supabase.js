@@ -88,8 +88,8 @@ async function convertToJpeg(file, quality = 0.9) {
 export async function uploadTempImage(file, userId) {
     console.log('Converting image to JPEG...');
 
-    // Convert to JPEG (handles HEIC, orientation, etc.)
-    const jpegBlob = await convertToJpeg(file, 0.9);
+    // Convert to JPEG (handles HEIC, orientation, etc.) - MAX QUALITY
+    const jpegBlob = await convertToJpeg(file, 1.0);
 
     // Create unique filename in user's temp folder (always .jpg now)
     const baseName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
