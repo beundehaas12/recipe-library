@@ -1,22 +1,9 @@
 // Supabase Edge Function: extract-recipe
-// Secure xAI Grok API integration
-//
-// SECURITY:
-// - XAI_API_KEY stored as Supabase secret (never exposed to browser)
-// - User authentication via Supabase JWT (automatic)
-//
-// MODEL: grok-beta (Multimodal support for OCR + JSON)
+// Clean implementation using Grok 4 for OCR and structured extraction.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import OpenAI from "https://esm.sh/openai@4"
 
-// ==============================================================================
-// FIXED SYSTEM PROMPT - Identical for ALL calls = Maximum Cache Hits
-// ==============================================================================
-// This prompt is sent with every request but xAI caches it server-side.
-// After the first call, subsequent calls only pay ~25% of the input token cost.
-// DO NOT modify this prompt frequently - changes invalidate the cache.
-// ==============================================================================
 const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie expert. Analyseer de afbeelding of tekst en voer deze twee stappen uit:
 
 STAP 1: RAW OCR
@@ -47,14 +34,12 @@ Geef je antwoord in dit exacte formaat:
 (hier de JSON output)
 [JSON_END]`
 
-// CORS headers for browser requests
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
-    // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
@@ -62,21 +47,11 @@ serve(async (req) => {
     try {
         const { signedUrl, type, textContent } = await req.json()
 
-        // Validate input
-        if (type === 'image' && !signedUrl) {
-            throw new Error('signedUrl is required for image extraction')
-        }
-        if (type === 'text' && !textContent) {
-            throw new Error('textContent is required for text extraction')
-        }
-
-        // Initialize xAI client with server-side secret
         const xai = new OpenAI({
             baseURL: "https://api.x.ai/v1",
             apiKey: Deno.env.get("XAI_API_KEY")
         })
 
-        // Build user message
         const userContent = type === 'image'
             ? [
                 { type: "text", text: "Voer OCR uit en extraheer het recept als JSON." },
@@ -84,10 +59,8 @@ serve(async (req) => {
             ]
             : `Voer OCR uit en extraheer het recept als JSON uit:\n\n${textContent}`
 
-        console.log(`Processing ${type} request with grok-beta...`)
-
         const response = await xai.chat.completions.create({
-            model: "grok-beta",  // Standard multimodal model
+            model: "grok-4",
             messages: [
                 { role: "system", content: FIXED_SYSTEM_PROMPT },
                 { role: "user", content: userContent }
@@ -97,8 +70,6 @@ serve(async (req) => {
         })
 
         const content = response.choices[0].message.content
-
-        // Extract parts using markers
         const rawOcrMatch = content.match(/\[RAW_OCR_START\]([\s\S]*?)\[RAW_OCR_END\]/)
         const jsonMatch = content.match(/\[JSON_START\]([\s\S]*?)\[JSON_END\]/)
 
@@ -109,7 +80,7 @@ serve(async (req) => {
         try {
             recipe = JSON.parse(jsonStr)
         } catch (e) {
-            console.error('Failed to parse inner JSON:', e)
+            console.error('Failed to parse recipe JSON:', e)
             throw new Error('AI response structure was invalid')
         }
 
@@ -132,7 +103,6 @@ serve(async (req) => {
 
     } catch (error) {
         console.error('Edge function error:', error)
-
         return new Response(
             JSON.stringify({
                 error: error.message || 'Unknown error occurred',
