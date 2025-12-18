@@ -881,7 +881,7 @@ function Home({ activeTasks, setActiveTasks }) {
         )}
 
         {/* Content Area - No negative margins for better mobile stability */}
-        <div className={`relative z-20 space-y-12 pb-24 bg-background max-w-[1600px] mx-auto ${searchQuery ? 'pt-32' : 'pt-12'}`}>
+        <div className={`relative z-20 space-y-12 pb-24 bg-background max-w-[1600px] mx-auto ${searchQuery ? 'pt-32' : 'pt-6'}`}>
           <RecipeList
             recipes={displayRecipes}
             isEmptyState={isEmptyState}

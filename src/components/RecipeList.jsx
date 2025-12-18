@@ -43,9 +43,9 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
     }
 
     return (
-        <div className="relative py-12">
+        <div className="relative pt-4 pb-12">
             {/* Header - Aligned with Hero */}
-            <div className="px-6 md:px-12 lg:px-20 mb-10">
+            <div className="px-6 md:px-12 lg:px-20 mb-8">
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
                         {t.myCookbook}
