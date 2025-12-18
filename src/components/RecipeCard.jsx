@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown } from 'lucide-react';
+import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
+import { reviewRecipeWithAI } from '../lib/xai';
 
 // Language code to Dutch name mapping
 const languageNames = {
@@ -22,8 +23,10 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     const [expandedSections, setExpandedSections] = useState({
         about: true,
         ingredients: true,
-        ai: true
+        ai: true,
+        history: false
     });
+    const [isReviewing, setIsReviewing] = useState(false);
 
     const toggleSection = (section) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -415,6 +418,213 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                 </AnimatePresence>
                             </div>
                         )}
+
+                        {/* Extraction History Section */}
+                        {recipe.extraction_history && !isEditing && (
+                            <div className="glass-card !border-0 rounded-[var(--radius)] p-6 shadow-xl transition-all">
+                                <div
+                                    className="flex items-center justify-between cursor-pointer group/stat"
+                                    onClick={() => toggleSection('history')}
+                                >
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                                        <Info size={14} className="text-muted-foreground/50" />
+                                        Source & Analysis
+                                    </h3>
+                                    <motion.div animate={{ rotate: expandedSections.history ? 0 : -90 }} className="text-muted-foreground group-hover/stat:text-white transition-colors">
+                                        <ChevronDown size={20} />
+                                    </motion.div>
+                                </div>
+
+                                <AnimatePresence>
+                                    {expandedSections.history && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="pt-6 space-y-4">
+                                                {/* Method Pills */}
+                                                <div className="flex flex-wrap gap-2">
+                                                    {recipe.extraction_history.schema_used && (
+                                                        <span className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/30">
+                                                            📊 Schema.org
+                                                        </span>
+                                                    )}
+                                                    {recipe.extraction_history.ai_used && (
+                                                        <span className="px-3 py-1.5 bg-purple-500/20 text-purple-400 text-xs font-bold rounded-lg border border-purple-500/30">
+                                                            🤖 {recipe.extraction_history.ai_model || 'AI'}
+                                                        </span>
+                                                    )}
+                                                    <span className="px-3 py-1.5 bg-white/5 text-white/50 text-xs font-medium rounded-lg border border-white/10">
+                                                        {recipe.extraction_history.source_type === 'url' ? '🔗 URL' : '📷 Image'}
+                                                    </span>
+                                                </div>
+
+                                                {/* Stats Grid */}
+                                                {recipe.extraction_history.ai_used && recipe.extraction_history.tokens && (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                                            <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Tokens</div>
+                                                            <div className="text-white font-bold">{recipe.extraction_history.tokens.total?.toLocaleString()}</div>
+                                                        </div>
+                                                        <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                                            <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Cost</div>
+                                                            <div className="text-white font-bold">€{recipe.extraction_history.estimated_cost_eur?.toFixed(4)}</div>
+                                                        </div>
+                                                        <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                                            <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Time</div>
+                                                            <div className="text-white font-bold">{(recipe.extraction_history.processing_time_ms / 1000).toFixed(1)}s</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Processing Time (for schema-only) */}
+                                                {!recipe.extraction_history.ai_used && recipe.extraction_history.processing_time_ms && (
+                                                    <div className="bg-white/5 rounded-xl p-3 border border-white/5 inline-block">
+                                                        <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Processing Time</div>
+                                                        <div className="text-white font-bold">{recipe.extraction_history.processing_time_ms}ms</div>
+                                                    </div>
+                                                )}
+
+                                                {/* Notes */}
+                                                {recipe.extraction_history.notes && recipe.extraction_history.notes.length > 0 && (
+                                                    <div className="pt-2 border-t border-white/5">
+                                                        <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider mb-2">Analysis Notes</div>
+                                                        <ul className="space-y-1">
+                                                            {recipe.extraction_history.notes.map((note, idx) => (
+                                                                <li key={idx} className="text-white/60 text-xs flex items-start gap-2">
+                                                                    <span className="text-white/20">•</span>
+                                                                    {note}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+
+                                                {/* Timestamp */}
+                                                <div className="text-[10px] text-white/30 pt-2">
+                                                    Extracted: {new Date(recipe.extraction_history.timestamp).toLocaleString('nl-NL')}
+                                                </div>
+
+                                                {/* Review History Display */}
+                                                {recipe.extraction_history.reviews && recipe.extraction_history.reviews.length > 0 && (
+                                                    <div className="pt-3 mt-3 border-t border-purple-500/20">
+                                                        <div className="text-[10px] text-purple-400/70 uppercase font-bold tracking-wider mb-2">Grok Reviews</div>
+                                                        {recipe.extraction_history.reviews.map((review, idx) => (
+                                                            <div key={idx} className="bg-purple-500/10 rounded-lg p-3 mb-2 border border-purple-500/20">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="text-[10px] text-purple-300">
+                                                                        {new Date(review.timestamp).toLocaleString('nl-NL')}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-purple-400/60">
+                                                                        {review.tokens_used} tokens • €{review.cost?.toFixed(4)}
+                                                                    </span>
+                                                                </div>
+                                                                {review.changes && review.changes.length > 0 && (
+                                                                    <ul className="space-y-1">
+                                                                        {review.changes.map((change, cIdx) => (
+                                                                            <li key={cIdx} className="text-xs text-purple-200/80 flex items-start gap-2">
+                                                                                <span className="text-purple-400">✓</span>
+                                                                                {change}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Review with Grok Button */}
+                                                <div className="pt-4 border-t border-white/5">
+                                                    <button
+                                                        onClick={async () => {
+                                                            setIsReviewing(true);
+                                                            try {
+                                                                const originalData = {
+                                                                    title: recipe.title,
+                                                                    description: recipe.description,
+                                                                    ingredients: recipe.ingredients,
+                                                                    instructions: recipe.instructions,
+                                                                    servings: recipe.servings,
+                                                                    prep_time: recipe.prep_time,
+                                                                    cook_time: recipe.cook_time,
+                                                                    difficulty: recipe.difficulty,
+                                                                    cuisine: recipe.cuisine,
+                                                                    author: recipe.author
+                                                                };
+
+                                                                const { recipe: correctedRecipe, usage } = await reviewRecipeWithAI(originalData);
+
+                                                                // Track what was changed
+                                                                const changes = [];
+                                                                if (correctedRecipe.title !== originalData.title) changes.push(`Title: "${originalData.title}" → "${correctedRecipe.title}"`);
+                                                                if (correctedRecipe.prepTime !== originalData.prep_time) changes.push(`Prep time updated to: ${correctedRecipe.prepTime || 'removed'}`);
+                                                                if (correctedRecipe.cookTime !== originalData.cook_time) changes.push(`Cook time updated to: ${correctedRecipe.cookTime || 'removed'}`);
+                                                                if (JSON.stringify(correctedRecipe.ingredients) !== JSON.stringify(originalData.ingredients)) changes.push('Ingredients corrected');
+                                                                if (JSON.stringify(correctedRecipe.instructions) !== JSON.stringify(originalData.instructions)) changes.push('Instructions corrected');
+                                                                if (correctedRecipe.servings !== originalData.servings) changes.push(`Servings: ${originalData.servings} → ${correctedRecipe.servings}`);
+                                                                if (correctedRecipe.difficulty !== originalData.difficulty) changes.push(`Difficulty set to: ${correctedRecipe.difficulty}`);
+                                                                if (correctedRecipe.cuisine !== originalData.cuisine) changes.push(`Cuisine set to: ${correctedRecipe.cuisine}`);
+
+                                                                if (changes.length === 0) changes.push('No significant changes needed');
+
+                                                                // Create review entry
+                                                                const reviewEntry = {
+                                                                    timestamp: new Date().toISOString(),
+                                                                    tokens_used: usage.total_tokens,
+                                                                    cost: (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000,
+                                                                    changes: changes
+                                                                };
+
+                                                                // Update extraction_history with review
+                                                                const updatedHistory = {
+                                                                    ...recipe.extraction_history,
+                                                                    reviews: [...(recipe.extraction_history.reviews || []), reviewEntry]
+                                                                };
+
+                                                                // Update via onUpdate callback with corrected data and updated history
+                                                                onUpdate({
+                                                                    ...correctedRecipe,
+                                                                    extraction_history: updatedHistory,
+                                                                    ai_tags: ['🤖 grok-reviewed', ...(recipe.ai_tags || []).filter(t => t !== '📊 schema' && t !== '🤖 grok-reviewed')]
+                                                                });
+
+                                                                alert(`Recipe reviewed! ${changes.length} item(s) checked. Used ${usage.total_tokens} tokens.`);
+                                                            } catch (error) {
+                                                                console.error('Review failed:', error);
+                                                                alert('Review failed: ' + error.message);
+                                                            } finally {
+                                                                setIsReviewing(false);
+                                                            }
+                                                        }}
+                                                        disabled={isReviewing}
+                                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm font-bold rounded-lg border border-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {isReviewing ? (
+                                                            <>
+                                                                <Loader2 size={16} className="animate-spin" />
+                                                                Reviewing...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Zap size={16} />
+                                                                Review with Grok
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                    <p className="text-[10px] text-white/30 mt-2 text-center">
+                                                        AI will review and fix parsing issues
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column: Instructions */}
@@ -457,6 +667,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

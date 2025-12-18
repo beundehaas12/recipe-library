@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { supabase } from './lib/supabase';
-import { extractRecipeFromImage, extractRecipeFromText } from './lib/gemini';
+import { supabase, uploadTempImage, deleteTempImage } from './lib/supabase';
+import { extractRecipeFromImage, extractRecipeFromText } from './lib/xai';
+import { processHtmlForRecipe } from './lib/htmlParser';
 import { translations as t } from './lib/translations';
 import { useAuth } from './context/AuthContext';
 import LoginScreen from './components/LoginScreen';
@@ -19,6 +20,7 @@ function Home() {
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState(null);  // Track AI token usage for cost display
   const navigate = useNavigate();
   const { scrollY } = useScroll();
 
@@ -137,7 +139,7 @@ function Home() {
     setSearchResults(null);
   };
 
-  const saveRecipeToDb = async (recipeData, sourceInfo = {}) => {
+  const saveRecipeToDb = async (recipeData, sourceInfo = {}, extractionHistory = null) => {
     try {
       const {
         title,
@@ -156,31 +158,34 @@ function Home() {
         ai_tags
       } = recipeData;
 
+      const insertData = {
+        user_id: user.id,
+        title,
+        description,
+        ingredients,
+        instructions,
+        servings,
+        prep_time: prepTime,
+        cook_time: cookTime,
+        difficulty,
+        cuisine,
+        author,
+        cookbook_name,
+        isbn,
+        source_url: sourceInfo.url || null,
+        source_type: sourceInfo.type || 'manual',
+        source_language: source_language || 'en',
+        ai_tags: ai_tags || [],
+        extraction_history: extractionHistory,
+        image_url: null,
+        original_image_url: null,
+      };
+
+      console.log('Inserting recipe data:', insertData);
+
       const { data: newRecipe, error: dbError } = await supabase
         .from('recipes')
-        .insert([
-          {
-            user_id: user.id,
-            title,
-            description,
-            ingredients,
-            instructions,
-            servings,
-            prep_time: prepTime,
-            cook_time: cookTime,
-            difficulty,
-            cuisine,
-            author,
-            cookbook_name,
-            isbn,
-            source_url: sourceInfo.url || null,
-            source_type: sourceInfo.type || 'manual',
-            source_language: source_language || 'en',
-            ai_tags: ai_tags || [],
-            image_url: null,
-            original_image_url: null,
-          }
-        ])
+        .insert([insertData])
         .select()
         .single();
 
@@ -196,14 +201,78 @@ function Home() {
     }
   };
 
+  // =============================================================================
+  // RECIPE CAPTURE FLOW (xAI + Supabase Storage)
+  // =============================================================================
+  // 1. Upload image to Supabase Storage (temp folder)
+  // 2. Generate signed URL (2 min expiry)
+  // 3. Call Edge Function with signed URL (secure - no API key in browser)
+  // 4. Delete temp image on success
+  // 5. Save recipe to database
+  // =============================================================================
   const handleCapture = async (file) => {
     setIsProcessing(true);
+    setTokenUsage(null);
+    let imagePath = null;
+
+    const startTime = Date.now();
+    const extractionHistory = {
+      timestamp: new Date().toISOString(),
+      source_type: 'image',
+      source_url: null,
+      extraction_method: 'grok',
+      schema_used: false,
+      ai_used: true,
+      ai_model: 'grok-4-1-fast',
+      tokens: null,
+      estimated_cost_eur: null,
+      processing_time_ms: null,
+      notes: []
+    };
+
     try {
-      const recipeData = await extractRecipeFromImage(file);
-      await saveRecipeToDb(recipeData, { type: 'image' });
+      // Step 1: Upload to Supabase Storage, get signed URL
+      console.log('Uploading image to Supabase Storage...');
+      const { path, signedUrl } = await uploadTempImage(file, user.id);
+      imagePath = path;
+      console.log('Signed URL generated:', signedUrl.substring(0, 50) + '...');
+      extractionHistory.notes.push('Image uploaded to Supabase Storage');
+
+      // Step 2: Call xAI via Edge Function
+      console.log('Calling xAI via Edge Function...');
+      const { recipe, usage } = await extractRecipeFromImage(signedUrl);
+      setTokenUsage(usage);  // Store for display
+      console.log('Recipe extracted!', { tokens: usage });
+
+      // Track AI usage
+      extractionHistory.tokens = {
+        prompt: usage.prompt_tokens,
+        completion: usage.completion_tokens,
+        total: usage.total_tokens
+      };
+      extractionHistory.estimated_cost_eur =
+        (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
+      extractionHistory.notes.push('AI extracted recipe from image');
+
+      // Step 3: Delete temp image (only on success)
+      console.log('Deleting temp image...');
+      await deleteTempImage(imagePath);
+      extractionHistory.notes.push('Temporary image deleted');
+
+      // Calculate processing time
+      extractionHistory.processing_time_ms = Date.now() - startTime;
+
+      // Add grok source tag for image extraction
+      recipe.ai_tags = ['🤖 grok', ...(recipe.ai_tags || [])];
+
+      // Step 4: Save to database
+      await saveRecipeToDb(recipe, { type: 'image' }, extractionHistory);
+
     } catch (error) {
       console.error('Error processing recipe:', error);
-      alert('Recept verwerken mislukt. Zie console voor details.');
+      alert('Recept verwerken mislukt: ' + error.message);
+      // NO cleanup on error per requirements
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -235,6 +304,21 @@ function Home() {
     setShowUrlInput(false);
     setIsProcessing(true);
 
+    const startTime = Date.now();
+    const extractionHistory = {
+      timestamp: new Date().toISOString(),
+      source_type: 'url',
+      source_url: url,
+      extraction_method: null,
+      schema_used: false,
+      ai_used: false,
+      ai_model: null,
+      tokens: null,
+      estimated_cost_eur: null,
+      processing_time_ms: null,
+      notes: []
+    };
+
     const fetchWithProxy = async (proxyUrl) => {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), 10000);
@@ -247,16 +331,20 @@ function Home() {
     try {
       let htmlContent = "";
 
+      // Fetch HTML via CORS proxy
       try {
         const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
         htmlContent = await fetchWithProxy(proxyUrl);
+        extractionHistory.notes.push('Fetched via corsproxy.io');
       } catch (e) {
         console.warn("Primary proxy failed, trying backup...", e);
+        extractionHistory.notes.push('Primary proxy failed, using backup');
         const backupProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         const res = await fetch(backupProxy);
         const data = await res.json();
         if (data.contents) {
           htmlContent = data.contents;
+          extractionHistory.notes.push('Fetched via allorigins.win');
         } else {
           throw new Error("Backup proxy also failed");
         }
@@ -264,13 +352,80 @@ function Home() {
 
       if (!htmlContent) throw new Error("Could not retrieve content from URL");
 
-      const truncatedContent = htmlContent.substring(0, 100000);
-      const recipeData = await extractRecipeFromText(truncatedContent);
-      await saveRecipeToDb(recipeData, { type: 'url', url });
+      // Process HTML - extract Schema.org data or clean for AI
+      const processed = processHtmlForRecipe(htmlContent);
+      console.log('HTML processed:', { type: processed.type, hasSchema: !!processed.schemaRecipe });
+
+      let recipe;
+      let usage = null;
+
+      if (processed.type === 'schema') {
+        // Schema.org data is complete - use directly without AI!
+        console.log('Using Schema.org data directly (no AI needed)');
+        recipe = processed.data;
+        console.log('Schema recipe data:', recipe);
+
+        extractionHistory.extraction_method = 'schema';
+        extractionHistory.schema_used = true;
+        extractionHistory.notes.push('Schema.org JSON-LD data found');
+        extractionHistory.notes.push('Complete recipe extracted from structured data');
+
+        // Add source tag and generate basic tags if needed
+        recipe.ai_tags = [
+          '📊 schema',
+          ...(recipe.ai_tags || []),
+          ...((!recipe.ai_tags || recipe.ai_tags.length === 0) ? [
+            recipe.cuisine || 'internationaal'
+          ].filter(Boolean) : [])
+        ];
+      } else {
+        // Need AI to extract from cleaned text
+        console.log('Using AI to extract recipe from cleaned content');
+        const result = await extractRecipeFromText(processed.data);
+        recipe = result.recipe;
+        usage = result.usage;
+        setTokenUsage(usage);
+        console.log('Recipe extracted from URL!', { tokens: usage });
+
+        extractionHistory.extraction_method = processed.schemaRecipe ? 'schema+grok' : 'grok';
+        extractionHistory.schema_used = !!processed.schemaRecipe;
+        extractionHistory.ai_used = true;
+        extractionHistory.ai_model = 'grok-4-1-fast';
+        extractionHistory.tokens = {
+          prompt: usage.prompt_tokens,
+          completion: usage.completion_tokens,
+          total: usage.total_tokens
+        };
+        // Cost calculation: $0.30/1M input, $1.50/1M output (in EUR ~= USD)
+        extractionHistory.estimated_cost_eur =
+          (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
+
+        if (processed.schemaRecipe) {
+          extractionHistory.notes.push('Partial Schema.org data found');
+        } else {
+          extractionHistory.notes.push('No Schema.org data found');
+        }
+        extractionHistory.notes.push('AI extracted recipe from cleaned HTML');
+
+        // Add grok source tag
+        recipe.ai_tags = ['🤖 grok', ...(recipe.ai_tags || [])];
+      }
+
+      // Calculate processing time
+      extractionHistory.processing_time_ms = Date.now() - startTime;
+
+      // Validate required fields before saving
+      if (!recipe || !recipe.title) {
+        console.error('Invalid recipe data:', recipe);
+        throw new Error('Kon geen recepttitel vinden op deze pagina');
+      }
+
+      await saveRecipeToDb(recipe, { type: 'url', url }, extractionHistory);
 
     } catch (error) {
       console.error("URL processing failed:", error);
       alert(`URL verwerken mislukt: ${error.message}`);
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -625,7 +780,7 @@ function Home() {
         capture="environment"
       />
 
-      {/* Processing Overlay - Cinematic Version */}
+      {/* Processing Overlay - Cinematic Version with Token Display */}
       <AnimatePresence>
         {isProcessing && (
           <motion.div
@@ -677,6 +832,22 @@ function Home() {
                   />
                 ))}
               </div>
+
+              {/* Token Usage Display - Shows after extraction completes */}
+              {tokenUsage && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 px-4 py-2 bg-white/5 rounded-full border border-white/10"
+                >
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    {tokenUsage.prompt_tokens} in • {tokenUsage.completion_tokens} out
+                  </span>
+                  <span className="text-[10px] font-bold text-primary ml-2">
+                    ~€{((tokenUsage.prompt_tokens * 0.0003 + tokenUsage.completion_tokens * 0.0015) / 100).toFixed(4)}
+                  </span>
+                </motion.div>
+              )}
             </motion.div>
           </motion.div>
         )}
