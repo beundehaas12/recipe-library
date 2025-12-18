@@ -17,9 +17,10 @@
     --popover: 240 10% 6%;
     --popover-foreground: 0 0% 98%;
 
-    /* Sophisticated Apple Blue - Vibrant but Premium */
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
+    /* Sophisticated Bistro Green - Organic, Precise, Culinary */
+    --primary: 142 60% 45%;
+    --primary-foreground: 142 95% 4%;
+    --primary-glow: hsla(142, 60%, 45%, 0.1);
 
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -37,18 +38,47 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
 
-    --radius: 0.75rem;
+    --radius: 1.5rem;
+    --radius-btn: 1rem;
+
+    /* Animation Speeds */
+    --transition-fast: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border/50;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased selection:bg-primary/30;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Design System Utilities */
+@layer components {
+  .glass-panel {
+    @apply bg-white/5 border border-white/10 backdrop-blur-xl;
+  }
+
+  .glass-card {
+    @apply bg-card/40 border border-white/5 backdrop-blur-md;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-primary text-white font-bold rounded-[var(--radius-btn)] shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] hover:brightness-110 active:scale-95 transition-all duration-200;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-white/10 text-white font-bold rounded-[var(--radius-btn)] backdrop-blur-md border border-white/10 hover:bg-white/20 active:scale-95 transition-all duration-200;
+  }
+
+  .input-standard {
+    @apply w-full bg-white/5 border border-white/10 rounded-[var(--radius-btn)] px-4 py-3 text-white placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all duration-200;
   }
 }
 
@@ -69,5 +99,9 @@
 
   .text-shadow-lg {
     text-shadow: 0 4px 8px rgba(0, 0, 0, 0.7);
+  }
+
+  .mask-fade-bottom {
+    mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
   }
 }

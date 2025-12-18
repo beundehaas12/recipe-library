@@ -346,7 +346,7 @@ function Home() {
               placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full h-11 bg-white/5 hover:bg-white/10 focus:bg-white/15 backdrop-blur-md border border-white/10 focus:border-white/20 rounded-full pl-10 pr-10 text-sm text-white placeholder:text-muted-foreground/60 focus:outline-none transition-all placeholder:font-medium shadow-inner"
+              className="input-standard !rounded-full pl-10 h-11"
             />
             {searchQuery && (
               <button
@@ -374,10 +374,14 @@ function Home() {
                 setShowAddMenu(!showAddMenu);
                 setShowProfileMenu(false);
               }}
-              className="h-11 flex items-center gap-2 px-6 bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md text-white font-semibold rounded-full transition-all text-sm group whitespace-nowrap"
+              className="h-11 px-4 rounded-full bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-all flex items-center gap-2.5 whitespace-nowrap active:scale-95 group shadow-xl"
             >
-              <Plus size={18} className="text-primary group-hover:scale-110 transition-transform" />
-              <span className="hidden md:inline">{t.addRecipe}</span>
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                <Plus size={14} className="text-primary" />
+              </div>
+              <span className="hidden md:inline text-sm font-bold text-white tracking-tight">
+                {t.addRecipe}
+              </span>
             </button>
 
             <AnimatePresence>
@@ -391,23 +395,29 @@ function Home() {
                 >
                   <button
                     onClick={handleCameraClick}
-                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-medium"
+                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
                   >
-                    <CameraCaptureIcon size={18} />
+                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
+                      <CameraCaptureIcon size={16} />
+                    </div>
                     <span>{t.takePhoto}</span>
                   </button>
                   <button
                     onClick={handleUploadClick}
-                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-medium"
+                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
                   >
-                    <UploadIcon size={18} />
+                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
+                      <UploadIcon size={16} />
+                    </div>
                     <span>{t.uploadImage}</span>
                   </button>
                   <button
                     onClick={handleUrlClick}
-                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-medium"
+                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
                   >
-                    <LinkIcon size={18} />
+                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
+                      <LinkIcon size={16} />
+                    </div>
                     <span>{t.fromUrl}</span>
                   </button>
                 </motion.div>
@@ -422,10 +432,10 @@ function Home() {
                 setShowProfileMenu(!showProfileMenu);
                 setShowAddMenu(false);
               }}
-              className="h-11 w-11 shrink-0 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border border-white/10 flex items-center justify-center text-xs font-bold text-white shadow-inner hover:scale-105 hover:border-primary/50 transition-all"
+              className="h-11 w-11 shrink-0 rounded-full bg-card border border-white/10 flex items-center justify-center text-xs font-bold text-white shadow-xl hover:scale-105 hover:border-primary/50 transition-all overflow-hidden"
             >
               {user?.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover rounded-full" alt="Avatar" />
+                <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
               ) : (
                 user?.email?.[0]?.toUpperCase() || '?'
               )}
@@ -481,7 +491,7 @@ function Home() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-[#1c1c1e] w-full max-w-md p-8 rounded-3xl border border-white/10 shadow-2xl"
+              className="glass-panel w-full max-w-md p-8 rounded-[var(--radius)] shadow-2xl"
               onClick={e => e.stopPropagation()}
             >
               <h3 className="text-2xl font-bold text-white mb-2">{t.pasteUrl}</h3>
@@ -490,7 +500,7 @@ function Home() {
               <input
                 type="url"
                 placeholder="https://example.com/lekker-recept"
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-4 text-white mb-6 focus:outline-none focus:ring-2 focus:ring-primary/50 text-lg"
+                className="input-standard mb-6 !py-4 text-lg"
                 value={urlInputValue}
                 onChange={(e) => setUrlInputValue(e.target.value)}
                 autoFocus
@@ -498,14 +508,14 @@ function Home() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowUrlInput(false)}
-                  className="flex-1 px-4 py-3 rounded-xl hover:bg-white/5 text-white/70 font-medium transition-colors"
+                  className="btn-secondary flex-1"
                 >
                   {t.cancel}
                 </button>
                 <button
                   onClick={() => processUrl(urlInputValue)}
                   disabled={!urlInputValue}
-                  className="flex-1 px-4 py-3 bg-white text-black rounded-xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-primary flex-1 !text-black"
                 >
                   {t.analyzeUrl}
                 </button>
@@ -525,21 +535,21 @@ function Home() {
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[70] bg-[#09090b] flex flex-col pt-safe"
           >
-            <div className="flex items-center gap-4 p-4 border-b border-white/10 mt-safe-top">
+            <div className="flex items-center gap-4 px-6 py-4 border-b border-white/10 mt-safe-top glass-panel !border-none">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                 <input
                   autoFocus
                   type="text"
                   placeholder={t.searchPlaceholder}
-                  className="w-full bg-white/10 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="input-standard !rounded-full pl-10 py-3"
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                 />
                 {searchQuery && (
                   <button
                     onClick={clearSearch}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
                   >
                     <X size={16} />
                   </button>
@@ -556,7 +566,7 @@ function Home() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto px-6 py-4">
               {/* Mobile Search Results */}
               {(instantFilteredRecipes || searchResults) && searchQuery && (
                 <div className="space-y-4 pb-20">
@@ -568,12 +578,12 @@ function Home() {
                           navigate(`/recipe/${recipe.id}`);
                           setShowMobileSearch(false);
                         }}
-                        className="flex items-center gap-4 p-3 bg-white/5 rounded-xl border border-white/5 active:bg-white/10"
+                        className="flex items-center gap-4 p-3 glass-card rounded-[var(--radius-btn)] active:bg-white/10"
                       >
                         {recipe.image_url ? (
-                          <img src={recipe.image_url} alt={recipe.title} className="w-16 h-16 rounded-lg object-cover" />
+                          <img src={recipe.image_url} alt={recipe.title} className="w-16 h-16 rounded-[var(--radius-btn)] object-cover" />
                         ) : (
-                          <div className="w-16 h-16 rounded-lg bg-white/10 flex items-center justify-center">
+                          <div className="w-16 h-16 rounded-[var(--radius-btn)] bg-white/10 flex items-center justify-center">
                             <ChefHat size={24} className="text-white/20" />
                           </div>
                         )}
@@ -615,23 +625,59 @@ function Home() {
         capture="environment"
       />
 
-      {/* Processing Overlay */}
+      {/* Processing Overlay - Cinematic Version */}
       <AnimatePresence>
         {isProcessing && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6"
           >
-            <div className="bg-[#1c1c1e] border border-white/10 p-10 rounded-3xl flex flex-col items-center max-w-sm w-full shadow-2xl text-center">
-              <div className="relative w-20 h-20 mb-8">
-                <div className="absolute inset-0 border-4 border-white/10 rounded-full" />
-                <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin" />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex flex-col items-center max-w-sm w-full text-center"
+            >
+              <div className="relative w-32 h-32 mb-10">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0 border border-white/5 rounded-full"
+                />
+                <motion.div
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-2 border border-primary/20 rounded-full"
+                />
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-4 border-2 border-primary rounded-full border-t-transparent shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <ChefHat size={40} className="text-primary animate-pulse" />
+                </div>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">{t.analyzing}</h3>
-              <p className="text-muted-foreground">{t.analyzingDesc}</p>
-            </div>
+
+              <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">
+                {t.analyzing}
+              </h3>
+              <p className="text-muted-foreground font-bold text-[10px] uppercase tracking-[0.2em] leading-relaxed">
+                {t.analyzingDesc}
+              </p>
+
+              <div className="mt-8 flex gap-1.5 justify-center">
+                {[0, 1, 2].map(i => (
+                  <motion.div
+                    key={i}
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                    className="w-1.5 h-1.5 bg-primary rounded-full"
+                  />
+                ))}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -659,15 +705,15 @@ function Home() {
               <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
             </motion.div>
 
-            {/* Hero Content */}
-            <div className="absolute bottom-0 left-0 max-w-4xl p-6 md:p-16 z-30 flex flex-col items-start gap-6 pb-40 md:pb-56">
+            {/* Hero Content - Use pointer-events-none to prevent blocking the RecipeList below it */}
+            <div className="absolute bottom-0 left-0 max-w-4xl p-6 md:p-16 z-30 flex flex-col items-start gap-6 pb-40 md:pb-56 pointer-events-none">
               {heroRecipe ? (
                 <>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="flex flex-wrap gap-3 items-center"
+                    className="flex flex-wrap gap-3 items-center pointer-events-auto"
                   >
                     <span className="px-3 py-1 rounded-md bg-white/10 backdrop-blur-md border border-white/10 text-white/90 text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-lg">
                       {t.latestDiscovery}
@@ -683,7 +729,7 @@ function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] drop-shadow-2xl font-display max-w-3xl"
+                    className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] drop-shadow-2xl font-display max-w-3xl pointer-events-auto"
                   >
                     {heroRecipe.title}
                   </motion.h2>
@@ -692,7 +738,7 @@ function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="text-gray-200 text-lg md:text-xl line-clamp-3 max-w-xl drop-shadow-md font-medium leading-relaxed"
+                    className="text-gray-200 text-lg md:text-xl line-clamp-3 max-w-xl drop-shadow-md font-medium leading-relaxed pointer-events-auto"
                   >
                     {heroRecipe.description || ''}
                   </motion.p>
@@ -701,20 +747,20 @@ function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="flex items-center gap-4 mt-4"
+                    className="flex items-center gap-4 mt-4 pointer-events-auto"
                   >
                     <button
                       onClick={() => navigate(`/recipe/${heroRecipe.id}`)}
-                      className="px-8 py-4 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-3 text-lg"
+                      className="btn-primary !px-10 !py-5 !text-black font-black uppercase tracking-widest flex items-center gap-4 text-sm group/btn shadow-2xl shadow-primary/20 active:scale-95"
                     >
-                      {t.startCooking}
-                      <ArrowRight size={20} />
+                      <span>{t.startCooking}</span>
+                      <ArrowRight size={20} className="group-hover/btn:translate-x-1 transition-transform" />
                     </button>
 
                   </motion.div>
                 </>
               ) : (
-                <div className="flex flex-col items-start gap-4">
+                <div className="flex flex-col items-start gap-4 pointer-events-auto">
                   <h1 className="text-6xl font-black text-white mb-4 leading-tight">{t.appTitle}</h1>
                   <p className="text-xl text-gray-400 max-w-md">Jouw culinaire reis begint hier. Scan recepten en ontdek nieuwe smaken.</p>
                 </div>

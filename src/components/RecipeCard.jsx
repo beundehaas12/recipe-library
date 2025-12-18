@@ -29,14 +29,21 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
+    // Unified scroll flow - removing parallax for synchronized movement
     const { scrollY } = useScroll();
 
-    // Parallax effect for header image
-    const y = useTransform(scrollY, [0, 500], [0, 200]);
-    const opacity = useTransform(scrollY, [0, 400], [1, 0]);
-    const headerTitleOpacity = useTransform(scrollY, [300, 400], [0, 1]);
-    const headerBgColor = useTransform(scrollY, [0, 200], ['rgba(9, 9, 11, 0)', 'rgba(9, 9, 11, 0.4)']);
-    const headerBlurFilter = useTransform(scrollY, [0, 200], ['blur(0px)', 'blur(8px)']);
+    // Ensure the sticky header background is strictly transparent at the top and during overscroll
+    const headerBgColor = useTransform(
+        scrollY,
+        [0, 100, 200],
+        ['rgba(9, 9, 11, 0)', 'rgba(9, 9, 11, 0)', 'rgba(9, 9, 11, 0.85)']
+    );
+    const headerBlurFilter = useTransform(
+        scrollY,
+        [0, 100, 200],
+        ['blur(0px)', 'blur(0px)', 'blur(16px)']
+    );
+    const headerTitleOpacity = useTransform(scrollY, [150, 250], [0, 1]);
 
     useEffect(() => {
         if (recipe?.servings) {
@@ -105,7 +112,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         if (typeof ing === 'object' && ing !== null && 'item' in ing) {
             let amount = ing.amount;
             if (typeof amount === 'number') amount = Math.round(amount * scaleFactor * 100) / 100;
-            return (<span><span className="font-bold text-primary">{amount}</span>{ing.unit && <span className="text-muted-foreground mx-1">{ing.unit}</span>}<span>{ing.item}</span></span>);
+            return (<span><span className="font-bold text-white">{amount}</span>{ing.unit && <span className="text-muted-foreground mx-1">{ing.unit}</span>}<span>{ing.item}</span></span>);
         }
         return parseAndScaleString(String(ing));
     };
@@ -113,10 +120,13 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     const sourceLangName = languageNames[recipe.source_language] || recipe.source_language || t.languageUnknown;
 
     return (
-        <div className="bg-background min-h-screen pb-20">
-            {/* Immersive Header */}
-            <div className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden">
-                <motion.div style={{ y, opacity }} className="absolute inset-0">
+        <div className="bg-background min-h-screen pb-20 overflow-x-hidden scroll-smooth">
+            {/* Immersive Header - Unified Scroll Container */}
+            <div className="relative w-full h-[60vh] md:h-[75vh]">
+                <motion.div
+                    layoutId={`image-${recipe.id}`}
+                    className="absolute inset-0 z-0"
+                >
                     {recipe.image_url ? (
                         <img src={recipe.image_url} alt={recipe.title} className="w-full h-full object-cover" />
                     ) : (
@@ -124,58 +134,39 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                             <ChefHat size={100} className="text-muted-foreground/20" strokeWidth={1} />
                         </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-black/60" />
+                    {/* Bottom-weighted gradient for smooth transition to content - Top remains 100% clean */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent z-10" />
                 </motion.div>
 
-                {/* Fixed gradient overlay - stays when scrolling for smooth transition */}
-                <div className="fixed inset-x-0 top-[20vh] h-[80vh] bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-10" />
-
-                {/* Floating Nav Actions with Gradient Blur Background */}
-                <div className="fixed top-0 left-0 right-0 z-50 p-6 flex justify-between items-start pointer-events-none">
-                    {/* Gradient Blur Background Layer */}
-                    <motion.div
-                        style={{
-                            backgroundColor: headerBgColor,
-                            backdropFilter: headerBlurFilter,
-                            WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
-                            maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)'
-                        }}
-                        className="absolute top-0 left-0 right-0 h-32 -z-10"
-                    />
+                {/* Cinematic Floating Header - Completely transparent background version */}
+                <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex justify-between items-center">
                     <Link to="/" className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto">
                         <ArrowLeft size={20} />
                     </Link>
 
-                    <motion.div style={{ opacity: headerTitleOpacity }} className="absolute inset-x-0 top-6 text-center pointer-events-none">
-                        <span className="text-sm font-bold text-white uppercase tracking-widest drop-shadow-md bg-black/50 px-4 py-2 rounded-full backdrop-blur-md border border-white/5">
-                            {recipe.title}
-                        </span>
-                    </motion.div>
-
                     <div className="flex gap-3 pointer-events-auto">
                         {isEditing ? (
                             <div className="flex gap-2">
-                                <button onClick={handleSave} className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-full shadow-lg hover:brightness-110">Opslaan</button>
-                                <button onClick={handleCancel} className="px-4 py-2 bg-white/10 text-white text-sm font-bold rounded-full backdrop-blur-md hover:bg-white/20">Annuleren</button>
+                                <button onClick={handleSave} className="btn-primary !py-2 !px-4 text-sm !text-black">Opslaan</button>
+                                <button onClick={handleCancel} className="btn-secondary !py-2 !px-4 text-sm">Annuleren</button>
                             </div>
                         ) : (
                             <>
-                                <button onClick={() => setIsEditing(true)} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors">
-                                    <Edit size={18} />
+                                <button onClick={() => setIsEditing(true)} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center">
+                                    <Edit size={20} />
                                 </button>
-                                <label className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors cursor-pointer">
-                                    <Camera size={18} />
+                                <label className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center cursor-pointer">
+                                    <Camera size={20} />
                                     <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file && onImageUpdate) onImageUpdate(file); }} />
                                 </label>
-                                <button onClick={onDelete} className="w-10 h-10 rounded-full bg-red-500/20 backdrop-blur-md flex items-center justify-center text-red-500 border border-red-500/30 hover:bg-red-500/40 transition-colors">
-                                    <Trash2 size={18} />
+                                <button onClick={onDelete} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center !bg-red-500/10 !text-red-500 !border-red-500/20 hover:!bg-red-500/20 transition-all">
+                                    <Trash2 size={20} />
                                 </button>
                             </>
                         )}
                     </div>
-                </div>
+                </header>
 
-                {/* Header Content */}
                 {/* Header Content */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col justify-end pb-12">
                     <div className="max-w-7xl mx-auto px-6 md:px-12 w-full">
@@ -204,17 +195,18 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                 </motion.div>
 
                                 <motion.h1
+                                    layoutId={`title-${recipe.id}`}
                                     initial={{ y: 20, opacity: 0 }}
                                     animate={{ y: 0, opacity: 1 }}
-                                    transition={{ delay: 0.3 }}
-                                    className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight drop-shadow-xl font-display"
+                                    transition={{ delay: 0.1, duration: 0.5 }}
+                                    className="text-6xl md:text-8xl lg:text-9xl font-black text-white leading-[0.85] drop-shadow-2xl font-display"
                                 >
                                     {recipe.title}
                                 </motion.h1>
 
-                                <div className="mb-4"></div> {/* Spacer for user request */}
+                                <div className="mb-4"></div>
 
-                                {/* Description - Moved to Header */}
+                                {/* Description */}
                                 {recipe.description && (
                                     <motion.p
                                         initial={{ opacity: 0 }}
@@ -225,8 +217,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         {recipe.description}
                                     </motion.p>
                                 )}
-
-
                             </div>
                         )}
                     </div>
@@ -239,20 +229,19 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
                     {/* Left Column: Stats & Ingredients */}
                     <div className="space-y-6">
-                        {/* Stats Card - Standalone, No Border */}
-                        <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 shadow-xl transition-all">
+                        {/* Stats Card */}
+                        <div className="glass-card !border-0 rounded-[var(--radius)] p-6 shadow-xl transition-all">
                             <div
-                                className="flex items-center justify-between cursor-pointer"
+                                className="flex items-center justify-between cursor-pointer group/stat"
                                 onClick={() => toggleSection('about')}
                             >
                                 <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                    <Info size={20} className="text-white" />
+                                    <ChefHat size={18} className="text-muted-foreground" />
                                     {t.aboutRecipe || "Over dit recept"}
                                 </h3>
-                                <ChevronDown
-                                    size={20}
-                                    className={`text-white/60 transition-transform duration-300 ${expandedSections.about ? 'rotate-180' : ''}`}
-                                />
+                                <motion.div animate={{ rotate: expandedSections.about ? 0 : -90 }} className="text-muted-foreground group-hover/stat:text-white transition-colors">
+                                    <ChevronDown size={20} />
+                                </motion.div>
                             </div>
 
                             <AnimatePresence>
@@ -264,38 +253,54 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         transition={{ duration: 0.3, ease: "easeInOut" }}
                                         className="overflow-hidden"
                                     >
-                                        <div className="space-y-6 pt-6">
-                                            {/* Prep & Cook Time - Side by Side */}
+                                        <div className="pt-6 space-y-6">
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="p-3 bg-black/20 rounded-2xl flex flex-col items-center justify-center text-center">
-                                                    <Clock size={20} className="text-white/60 mb-2" />
-                                                    <span className="text-[10px] text-white/40 uppercase font-bold tracking-wider">{t.prepTime}</span>
-                                                    {isEditing ? (
-                                                        <input className="w-full text-center bg-transparent text-sm mt-1" value={editForm.prep_time} onChange={e => setEditForm({ ...editForm, prep_time: e.target.value })} />
-                                                    ) : (
-                                                        <span className="font-bold text-white text-base">{recipe.prep_time || '-'}</span>
-                                                    )}
+                                                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-2">
+                                                    <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                                        <Clock size={14} className="text-muted-foreground/50" />
+                                                        {t.prepTime}
+                                                    </div>
+                                                    <div className="text-white font-bold text-lg">{recipe.prep_time || '-'}</div>
                                                 </div>
-
-                                                <div className="p-3 bg-black/20 rounded-2xl flex flex-col items-center justify-center text-center">
-                                                    <Flame size={20} className="text-white/60 mb-2" />
-                                                    <span className="text-[10px] text-white/40 uppercase font-bold tracking-wider">{t.cookTime}</span>
-                                                    {isEditing ? (
-                                                        <input className="w-full text-center bg-transparent text-sm mt-1" value={editForm.cook_time} onChange={e => setEditForm({ ...editForm, cook_time: e.target.value })} />
-                                                    ) : (
-                                                        <span className="font-bold text-white text-base">{recipe.cook_time || '-'}</span>
-                                                    )}
+                                                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-2">
+                                                    <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                                        <Clock size={14} className="text-muted-foreground/50" />
+                                                        {t.cookTime}
+                                                    </div>
+                                                    <div className="text-white font-bold text-lg">{recipe.cook_time || '-'}</div>
                                                 </div>
                                             </div>
 
-                                            {/* Source Info inside "Over dit recept" */}
+                                            {/* Servings Adjustment Row - Matches Ingredient List Style */}
+                                            <div className="flex items-center justify-between py-2">
+                                                <span className="text-gray-200 font-medium">{t.servings}</span>
+                                                <div className="flex items-center bg-white/5 rounded-full border border-white/10 shadow-inner overflow-hidden">
+                                                    <button
+                                                        onClick={() => setCurrentServings(Math.max(1, currentServings - 1))}
+                                                        className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/5 transition-all active:scale-90"
+                                                        aria-label="Minder porties"
+                                                    >
+                                                        <Minus size={14} />
+                                                    </button>
+                                                    <span className="text-white font-black text-sm min-w-[1.5rem] text-center">{currentServings}</span>
+                                                    <button
+                                                        onClick={() => setCurrentServings(currentServings + 1)}
+                                                        className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/5 transition-all active:scale-90"
+                                                        aria-label="Meer porties"
+                                                    >
+                                                        <Plus size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Source Info */}
                                             {(recipe.author || recipe.cookbook_name || recipe.source_url) && (
                                                 <div className="pt-4 border-t border-white/5">
                                                     <span className="text-[10px] text-white/40 uppercase font-bold tracking-wider block mb-2">{t.source || "Bron"}</span>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-white font-medium text-sm">{recipe.author || recipe.cookbook_name || "Onbekend"}</span>
                                                         {recipe.source_url && (
-                                                            <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary text-xs font-bold hover:underline bg-primary/10 px-3 py-1.5 rounded-full transition-colors">
+                                                            <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-white/10">
                                                                 Open link <ExternalLink size={12} />
                                                             </a>
                                                         )}
@@ -308,33 +313,19 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                             </AnimatePresence>
                         </div>
 
-
-                        {/* Ingredients List - Standalone Card, Name First Layout */}
-                        <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 shadow-xl transition-all">
-                            {/* Header with Servings Control */}
+                        {/* Ingredients Card */}
+                        <div className="glass-card !border-0 rounded-[var(--radius)] p-6 shadow-xl transition-all">
                             <div
-                                className="flex items-center justify-between cursor-pointer"
+                                className="flex items-center justify-between cursor-pointer group/stat"
                                 onClick={() => toggleSection('ingredients')}
                             >
-                                <div className="flex items-center gap-4 flex-1">
-                                    <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                        <Utensils size={20} className="text-white" />
-                                        {t.ingredients}
-                                    </h3>
-                                    {isEditing ? (
-                                        <input className="w-12 text-center bg-transparent border-b border-white/20 text-white font-bold" value={editForm.servings} onChange={e => setEditForm({ ...editForm, servings: e.target.value })} onClick={(e) => e.stopPropagation()} />
-                                    ) : (
-                                        <div className="flex items-center gap-3 bg-black/20 rounded-full px-3 py-1.5" onClick={(e) => e.stopPropagation()}>
-                                            <button onClick={() => setCurrentServings(Math.max(1, currentServings - 1))} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors"><Minus size={14} /></button>
-                                            <span className="w-6 text-center text-base font-bold text-primary">{currentServings}</span>
-                                            <button onClick={() => setCurrentServings(currentServings + 1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors"><Plus size={14} /></button>
-                                        </div>
-                                    )}
-                                </div>
-                                <ChevronDown
-                                    size={20}
-                                    className={`text-white/60 transition-transform duration-300 ${expandedSections.ingredients ? 'rotate-180' : ''}`}
-                                />
+                                <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                                    <Utensils size={18} className="text-muted-foreground" />
+                                    {t.ingredients}
+                                </h3>
+                                <motion.div animate={{ rotate: expandedSections.ingredients ? 0 : -90 }} className="text-muted-foreground group-hover/stat:text-white transition-colors">
+                                    <ChevronDown size={20} />
+                                </motion.div>
                             </div>
 
                             <AnimatePresence>
@@ -348,45 +339,35 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                     >
                                         <ul className="space-y-3 pt-6">
                                             {Array.isArray(recipe.ingredients) && recipe.ingredients.map((ingredient, idx) => {
-                                                // Custom formatting for name-first layout
                                                 let content = { amount: '', unit: '', item: '' };
-
                                                 if (typeof ingredient === 'object' && ingredient !== null && 'item' in ingredient) {
                                                     let amount = ingredient.amount;
                                                     if (typeof amount === 'number') amount = Math.round(amount * scaleFactor * 100) / 100;
-                                                    content = {
-                                                        amount: amount || '',
-                                                        unit: ingredient.unit || '',
-                                                        item: ingredient.item || ''
-                                                    };
+                                                    content = { amount: amount || '', unit: ingredient.unit || '', item: ingredient.item || '' };
                                                 } else {
-                                                    // Parse string
                                                     const str = String(ingredient);
                                                     const regex = /^(\d+(?:\.\d+)?|\d+\/\d+|\d+\s+\d+\/\d+)\s*([a-zA-Z]+)?\s+(.*)/;
                                                     const match = str.match(regex);
                                                     if (match) {
                                                         let amountStr = match[1];
                                                         let amount = 0;
-                                                        // Simple parse logic for preview
-                                                        if (amountStr.includes('/')) amount = eval(amountStr);
-                                                        else amount = parseFloat(amountStr);
-
-                                                        content = {
-                                                            amount: Math.round(amount * scaleFactor * 100) / 100,
-                                                            unit: match[2] || '',
-                                                            item: match[3] || ''
-                                                        };
+                                                        if (amountStr.includes(' ')) {
+                                                            const parts = amountStr.split(' ');
+                                                            amount = parseFloat(parts[0]) + (parts[1].includes('/') ? eval(parts[1]) : parseFloat(parts[1]));
+                                                        } else if (amountStr.includes('/')) {
+                                                            amount = eval(amountStr);
+                                                        } else amount = parseFloat(amountStr);
+                                                        content = { amount: Math.round(amount * scaleFactor * 100) / 100, unit: match[2] || '', item: match[3] || '' };
                                                     } else {
                                                         content = { item: str, amount: '', unit: '' };
                                                     }
                                                 }
-
                                                 return (
                                                     <li key={idx} className="grid grid-cols-[1fr_auto] gap-4 py-2 border-b border-white/5 last:border-0 hover:border-white/10 transition-colors items-baseline">
                                                         <span className="text-gray-200 font-medium">{content.item}</span>
                                                         <span className="text-right whitespace-nowrap">
-                                                            <span className="font-bold text-primary">{content.amount}</span>
-                                                            {content.unit && <span className="text-white/60 ml-1 text-sm">{content.unit}</span>}
+                                                            <span className="font-bold text-white">{content.amount}</span>
+                                                            {content.unit && <span className="text-white/40 ml-1 text-xs uppercase tracking-wider font-bold">{content.unit}</span>}
                                                         </span>
                                                     </li>
                                                 );
@@ -397,21 +378,20 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                             </AnimatePresence>
                         </div>
 
-                        {/* AI Tags - Standalone Card */}
+                        {/* AI Tags Section */}
                         {recipe.ai_tags && recipe.ai_tags.length > 0 && !isEditing && (
-                            <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 shadow-xl transition-all">
+                            <div className="glass-card !border-0 rounded-[var(--radius)] p-6 shadow-xl transition-all">
                                 <div
-                                    className="flex items-center justify-between cursor-pointer"
+                                    className="flex items-center justify-between cursor-pointer group/stat"
                                     onClick={() => toggleSection('ai')}
                                 >
                                     <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                        <Sparkles size={20} className="text-white" />
+                                        <Sparkles size={14} className="text-muted-foreground/50" />
                                         {t.aiTags}
                                     </h3>
-                                    <ChevronDown
-                                        size={20}
-                                        className={`text-white/60 transition-transform duration-300 ${expandedSections.ai ? 'rotate-180' : ''}`}
-                                    />
+                                    <motion.div animate={{ rotate: expandedSections.ai ? 0 : -90 }} className="text-muted-foreground group-hover/stat:text-white transition-colors">
+                                        <ChevronDown size={20} />
+                                    </motion.div>
                                 </div>
 
                                 <AnimatePresence>
@@ -425,7 +405,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         >
                                             <div className="flex flex-wrap gap-2 pt-6">
                                                 {recipe.ai_tags.map((tag, idx) => (
-                                                    <span key={idx} className="px-3 py-1.5 bg-black/20 text-white/70 text-xs font-medium rounded-lg hover:bg-primary/20 hover:text-primary transition-all cursor-default">
+                                                    <span key={idx} className="px-3 py-1.5 glass-card !bg-white/5 !backdrop-blur-none text-white/70 text-xs font-semibold rounded-lg hover:bg-primary/20 hover:text-primary transition-all cursor-default border-white/10">
                                                         {tag}
                                                     </span>
                                                 ))}
@@ -437,42 +417,46 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                         )}
                     </div>
 
-                    {/* Right Column: Instructions (No Background) */}
+                    {/* Right Column: Instructions */}
                     <div className="space-y-12">
                         {isEditing && (
-                            <div className="bg-white/5 rounded-2xl p-6">
-                                <h3 className="text-white mb-2">Beschrijving (voor header)</h3>
-                                <textarea className="w-full h-32 bg-black/20 border border-white/10 rounded-xl p-4 text-white" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} placeholder="Korte beschrijving van het gerecht..." />
+                            <div className="glass-panel rounded-[var(--radius)] p-6">
+                                <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                                    <Edit size={18} className="text-primary" />
+                                    Beschrijving
+                                </h3>
+                                <textarea
+                                    className="input-standard h-32"
+                                    value={editForm.description}
+                                    onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                                    placeholder="Korte beschrijving van het gerecht..."
+                                />
                             </div>
                         )}
 
                         <div className="space-y-8">
-                            <h3 className="text-2xl font-bold text-white mb-8 inline-block pr-12">
+                            <h3 className="text-3xl font-black text-white mb-8 inline-block pr-12 relative">
                                 {t.instructions}
+                                <div className="absolute -bottom-2 left-0 w-12 h-0.5 bg-primary/50 rounded-full" />
                             </h3>
                             <div className="space-y-10 relative">
-                                {/* Vertical Line connecting steps */}
-                                <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-gradient-to-b from-primary via-primary/20 to-transparent opacity-30" />
+                                <div className="absolute left-[19px] top-4 bottom-4 w-[1px] bg-white/5" />
 
                                 {Array.isArray(recipe.instructions) && recipe.instructions.map((step, idx) => (
                                     <div key={idx} className="group relative pl-12">
-                                        {/* Step Number Bubble */}
-                                        <div className="absolute left-0 top-0 w-10 h-10 rounded-full bg-card border border-white/10 flex items-center justify-center text-sm font-bold text-primary shadow-lg shadow-black/50 group-hover:scale-110 group-hover:border-primary/50 transition-all z-10">
+                                        <div className="absolute left-0 top-0 w-10 h-10 rounded-full bg-background border border-white/10 flex items-center justify-center text-sm font-bold text-muted-foreground group-hover:border-primary/40 group-hover:text-white transition-all z-10">
                                             {idx + 1}
                                         </div>
-
                                         <div className="pt-1">
-                                            <p className="text-lg text-gray-200 leading-8 group-hover:text-white transition-colors">{step}</p>
+                                            <p className="text-xl text-gray-200 leading-relaxed font-medium group-hover:text-white transition-colors">{step}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
-
         </div>
     );
 }
