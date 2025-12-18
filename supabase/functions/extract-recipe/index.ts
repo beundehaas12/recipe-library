@@ -158,7 +158,7 @@ OUTPUT: Geef de verbeterde JSON:
         }
 
         const response = await xai.chat.completions.create({
-            model: "grok-4-1-fast-reasoning",
+            model: "grok-4",
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userContent }
