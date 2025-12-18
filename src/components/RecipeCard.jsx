@@ -27,6 +27,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         history: false
     });
     const [isReviewing, setIsReviewing] = useState(false);
+    const [showSourceModal, setShowSourceModal] = useState(false);
 
     const toggleSection = (section) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
