@@ -153,8 +153,8 @@ function Home({ activeTasks, setActiveTasks }) {
         ingredients,
         instructions,
         servings,
-        prepTime,
-        cookTime,
+        prep_time,
+        cook_time,
         difficulty,
         cuisine,
         author,
@@ -171,8 +171,8 @@ function Home({ activeTasks, setActiveTasks }) {
         ingredients,
         instructions,
         servings,
-        prep_time: prepTime,
-        cook_time: cookTime,
+        prep_time,
+        cook_time,
         difficulty,
         cuisine,
         author,
@@ -256,14 +256,15 @@ function Home({ activeTasks, setActiveTasks }) {
       extractionHistory.notes.push('Image uploaded to Supabase Storage');
 
       console.log('Calling xAI via Edge Function...');
-      const { recipe, usage, raw_response, raw_ocr } = await extractRecipeFromImage(signedUrl);
+      const { recipe, usage, raw_response, raw_ocr, reasoning } = await extractRecipeFromImage(signedUrl);
       setTokenUsage(usage);
 
       extractionHistory.tokens = { prompt: usage.prompt_tokens, completion: usage.completion_tokens, total: usage.total_tokens };
       extractionHistory.estimated_cost_eur = (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
       extractionHistory.raw_response = raw_response;
       extractionHistory.raw_ocr = raw_ocr;
-      extractionHistory.notes.push('AI extracted recipe from image (Combined OCR + Structure)');
+      extractionHistory.reasoning = reasoning;
+      extractionHistory.notes.push('AI extracted recipe from image (OCR + Reasoning + JSON)');
 
       console.log('DEBUG: Keeping temp image for inspection:', imagePath);
       extractionHistory.notes.push(`DEBUG: Image kept at ${imagePath}`);
@@ -380,7 +381,8 @@ function Home({ activeTasks, setActiveTasks }) {
         extractionHistory.ai_model = 'grok-4-1-fast-reasoning';
         extractionHistory.tokens = { prompt: usage.prompt_tokens, completion: usage.completion_tokens, total: usage.total_tokens };
         extractionHistory.estimated_cost_eur = (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
-        extractionHistory.notes.push('AI extracted recipe from cleaned HTML');
+        extractionHistory.reasoning = result.reasoning;
+        extractionHistory.notes.push('AI extracted recipe from cleaned HTML (Reasoning active)');
         recipe.ai_tags = ['🤖 grok', ...(recipe.ai_tags || [])];
       }
 

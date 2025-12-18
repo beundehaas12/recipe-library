@@ -4,13 +4,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import OpenAI from "https://esm.sh/openai@4"
 
-const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie expert. Analyseer de afbeelding of tekst en voer deze twee stappen uit:
+const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie expert. Analyseer de afbeelding of tekst en voer deze drie stappen uit:
 
 STAP 1: RAW OCR
 Transcribeer ALLE zichtbare tekst van de afbeelding letterlijk en volledig.
 
-STAP 2: GESTRUCTUREERDE JSON
-Extraheer de informatie uit de OCR en zet deze om in dit JSON formaat:
+STAP 2: LOGISCHE REDENERING
+Analyseer de transcribed tekst. Identificeer de verschillende onderdelen van het recept. Besteed extra aandacht aan metadata die verstopt kan zijn, zoals bereidingstijden (prep/cook time), aantal porties en moeilijkheidsgraad. Als tijden niet expliciet genoemd worden, probeer ze dan logisch in te schatten op basis van de instructies.
+
+STAP 3: GESTRUCTUREERDE JSON
+Zet de informatie om in dit JSON formaat:
 {
   "title": "...",
   "description": "...",
@@ -29,6 +32,10 @@ Geef je antwoord in dit exacte formaat:
 [RAW_OCR_START]
 (hier de volledige transcriptie)
 [RAW_OCR_END]
+
+[REASONING_START]
+(hier je logische redenering en analyse)
+[REASONING_END]
 
 [JSON_START]
 (hier de JSON output)
@@ -54,10 +61,10 @@ serve(async (req) => {
 
         const userContent = type === 'image'
             ? [
-                { type: "text", text: "Voer OCR uit en extraheer het recept als JSON." },
+                { type: "text", text: "Voer OCR uit, redeneer over de data en extraheer het recept als JSON." },
                 { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
             ]
-            : `Voer OCR uit en extraheer het recept als JSON uit:\n\n${textContent}`
+            : `Voer OCR uit, redeneer over de data en extraheer het recept als JSON uit:\n\n${textContent}`
 
         const response = await xai.chat.completions.create({
             model: "grok-4-1-fast-reasoning",
@@ -71,9 +78,11 @@ serve(async (req) => {
 
         const content = response.choices[0].message.content
         const rawOcrMatch = content.match(/\[RAW_OCR_START\]([\s\S]*?)\[RAW_OCR_END\]/)
+        const reasoningMatch = content.match(/\[REASONING_START\]([\s\S]*?)\[REASONING_END\]/)
         const jsonMatch = content.match(/\[JSON_START\]([\s\S]*?)\[JSON_END\]/)
 
         const raw_ocr = rawOcrMatch ? rawOcrMatch[1].trim() : ''
+        const reasoning = reasoningMatch ? reasoningMatch[1].trim() : ''
         const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.replace(/```json/g, '').replace(/```/g, '').trim()
 
         let recipe = {}
@@ -88,6 +97,7 @@ serve(async (req) => {
             JSON.stringify({
                 recipe,
                 raw_ocr,
+                reasoning,
                 raw_response: content,
                 usage: {
                     prompt_tokens: response.usage?.prompt_tokens || 0,

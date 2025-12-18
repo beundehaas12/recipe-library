@@ -571,8 +571,8 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                                 // Track what was changed
                                                                 const changes = [];
                                                                 if (correctedRecipe.title !== originalData.title) changes.push(`Title: "${originalData.title}" → "${correctedRecipe.title}"`);
-                                                                if (correctedRecipe.prepTime !== originalData.prep_time) changes.push(`Prep time updated to: ${correctedRecipe.prepTime || 'removed'}`);
-                                                                if (correctedRecipe.cookTime !== originalData.cook_time) changes.push(`Cook time updated to: ${correctedRecipe.cookTime || 'removed'}`);
+                                                                if (correctedRecipe.prep_time !== originalData.prep_time) changes.push(`Prep time: ${originalData.prep_time || 'geen'} → ${correctedRecipe.prep_time || 'geen'}`);
+                                                                if (correctedRecipe.cook_time !== originalData.cook_time) changes.push(`Cook time: ${originalData.cook_time || 'geen'} → ${correctedRecipe.cook_time || 'geen'}`);
                                                                 if (JSON.stringify(correctedRecipe.ingredients) !== JSON.stringify(originalData.ingredients)) changes.push('Ingredients corrected');
                                                                 if (JSON.stringify(correctedRecipe.instructions) !== JSON.stringify(originalData.instructions)) changes.push('Instructions corrected');
                                                                 if (correctedRecipe.servings !== originalData.servings) changes.push(`Servings: ${originalData.servings} → ${correctedRecipe.servings}`);
@@ -692,6 +692,33 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         </div>
                                         <div className="relative font-mono text-sm text-gray-400 leading-relaxed whitespace-pre-wrap max-h-[600px] overflow-y-auto custom-scrollbar">
                                             {recipe.extraction_history.raw_ocr}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Reasoning Section (Requested by user) */}
+                            {recipe.extraction_history?.reasoning && (
+                                <div className="mt-12 pt-12 border-t border-white/5">
+                                    <div className="flex items-center gap-3 mb-8">
+                                        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                                            <Info size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white leading-none mb-1">AI Analyse & Redenering</h3>
+                                            <p className="text-xs text-white/30 uppercase tracking-widest font-bold">Logische stappen door Grok 4.1</p>
+                                        </div>
+                                    </div>
+                                    <div className="glass-card !bg-primary/5 rounded-2xl p-8 border border-primary/10 shadow-lg relative overflow-hidden group/reasoning">
+                                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover/reasoning:opacity-10 transition-opacity">
+                                            <Info size={120} />
+                                        </div>
+                                        <div className="relative text-lg text-gray-300 leading-relaxed italic">
+                                            <div className="absolute left-0 top-0 text-primary/40 text-4xl font-serif">"</div>
+                                            <div className="pl-6 pt-2">
+                                                {recipe.extraction_history.reasoning}
+                                            </div>
+                                            <div className="flex justify-end mt-2 text-primary/40 text-4xl font-serif">"</div>
                                         </div>
                                     </div>
                                 </div>
