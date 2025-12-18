@@ -8,19 +8,18 @@ import { useAuth } from './context/AuthContext';
 import LoginScreen from './components/LoginScreen';
 import RecipeList from './components/RecipeList';
 import RecipeCard from './components/RecipeCard';
-import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight } from 'lucide-react';
+import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight, CheckCircle2, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 
-function Home() {
+function Home({ activeTasks, setActiveTasks }) {
   const { user, signOut } = useAuth();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const [tokenUsage, setTokenUsage] = useState(null);  // Track AI token usage for cost display
+  const [tokenUsage, setTokenUsage] = useState(null);
   const navigate = useNavigate();
   const { scrollY } = useScroll();
 
@@ -139,7 +138,14 @@ function Home() {
     setSearchResults(null);
   };
 
-  const saveRecipeToDb = async (recipeData, sourceInfo = {}, extractionHistory = null) => {
+  // Helper to update background task status
+  const updateTask = (id, updates) => {
+    setActiveTasks(prev => prev.map(task =>
+      task.id === id ? { ...task, ...updates } : task
+    ));
+  };
+
+  const saveRecipeToDb = async (recipeData, sourceInfo = {}, extractionHistory = null, taskId = null) => {
     try {
       const {
         title,
@@ -192,12 +198,17 @@ function Home() {
       if (dbError) throw dbError;
 
       setRecipes([newRecipe, ...recipes]);
-      setIsProcessing(false);
-      navigate(`/recipe/${newRecipe.id}`);
+
+      if (taskId) {
+        updateTask(taskId, { status: 'done', resultId: newRecipe.id });
+      }
     } catch (e) {
       console.error("DB Save failed:", e);
-      alert("Opslaan mislukt: " + e.message);
-      setIsProcessing(false);
+      if (taskId) {
+        updateTask(taskId, { status: 'error', error: e.message });
+      } else {
+        alert("Opslaan mislukt: " + e.message);
+      }
     }
   };
 
@@ -211,10 +222,18 @@ function Home() {
   // 5. Save recipe to database
   // =============================================================================
   const handleCapture = async (file) => {
-    setIsProcessing(true);
-    setTokenUsage(null);
-    let imagePath = null;
+    const taskId = Date.now().toString();
+    const taskName = file.name.substring(0, 20) + (file.name.length > 20 ? '...' : '');
 
+    // Add to background tasks
+    setActiveTasks(prev => [{
+      id: taskId,
+      type: 'image',
+      name: taskName,
+      status: 'processing'
+    }, ...prev]);
+
+    let imagePath = null;
     const startTime = Date.now();
     const extractionHistory = {
       timestamp: new Date().toISOString(),
@@ -223,7 +242,7 @@ function Home() {
       extraction_method: 'grok',
       schema_used: false,
       ai_used: true,
-      ai_model: 'grok-4-1-fast',
+      ai_model: 'grok-4-1-fast-reasoning',
       tokens: null,
       estimated_cost_eur: null,
       processing_time_ms: null,
@@ -231,52 +250,31 @@ function Home() {
     };
 
     try {
-      // Step 1: Upload to Supabase Storage, get signed URL
       console.log('Uploading image to Supabase Storage...');
       const { path, signedUrl } = await uploadTempImage(file, user.id);
       imagePath = path;
-      console.log('Signed URL generated:', signedUrl.substring(0, 50) + '...');
       extractionHistory.notes.push('Image uploaded to Supabase Storage');
 
-      // Step 2: Call xAI via Edge Function
       console.log('Calling xAI via Edge Function...');
       const { recipe, usage, raw_response, raw_ocr } = await extractRecipeFromImage(signedUrl);
-      setTokenUsage(usage);  // Store for display
-      console.log('Recipe extracted!', { tokens: usage });
-      console.log('Raw AI response:', raw_response);
+      setTokenUsage(usage);
 
-      // Track AI usage
-      extractionHistory.tokens = {
-        prompt: usage.prompt_tokens,
-        completion: usage.completion_tokens,
-        total: usage.total_tokens
-      };
-      extractionHistory.estimated_cost_eur =
-        (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
+      extractionHistory.tokens = { prompt: usage.prompt_tokens, completion: usage.completion_tokens, total: usage.total_tokens };
+      extractionHistory.estimated_cost_eur = (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
       extractionHistory.raw_response = raw_response;
-      extractionHistory.raw_ocr = raw_ocr; // Store the literal transcription
+      extractionHistory.raw_ocr = raw_ocr;
       extractionHistory.notes.push('AI extracted recipe from image (Combined OCR + Structure)');
 
-      // Step 3: Skip deletion for debugging - images stay in storage
       console.log('DEBUG: Keeping temp image for inspection:', imagePath);
-      // await deleteTempImage(imagePath);
       extractionHistory.notes.push(`DEBUG: Image kept at ${imagePath}`);
-
-      // Calculate processing time
       extractionHistory.processing_time_ms = Date.now() - startTime;
-
-      // Add grok source tag for image extraction
       recipe.ai_tags = ['🤖 grok', ...(recipe.ai_tags || [])];
 
-      // Step 4: Save to database
-      await saveRecipeToDb(recipe, { type: 'image' }, extractionHistory);
+      await saveRecipeToDb(recipe, { type: 'image' }, extractionHistory, taskId);
 
     } catch (error) {
       console.error('Error processing recipe:', error);
-      alert('Recept verwerken mislukt: ' + error.message);
-      // NO cleanup on error per requirements
-    } finally {
-      setIsProcessing(false);
+      updateTask(taskId, { status: 'error', error: error.message });
     }
   };
 
@@ -305,7 +303,15 @@ function Home() {
   const processUrl = async (url) => {
     if (!url) return;
     setShowUrlInput(false);
-    setIsProcessing(true);
+    const taskId = Date.now().toString();
+    const taskName = url.replace(/^https?:\/\/(www\.)?/, '').substring(0, 20) + '...';
+
+    setActiveTasks(prev => [{
+      id: taskId,
+      type: 'url',
+      name: taskName,
+      status: 'processing'
+    }, ...prev]);
 
     const startTime = Date.now();
     const extractionHistory = {
@@ -333,8 +339,6 @@ function Home() {
 
     try {
       let htmlContent = "";
-
-      // Fetch HTML via CORS proxy
       try {
         const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
         htmlContent = await fetchWithProxy(proxyUrl);
@@ -355,81 +359,39 @@ function Home() {
 
       if (!htmlContent) throw new Error("Could not retrieve content from URL");
 
-      // Process HTML - extract Schema.org data or clean for AI
       const processed = processHtmlForRecipe(htmlContent);
-      console.log('HTML processed:', { type: processed.type, hasSchema: !!processed.schemaRecipe });
-
       let recipe;
       let usage = null;
 
       if (processed.type === 'schema') {
-        // Schema.org data is complete - use directly without AI!
-        console.log('Using Schema.org data directly (no AI needed)');
         recipe = processed.data;
-        console.log('Schema recipe data:', recipe);
-
         extractionHistory.extraction_method = 'schema';
         extractionHistory.schema_used = true;
         extractionHistory.notes.push('Schema.org JSON-LD data found');
-        extractionHistory.notes.push('Complete recipe extracted from structured data');
-
-        // Add source tag and generate basic tags if needed
-        recipe.ai_tags = [
-          '📊 schema',
-          ...(recipe.ai_tags || []),
-          ...((!recipe.ai_tags || recipe.ai_tags.length === 0) ? [
-            recipe.cuisine || 'internationaal'
-          ].filter(Boolean) : [])
-        ];
+        recipe.ai_tags = ['📊 schema', ...(recipe.ai_tags || [])];
       } else {
-        // Need AI to extract from cleaned text
-        console.log('Using AI to extract recipe from cleaned content');
         const result = await extractRecipeFromText(processed.data);
         recipe = result.recipe;
         usage = result.usage;
         setTokenUsage(usage);
-        console.log('Recipe extracted from URL!', { tokens: usage });
-
         extractionHistory.extraction_method = processed.schemaRecipe ? 'schema+grok' : 'grok';
         extractionHistory.schema_used = !!processed.schemaRecipe;
         extractionHistory.ai_used = true;
-        extractionHistory.ai_model = 'grok-4-1-fast';
-        extractionHistory.tokens = {
-          prompt: usage.prompt_tokens,
-          completion: usage.completion_tokens,
-          total: usage.total_tokens
-        };
-        // Cost calculation: $0.30/1M input, $1.50/1M output (in EUR ~= USD)
-        extractionHistory.estimated_cost_eur =
-          (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
-
-        if (processed.schemaRecipe) {
-          extractionHistory.notes.push('Partial Schema.org data found');
-        } else {
-          extractionHistory.notes.push('No Schema.org data found');
-        }
+        extractionHistory.ai_model = 'grok-4-1-fast-reasoning';
+        extractionHistory.tokens = { prompt: usage.prompt_tokens, completion: usage.completion_tokens, total: usage.total_tokens };
+        extractionHistory.estimated_cost_eur = (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
         extractionHistory.notes.push('AI extracted recipe from cleaned HTML');
-
-        // Add grok source tag
         recipe.ai_tags = ['🤖 grok', ...(recipe.ai_tags || [])];
       }
 
-      // Calculate processing time
       extractionHistory.processing_time_ms = Date.now() - startTime;
+      if (!recipe || !recipe.title) throw new Error('Kon geen recepttitel vinden op deze pagina');
 
-      // Validate required fields before saving
-      if (!recipe || !recipe.title) {
-        console.error('Invalid recipe data:', recipe);
-        throw new Error('Kon geen recepttitel vinden op deze pagina');
-      }
-
-      await saveRecipeToDb(recipe, { type: 'url', url }, extractionHistory);
+      await saveRecipeToDb(recipe, { type: 'url', url }, extractionHistory, taskId);
 
     } catch (error) {
       console.error("URL processing failed:", error);
-      alert(`URL verwerken mislukt: ${error.message}`);
-    } finally {
-      setIsProcessing(false);
+      updateTask(taskId, { status: 'error', error: error.message });
     }
   };
 
@@ -438,6 +400,85 @@ function Home() {
     if (file) {
       handleCapture(file);
     }
+  };
+
+  // --- Background Tasks UI Component ---
+  const BackgroundTaskBar = () => {
+    if (activeTasks.length === 0) return null;
+
+    return (
+      <div className="fixed bottom-24 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
+        <AnimatePresence>
+          {activeTasks.map((task) => (
+            <motion.div
+              key={task.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.9 }}
+              className={`pointer-events-auto flex items-center gap-4 bg-[#18181b]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl min-w-[300px] max-w-sm ${task.status === 'error' ? 'border-red-500/30' :
+                task.status === 'done' ? 'border-primary/30' : ''
+                }`}
+            >
+              <div className="relative">
+                {task.status === 'processing' && (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="text-primary"
+                  >
+                    <Loader2 size={24} />
+                  </motion.div>
+                )}
+                {task.status === 'done' && (
+                  <div className="text-primary">
+                    <CheckCircle2 size={24} />
+                  </div>
+                )}
+                {task.status === 'error' && (
+                  <div className="text-red-500">
+                    <AlertCircle size={24} />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-white/40 uppercase tracking-widest font-black mb-0.5">
+                  {task.type === 'image' ? 'Beeld Analyse' : 'URL Analyse'}
+                </p>
+                <p className="text-white font-bold truncate text-sm">
+                  {task.name}
+                </p>
+                {task.status === 'error' && (
+                  <p className="text-[10px] text-red-400 mt-1 line-clamp-1">{task.error}</p>
+                )}
+              </div>
+
+              {task.status === 'done' && task.resultId && (
+                <button
+                  onClick={() => {
+                    navigate(`/recipe/${task.resultId}`);
+                    setActiveTasks(prev => prev.filter(t => t.id !== task.id));
+                  }}
+                  className="bg-primary/20 hover:bg-primary/30 text-primary p-2 rounded-xl transition-colors"
+                  title="Bekijk recept"
+                >
+                  <ArrowRight size={18} />
+                </button>
+              )}
+
+              {task.status !== 'processing' && (
+                <button
+                  onClick={() => setActiveTasks(prev => prev.filter(t => t.id !== task.id))}
+                  className="text-white/20 hover:text-white/60 p-1"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    );
   };
 
   // Display logic: Prioritize instant filter for immediate feedback
@@ -783,78 +824,8 @@ function Home() {
         capture="environment"
       />
 
-      {/* Processing Overlay - Cinematic Version with Token Display */}
-      <AnimatePresence>
-        {isProcessing && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="flex flex-col items-center max-w-sm w-full text-center"
-            >
-              <div className="relative w-32 h-32 mb-10">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-0 border border-white/5 rounded-full"
-                />
-                <motion.div
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-2 border border-primary/20 rounded-full"
-                />
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-4 border-2 border-primary rounded-full border-t-transparent shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <ChefHat size={40} className="text-primary animate-pulse" />
-                </div>
-              </div>
-
-              <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">
-                {t.analyzing}
-              </h3>
-              <p className="text-muted-foreground font-bold text-[10px] uppercase tracking-[0.2em] leading-relaxed">
-                {t.analyzingDesc}
-              </p>
-
-              <div className="mt-8 flex gap-1.5 justify-center">
-                {[0, 1, 2].map(i => (
-                  <motion.div
-                    key={i}
-                    animate={{ opacity: [0.3, 1, 0.3] }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
-                    className="w-1.5 h-1.5 bg-primary rounded-full"
-                  />
-                ))}
-              </div>
-
-              {/* Token Usage Display - Shows after extraction completes */}
-              {tokenUsage && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-6 px-4 py-2 bg-white/5 rounded-full border border-white/10"
-                >
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    {tokenUsage.prompt_tokens} in • {tokenUsage.completion_tokens} out
-                  </span>
-                  <span className="text-[10px] font-bold text-primary ml-2">
-                    ~€{((tokenUsage.prompt_tokens * 0.0003 + tokenUsage.completion_tokens * 0.0015) / 100).toFixed(4)}
-                  </span>
-                </motion.div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Background Tasks Progress Bar */}
+      <BackgroundTaskBar />
 
       <main className="relative min-h-screen">
         {/* HERO SECTION - Single Featured Item Style */}
@@ -958,7 +929,7 @@ function Home() {
   );
 }
 
-function RecipePage() {
+function RecipePage({ activeTasks, setActiveTasks }) {
   const { user } = useAuth();
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1104,22 +1075,107 @@ function RecipePage() {
   }
 
   return (
-    <RecipeCard
-      recipe={recipe}
-      onImageUpdate={handleImageUpdate}
-      onDelete={handleDelete}
-      onUpdate={handleUpdate}
-    />
+    <div className="min-h-screen bg-background">
+      <RecipeCard
+        recipe={recipe}
+        onImageUpdate={handleImageUpdate}
+        onDelete={handleDelete}
+        onUpdate={handleUpdate}
+      />
+    </div>
   );
 }
 
 function AuthenticatedApp() {
+  const [activeTasks, setActiveTasks] = useState([]);
+
+  // --- Background Tasks UI Component ---
+  const BackgroundTaskBar = () => {
+    const navigate = useNavigate();
+    if (activeTasks.length === 0) return null;
+
+    return (
+      <div className="fixed bottom-24 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
+        <AnimatePresence>
+          {activeTasks.map((task) => (
+            <motion.div
+              key={task.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.9 }}
+              className={`pointer-events-auto flex items-center gap-4 bg-[#18181b]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl min-w-[300px] max-w-sm ${task.status === 'error' ? 'border-red-500/30' :
+                task.status === 'done' ? 'border-primary/30' : ''
+                }`}
+            >
+              <div className="relative">
+                {task.status === 'processing' && (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="text-primary"
+                  >
+                    <Loader2 size={24} />
+                  </motion.div>
+                )}
+                {task.status === 'done' && (
+                  <div className="text-primary">
+                    <CheckCircle2 size={24} />
+                  </div>
+                )}
+                {task.status === 'error' && (
+                  <div className="text-red-500">
+                    <AlertCircle size={24} />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-white/40 uppercase tracking-widest font-black mb-0.5">
+                  {task.type === 'image' ? 'Beeld Analyse' : 'URL Analyse'}
+                </p>
+                <p className="text-white font-bold truncate text-sm">
+                  {task.name}
+                </p>
+                {task.status === 'error' && (
+                  <p className="text-[10px] text-red-400 mt-1 line-clamp-1">{task.error}</p>
+                )}
+              </div>
+
+              {task.status === 'done' && task.resultId && (
+                <button
+                  onClick={() => {
+                    navigate(`/recipe/${task.resultId}`);
+                    setActiveTasks(prev => prev.filter(t => t.id !== task.id));
+                  }}
+                  className="bg-primary/20 hover:bg-primary/30 text-primary p-2 rounded-xl transition-colors"
+                  title="Bekijk recept"
+                >
+                  <ArrowRight size={18} />
+                </button>
+              )}
+
+              {task.status !== 'processing' && (
+                <button
+                  onClick={() => setActiveTasks(prev => prev.filter(t => t.id !== task.id))}
+                  className="text-white/20 hover:text-white/60 p-1"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/recipe/:id" element={<RecipePage />} />
+        <Route path="/" element={<Home activeTasks={activeTasks} setActiveTasks={setActiveTasks} />} />
+        <Route path="/recipe/:id" element={<RecipePage activeTasks={activeTasks} setActiveTasks={setActiveTasks} />} />
       </Routes>
+      <BackgroundTaskBar />
     </Router>
   );
 }
