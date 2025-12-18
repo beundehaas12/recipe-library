@@ -1,14 +1,11 @@
 // Supabase Edge Function: extract-recipe
-// Secure xAI Grok API integration with prompt caching optimization
-//
-// COST OPTIMIZATION:
-// - Fixed system prompt is ALWAYS the same → xAI caches it (~75% savings on input tokens)
-// - Using "detail: low" for images → reduces image tokens by ~50%
-// - Estimated cost per call after caching: ~$0.0003
+// Secure xAI Grok API integration
 //
 // SECURITY:
 // - XAI_API_KEY stored as Supabase secret (never exposed to browser)
 // - User authentication via Supabase JWT (automatic)
+//
+// MODEL: grok-beta (Multimodal support for OCR + JSON)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import OpenAI from "https://esm.sh/openai@4"
@@ -87,10 +84,10 @@ serve(async (req) => {
             ]
             : `Voer OCR uit en extraheer het recept als JSON uit:\n\n${textContent}`
 
-        console.log(`Processing ${type} request with grok-4-1...`)
+        console.log(`Processing ${type} request with grok-beta...`)
 
         const response = await xai.chat.completions.create({
-            model: "grok-4-1",  // Flagship model
+            model: "grok-beta",  // Standard multimodal model
             messages: [
                 { role: "system", content: FIXED_SYSTEM_PROMPT },
                 { role: "user", content: userContent }

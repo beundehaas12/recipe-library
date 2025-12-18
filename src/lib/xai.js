@@ -8,11 +8,6 @@
  * - Edge Function calls xAI API with server-side API key
  * - API key is NEVER exposed to the browser
  * 
- * COST OPTIMIZATION:
- * - Fixed system prompt is cached by xAI (~75% savings on repeated calls)
- * - Using signed URLs instead of base64 (lower data transfer)
- * - Using "detail: low" for images (fewer tokens)
- * 
  * @module xai
  */
 
