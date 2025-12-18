@@ -488,9 +488,10 @@ function Home({ activeTasks, setActiveTasks }) {
                   setShowAddMenu(!showAddMenu);
                   setShowProfileMenu(false);
                 }}
-                className="h-11 px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all flex items-center gap-3 whitespace-nowrap active:scale-95 group shadow-xl"
+                className="w-11 h-11 md:h-11 md:w-auto md:px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all flex items-center justify-center md:gap-3 whitespace-nowrap active:scale-95 group shadow-xl"
               >
-                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                <Plus size={22} className="text-primary md:hidden" />
+                <div className="hidden md:flex w-6 h-6 rounded-full bg-primary/20 items-center justify-center group-hover:bg-primary/30 transition-colors">
                   <Plus size={14} className="text-primary" />
                 </div>
                 <span className="hidden md:inline text-sm font-bold text-white tracking-tight">
