@@ -402,11 +402,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                             <span className="text-white font-medium text-sm">
                                                                 {recipe.author || recipe.cookbook_name || (recipe.original_image_url ? "Foto" : "Website URL")}
                                                             </span>
-                                                            {recipe.source_type === 'image' || recipe.original_image_url ? (
-                                                                <span className="text-[10px] text-white/30 uppercase font-bold tracking-tight">foto</span>
-                                                            ) : (recipe.source_url && (
-                                                                <span className="text-[10px] text-white/30 uppercase font-bold tracking-tight">website URL</span>
-                                                            ))}
                                                         </div>
 
                                                         {recipe.original_image_url ? (
