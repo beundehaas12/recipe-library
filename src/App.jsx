@@ -482,11 +482,18 @@ function Home({ activeTasks, setActiveTasks }) {
 
             {/* Add Recipe */}
             <div className="relative">
+              {/* Mobile: Direct to native picker */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowAddMenu(!showAddMenu);
-                  setShowProfileMenu(false);
+                  // Mobile: directly trigger native file picker for camera/photo library
+                  if (window.innerWidth < 768) {
+                    cameraInputRef.current?.click();
+                  } else {
+                    // Desktop: show dropdown menu
+                    setShowAddMenu(!showAddMenu);
+                    setShowProfileMenu(false);
+                  }
                 }}
                 className="w-11 h-11 md:h-11 md:w-auto md:px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all flex items-center justify-center md:gap-3 whitespace-nowrap active:scale-95 group shadow-xl"
               >
