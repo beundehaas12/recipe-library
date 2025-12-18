@@ -161,12 +161,26 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                 type: isPhoto ? 'vision_reanalysis' : 'text_review'
             };
 
+            // CRITICAL: Merge AI results with existing recipe, keeping existing data as base
+            // Only apply AI corrections on top of existing data to prevent data loss
             await onUpdate({
-                ...freshRecipe,
+                ...recipe,  // Keep ALL existing recipe fields as base
+                // Only update content fields from AI (if they exist)
+                title: freshRecipe.title || recipe.title,
+                description: freshRecipe.description || recipe.description,
+                ingredients: freshRecipe.ingredients?.length > 0 ? freshRecipe.ingredients : recipe.ingredients,
+                instructions: freshRecipe.instructions?.length > 0 ? freshRecipe.instructions : recipe.instructions,
+                servings: freshRecipe.servings || recipe.servings,
+                prep_time: freshRecipe.prep_time || recipe.prep_time,
+                cook_time: freshRecipe.cook_time || recipe.cook_time,
+                difficulty: freshRecipe.difficulty || recipe.difficulty,
+                cuisine: freshRecipe.cuisine || recipe.cuisine,
+                // Merge extraction history
                 extraction_history: {
                     ...recipe.extraction_history,
                     reviews: [...(recipe.extraction_history?.reviews || []), reviewEntry]
                 },
+                // Merge AI tags (unique)
                 ai_tags: Array.from(new Set([...(freshRecipe.ai_tags || []), ...(recipe.ai_tags || [])]))
             });
 
