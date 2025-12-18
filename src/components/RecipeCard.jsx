@@ -503,7 +503,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
                         {/* AI Tags Section */}
                         {recipe.ai_tags && recipe.ai_tags.length > 0 && !isEditing && (
-                            <div className="bg-zinc-900/30 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all">
+                            <div className="bg-zinc-900/80 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all">
                                 <div
                                     className="flex items-center justify-between cursor-pointer group/stat"
                                     onClick={() => toggleSection('ai')}
@@ -541,7 +541,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
                         {/* Extraction History Section */}
                         {recipe.extraction_history && !isEditing && (
-                            <div className="bg-zinc-900/30 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all">
+                            <div className="bg-zinc-900/80 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all">
                                 <div
                                     className="flex items-center justify-between cursor-pointer group/stat"
                                     onClick={() => toggleSection('history')}
@@ -748,7 +748,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                             <p className="text-xs text-white/30 uppercase tracking-widest font-bold">Logische stappen door Grok 4.1</p>
                                         </div>
                                     </div>
-                                    <div className="bg-primary/5 backdrop-blur-md rounded-2xl p-8 border border-primary/10 shadow-lg relative overflow-hidden group/reasoning">
+                                    <div className="bg-zinc-900/80 backdrop-blur-md rounded-2xl p-8 border border-primary/10 shadow-lg relative overflow-hidden group/reasoning">
                                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover/reasoning:opacity-10 transition-opacity">
                                             <Info size={120} />
                                         </div>

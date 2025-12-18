@@ -1008,7 +1008,9 @@ function RecipePage({ activeTasks, setActiveTasks }) {
           author: updatedFields.author,
           cookbook_name: updatedFields.cookbook_name,
           isbn: updatedFields.isbn,
-          source_url: updatedFields.source_url
+          source_url: updatedFields.source_url,
+          ai_tags: updatedFields.ai_tags,
+          extraction_history: updatedFields.extraction_history
         })
         .eq('id', recipe.id);
 
