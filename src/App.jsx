@@ -441,7 +441,7 @@ function Home({ activeTasks, setActiveTasks }) {
     <div className="min-h-screen bg-background text-foreground pb-20 selection:bg-primary selection:text-white" onClick={() => { setShowAddMenu(false); setShowProfileMenu(false); }}>
 
       {/* Cinematic Navbar - Transparent by default like Detail Page */}
-      <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-6 md:px-12 lg:px-20 py-4">
+      <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
         <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-3 pointer-events-auto">
             <div className="bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full">
@@ -698,9 +698,9 @@ function Home({ activeTasks, setActiveTasks }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[70] bg-[#000000] flex flex-col pt-safe px-6 md:px-12 lg:px-20"
+            className="fixed inset-0 z-[70] bg-[#000000] flex flex-col pt-safe px-4 lg:px-20"
           >
-            <div className="flex items-center gap-4 px-6 py-4 border-b border-white/10 mt-safe-top glass-panel !border-none">
+            <div className="flex items-center gap-4 px-4 py-4 border-b border-white/10 mt-safe-top glass-panel !border-none">
               <div className="relative flex-1">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                 <input
@@ -731,7 +731,7 @@ function Home({ activeTasks, setActiveTasks }) {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-4 py-4">
               {/* Mobile Search Results */}
               {(instantFilteredRecipes || searchResults) && searchQuery && (
                 <div className="space-y-4 pb-20">
@@ -816,7 +816,7 @@ function Home({ activeTasks, setActiveTasks }) {
 
             {/* Hero Content - Anchored to bottom like Detail Page */}
             <div className="absolute bottom-0 left-0 right-0 z-20 pb-12 pointer-events-none">
-              <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 w-full flex flex-col items-start gap-4">
+              <div className="max-w-[1600px] mx-auto px-4 lg:px-20 w-full flex flex-col items-start gap-4">
                 {heroRecipe ? (
                   <>
                     <motion.div
@@ -1060,7 +1060,7 @@ function AuthenticatedApp() {
     if (activeTasks.length === 0) return null;
 
     return (
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3 pointer-events-none w-full max-w-md px-6">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3 pointer-events-none w-full max-w-md px-4">
         <AnimatePresence>
           {activeTasks.map((task) => (
             <motion.div

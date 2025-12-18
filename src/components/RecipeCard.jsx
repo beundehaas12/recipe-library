@@ -142,7 +142,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                 </motion.div>
 
                 {/* Cinematic Floating Header - Completely transparent background version */}
-                <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-6 md:px-12 lg:px-20 py-4">
+                <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
                     <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
                         <Link to="/" className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto">
                             <ArrowLeft size={20} />
@@ -174,7 +174,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
                 {/* Header Content */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col justify-end pb-12">
-                    <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 w-full">
+                    <div className="max-w-[1600px] mx-auto px-4 lg:px-20 w-full">
                         {isEditing ? (
                             <div className="bg-black/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10 space-y-4 max-w-2xl">
                                 <input
@@ -229,7 +229,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
             </div>
 
             {/* Main Content Grid */}
-            <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 mt-12 relative z-20">
+            <div className="max-w-[1600px] mx-auto px-4 lg:px-20 mt-12 relative z-20">
                 <div className="grid lg:grid-cols-[400px_1fr] gap-12 lg:gap-24">
 
                     {/* Left Column: Stats & Ingredients */}
