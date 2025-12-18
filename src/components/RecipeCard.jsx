@@ -604,28 +604,24 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                                     ai_tags: ['🤖 grok-reviewed', ...(recipe.ai_tags || []).filter(t => t !== '📊 schema' && t !== '🤖 grok-reviewed')]
                                                                 });
 
-                                                                alert(`Recipe reviewed! ${changes.length} item(s) checked. Used ${usage.total_tokens} tokens.`);
+                                                                // Successfully updated
                                                             } catch (error) {
                                                                 console.error('Review failed:', error);
-                                                                alert('Review failed: ' + error.message);
                                                             } finally {
                                                                 setIsReviewing(false);
                                                             }
                                                         }}
                                                         disabled={isReviewing}
-                                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm font-bold rounded-lg border border-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="w-full h-[40px] flex items-center justify-center gap-2 px-4 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm font-bold rounded-lg border border-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
-                                                        {isReviewing ? (
-                                                            <>
+                                                        <div className="flex items-center gap-2 pointer-events-none">
+                                                            {isReviewing ? (
                                                                 <Loader2 size={16} className="animate-spin" />
-                                                                Reviewing...
-                                                            </>
-                                                        ) : (
-                                                            <>
+                                                            ) : (
                                                                 <Zap size={16} />
-                                                                Review with Grok
-                                                            </>
-                                                        )}
+                                                            )}
+                                                            <span>{isReviewing ? 'Reviewing...' : 'Review with Grok'}</span>
+                                                        </div>
                                                     </button>
                                                     <p className="text-[10px] text-white/30 mt-2 text-center">
                                                         AI will review and fix parsing issues
