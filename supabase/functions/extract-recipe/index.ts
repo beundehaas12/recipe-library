@@ -20,44 +20,47 @@ import OpenAI from "https://esm.sh/openai@4"
 // After the first call, subsequent calls only pay ~25% of the input token cost.
 // DO NOT modify this prompt frequently - changes invalidate the cache.
 // ==============================================================================
-const FIXED_SYSTEM_PROMPT = `You are a professional culinary AI assistant specialized in extracting structured recipe data from images and text.
+const FIXED_SYSTEM_PROMPT = `Je bent een expert in het analyseren van receptenfoto's uit kookboeken en websites.
 
-OUTPUT FORMAT:
-Return ONLY valid JSON matching this exact schema:
+STAP 1 - NAUWKEURIGE OCR:
+Lees ALLE zichtbare tekst op de afbeelding nauwkeurig. Let speciaal op:
+- Titel van het recept
+- Tijden (bereidingstijd, kooktijd, totale tijd) - kijk naar klok-iconen, labels
+- Hoeveelheden en eenheden bij ingrediënten
+- Temperaturen (°C, graden)
+- Aantal porties/personen
+
+STAP 2 - GESTRUCTUREERDE EXTRACTIE:
+Output ALLEEN geldige JSON in dit formaat:
 {
-  "title": "string (in original language)",
-  "description": "string (in original language, max 200 chars)",
+  "title": "string (in originele taal)",
+  "description": "string (korte beschrijving, max 200 tekens)",
   "ingredients": [
     {"amount": number|null, "unit": "string|null", "item": "string"}
   ],
-  "instructions": ["string"],
+  "instructions": ["stap 1...", "stap 2..."],
   "servings": number,
-  "prep_time": "string (e.g. '15 min')",
-  "cook_time": "string (e.g. '30 min')",
+  "prep_time": "string (bijv. '15 min', '1 uur')",
+  "cook_time": "string (bijv. '30 min', '2 uur')",
   "difficulty": "Easy|Medium|Hard",
   "cuisine": "string",
   "author": "string|null",
   "cookbook_name": "string|null",
   "isbn": "string|null",
   "source_language": "ISO 639-1 code (nl/en/de/fr/es/it)",
-  "ai_tags": ["10-15 Dutch tags for search"]
+  "ai_tags": ["10-15 Nederlandse zoektags"]
 }
 
-CRITICAL RULES:
-1. PRESERVE original recipe language - do NOT translate the recipe content
-2. source_language must be ISO 639-1 code (nl, en, de, fr, es, it, etc.)
-3. ai_tags must be IN DUTCH for search functionality - describe: dish type, main ingredients, cooking method, dietary info, meal type, cuisine, season, occasion, flavor profile
-4. For ingredients: separate amount (number), unit (string), item (string)
-5. If no unit exists (e.g. "2 eggs"), set unit to null
-6. servings must be a number
-7. If the content is NOT a recipe or is unreadable: return {"error": "Not a recipe"}
-8. Output ONLY valid JSON - no markdown code blocks, no extra text, no explanations
-
-TIME EXTRACTION (IMPORTANT):
-- Look carefully for prep_time/cook_time in the image (often shown as icons with clock, or labels like "Bereidingstijd", "Voorbereiding", "Prep Time", "Kooktijd", etc.)
-- Common locations: top of recipe, near title, in a sidebar, or as icons
-- Format times as human-readable strings: "15 min", "1 uur", "1h 30min", "45 minuten"
-- If times are not visible, estimate based on the recipe complexity and ingredients`
+KRITIEKE REGELS:
+1. WEES EXTREEM ACCURAAT - lees alle details zorgvuldig
+2. BEHOUD de originele taal - vertaal NIET
+3. Bij ingrediënten: scheid hoeveelheid (getal), eenheid (string), item (string)
+4. Als geen eenheid (bijv. "2 eieren"), zet unit op null
+5. servings moet een getal zijn
+6. ai_tags moeten IN HET NEDERLANDS zijn voor zoekfunctionaliteit
+7. Als iets onduidelijk is, probeer het toch te interpreteren
+8. Als het GEEN recept is: return {"error": "Not a recipe"}
+9. Output ALLEEN JSON - geen markdown, geen uitleg`
 
 // CORS headers for browser requests
 const corsHeaders = {
