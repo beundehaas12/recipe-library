@@ -52,24 +52,68 @@ serve(async (req) => {
     }
 
     try {
-        const { signedUrl, type, textContent } = await req.json()
+        const { signedUrl, type, textContent, recipeData, sourceData } = await req.json()
 
         const xai = new OpenAI({
             baseURL: "https://api.x.ai/v1",
             apiKey: Deno.env.get("XAI_API_KEY")
         })
 
-        const userContent = type === 'image'
-            ? [
+        let userContent: string | any[];
+        let systemPrompt = FIXED_SYSTEM_PROMPT;
+
+        if (type === 'image') {
+            userContent = [
                 { type: "text", text: "Voer OCR uit, redeneer over de data en extraheer het recept als JSON." },
                 { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
-            ]
-            : `Voer OCR uit, redeneer over de data en extraheer het recept als JSON uit:\n\n${textContent}`
+            ];
+        } else if (type === 'review') {
+            // Special review prompt - validate and enrich existing data
+            systemPrompt = `Je bent een recept-validatie expert. Je taak is om bestaande receptdata te valideren, corrigeren en verrijken op basis van de originele bron.
+
+BELANGRIJK: Behoud ALLE bestaande correcte data. Corrigeer alleen wat fout is. Vul ontbrekende velden aan.
+
+BESTAANDE RECEPT DATA:
+${JSON.stringify(recipeData, null, 2)}
+
+ORIGINELE BRON DATA:
+${sourceData || 'Geen brondata beschikbaar'}
+
+OPDRACHT:
+1. Vergelijk de bestaande data met de bron
+2. Corrigeer fouten (bijv. verkeerde ingrediënt hoeveelheden)
+3. Vul ontbrekende metadata aan (prep_time, cook_time, servings, difficulty)
+4. BEHOUD alle correcte informatie
+
+Let EXTRA op:
+- prep_time en cook_time: zoek naar tijdsaanduidingen in de bron (bijv. "25 minuten", "1 uur")
+- servings: aantal porties/personen
+- difficulty: schat in op basis van instructies
+
+OUTPUT: Geef ALLEEN de gecorrigeerde/verrijkte JSON:
+[JSON_START]
+{
+  "title": "...",
+  "description": "...",
+  "ingredients": [{...}],
+  "instructions": ["..."],
+  "servings": number,
+  "prep_time": "...",
+  "cook_time": "...",
+  "difficulty": "Easy|Medium|Hard",
+  "cuisine": "...",
+  "ai_tags": [...]
+}
+[JSON_END]`;
+            userContent = "Valideer en verrijk het recept. Geef de gecorrigeerde JSON.";
+        } else {
+            userContent = `Voer OCR uit, redeneer over de data en extraheer het recept als JSON uit:\n\n${textContent}`;
+        }
 
         const response = await xai.chat.completions.create({
             model: "grok-4-1-fast-reasoning",
             messages: [
-                { role: "system", content: FIXED_SYSTEM_PROMPT },
+                { role: "system", content: systemPrompt },
                 { role: "user", content: userContent }
             ],
             max_tokens: 4000,
