@@ -20,47 +20,29 @@ import OpenAI from "https://esm.sh/openai@4"
 // After the first call, subsequent calls only pay ~25% of the input token cost.
 // DO NOT modify this prompt frequently - changes invalidate the cache.
 // ==============================================================================
-const FIXED_SYSTEM_PROMPT = `Je bent een expert in het analyseren van receptenfoto's uit kookboeken en websites.
+const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie expert. Analyseer afbeeldingen en tekst van recepten en retourneer de data als JSON.
 
-STAP 1 - NAUWKEURIGE OCR:
-Lees ALLE zichtbare tekst op de afbeelding nauwkeurig. Let speciaal op:
-- Titel van het recept
-- Tijden (bereidingstijd, kooktijd, totale tijd) - kijk naar klok-iconen, labels
-- Hoeveelheden en eenheden bij ingrediënten
-- Temperaturen (°C, graden)
-- Aantal porties/personen
-
-STAP 2 - GESTRUCTUREERDE EXTRACTIE:
-Output ALLEEN geldige JSON in dit formaat:
+Output formaat:
 {
-  "title": "string (in originele taal)",
-  "description": "string (korte beschrijving, max 200 tekens)",
-  "ingredients": [
-    {"amount": number|null, "unit": "string|null", "item": "string"}
-  ],
-  "instructions": ["stap 1...", "stap 2..."],
+  "title": "string",
+  "description": "string (max 200 tekens)",
+  "ingredients": [{"amount": number|null, "unit": "string|null", "item": "string"}],
+  "instructions": ["stap 1", "stap 2", ...],
   "servings": number,
-  "prep_time": "string (bijv. '15 min', '1 uur')",
-  "cook_time": "string (bijv. '30 min', '2 uur')",
+  "prep_time": "string",
+  "cook_time": "string",
   "difficulty": "Easy|Medium|Hard",
   "cuisine": "string",
   "author": "string|null",
   "cookbook_name": "string|null",
-  "isbn": "string|null",
-  "source_language": "ISO 639-1 code (nl/en/de/fr/es/it)",
-  "ai_tags": ["10-15 Nederlandse zoektags"]
+  "source_language": "nl|en|de|fr|es|it",
+  "ai_tags": ["Nederlandse zoektags"]
 }
 
-KRITIEKE REGELS:
-1. WEES EXTREEM ACCURAAT - lees alle details zorgvuldig
-2. BEHOUD de originele taal - vertaal NIET
-3. Bij ingrediënten: scheid hoeveelheid (getal), eenheid (string), item (string)
-4. Als geen eenheid (bijv. "2 eieren"), zet unit op null
-5. servings moet een getal zijn
-6. ai_tags moeten IN HET NEDERLANDS zijn voor zoekfunctionaliteit
-7. Als iets onduidelijk is, probeer het toch te interpreteren
-8. Als het GEEN recept is: return {"error": "Not a recipe"}
-9. Output ALLEEN JSON - geen markdown, geen uitleg`
+Regels:
+- Lees ALLE tekst nauwkeurig
+- Behoud originele taal
+- Output alleen JSON`
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -91,14 +73,13 @@ serve(async (req) => {
             apiKey: Deno.env.get("XAI_API_KEY")
         })
 
-        // Build user message based on type
-        // Keep user prompts MINIMAL - all instructions are in the cached system prompt
+        // Build user message - SIMPLE like Grok.com
         const userContent = type === 'image'
             ? [
-                { type: "text", text: "Extract recipe as JSON." },
+                { type: "text", text: "Analyseer dit recept en geef de data als JSON." },
                 { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
             ]
-            : `Extract recipe as JSON from:\n\n${textContent}`
+            : `Analyseer dit recept en geef de data als JSON:\n\n${textContent}`
 
         console.log(`Processing ${type} request...`)
 
@@ -125,10 +106,11 @@ serve(async (req) => {
             throw new Error('Failed to parse recipe JSON from AI response')
         }
 
-        // Return recipe + token usage for cost tracking
+        // Return recipe + token usage + raw response for debugging
         return new Response(
             JSON.stringify({
                 recipe,
+                raw_response: content, // For debugging
                 usage: {
                     prompt_tokens: response.usage?.prompt_tokens || 0,
                     completion_tokens: response.usage?.completion_tokens || 0,

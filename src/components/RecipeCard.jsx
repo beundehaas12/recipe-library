@@ -537,6 +537,16 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                     </div>
                                                 )}
 
+                                                {/* Raw AI Response (Debug) */}
+                                                {recipe.extraction_history.raw_response && (
+                                                    <div className="pt-3 mt-3 border-t border-orange-500/20">
+                                                        <div className="text-[10px] text-orange-400/70 uppercase font-bold tracking-wider mb-2">🔧 Raw AI Output (Debug)</div>
+                                                        <pre className="bg-black/40 rounded-lg p-3 text-[10px] text-orange-200/80 overflow-x-auto max-h-[300px] overflow-y-auto whitespace-pre-wrap break-all font-mono">
+                                                            {recipe.extraction_history.raw_response}
+                                                        </pre>
+                                                    </div>
+                                                )}
+
                                                 {/* Review with Grok Button */}
                                                 <div className="pt-4 border-t border-white/5">
                                                     <button
