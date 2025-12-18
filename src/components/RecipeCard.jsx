@@ -427,6 +427,31 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                             </a>
                                                         )}
                                                     </div>
+
+                                                    {/* Unified AI Improvement Button - Moved here under source details */}
+                                                    <div className="mt-4">
+                                                        <button
+                                                            onClick={handleAIImprovement}
+                                                            disabled={isAIProcessing}
+                                                            className="w-full h-12 flex items-center justify-center gap-3 bg-primary/10 hover:bg-primary/20 text-primary font-bold px-6 rounded-xl border border-primary/20 transition-all group/ai disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {isAIProcessing ? (
+                                                                <>
+                                                                    <Loader2 size={18} className="animate-spin text-primary" />
+                                                                    <span className="text-sm">Aan het analyseren...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Sparkles size={18} className="group-hover/ai:scale-110 transition-transform text-primary" />
+                                                                    <span className="text-sm">
+                                                                        {(!!recipe.original_image_url || recipe.source_type === 'image')
+                                                                            ? "Analyseer foto opnieuw"
+                                                                            : "Analyseer website opnieuw"}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
                                             {/* AI Tags - Consolidated here */}
@@ -444,31 +469,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                 </div>
                                             )}
 
-                                            {/* Review with Grok Button */}
-                                            {/* Unified AI Improvement Button */}
-                                            <div className="pt-6 border-t border-white/5">
-                                                <button
-                                                    onClick={handleAIImprovement}
-                                                    disabled={isAIProcessing}
-                                                    className="w-full h-14 flex items-center justify-center gap-3 bg-primary/10 hover:bg-primary/20 text-primary font-bold px-6 rounded-2xl border border-primary/20 transition-all group/ai disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    {isAIProcessing ? (
-                                                        <>
-                                                            <Loader2 size={20} className="animate-spin text-primary" />
-                                                            <span className="animate-pulse">Aan het analyseren...</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Sparkles size={20} className="group-hover/ai:scale-110 transition-transform text-primary" />
-                                                            <span>
-                                                                {(!!recipe.original_image_url || recipe.source_type === 'image')
-                                                                    ? "Analyseer foto opnieuw"
-                                                                    : "Analyseer website opnieuw"}
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
 
                                         </div>
                                     </motion.div>
