@@ -441,152 +441,154 @@ function Home({ activeTasks, setActiveTasks }) {
     <div className="min-h-screen bg-background text-foreground pb-20 selection:bg-primary selection:text-white" onClick={() => { setShowAddMenu(false); setShowProfileMenu(false); }}>
 
       {/* Cinematic Navbar - Transparent by default like Detail Page */}
-      <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-3 pointer-events-auto">
-          <div className="bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full">
-            <ChefHat size={22} />
+      <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-6 md:px-12 lg:px-20 py-4">
+        <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between">
+          <div className="flex items-center gap-3 pointer-events-auto">
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full">
+              <ChefHat size={22} />
+            </div>
+            <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden md:block">
+              {t.appTitle}
+            </h1>
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden md:block">
-            {t.appTitle}
-          </h1>
-        </div>
 
-        <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto">
-          {/* Search Input */}
-          <div className="relative w-full max-w-md hidden md:block group">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 group-hover:text-white transition-colors z-10" />
-            <input
-              type="text"
-              placeholder={t.searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="w-full bg-black/40 backdrop-blur-md border border-white/10 rounded-full pl-11 pr-4 h-11 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all shadow-xl"
-            />
-            {searchQuery && (
+          <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto">
+            {/* Search Input */}
+            <div className="relative w-full max-w-md hidden md:block group">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 group-hover:text-white transition-colors z-10" />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full bg-black/40 backdrop-blur-md border border-white/10 rounded-full pl-11 pr-4 h-11 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all shadow-xl"
+              />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* Mobile Search Icon */}
+            <button
+              onClick={() => setShowMobileSearch(true)}
+              className="md:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
+            >
+              <Search size={22} />
+            </button>
+
+            {/* Add Recipe */}
+            <div className="relative">
               <button
-                onClick={clearSearch}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAddMenu(!showAddMenu);
+                  setShowProfileMenu(false);
+                }}
+                className="h-11 px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all flex items-center gap-3 whitespace-nowrap active:scale-95 group shadow-xl"
               >
-                <X size={16} />
+                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                  <Plus size={14} className="text-primary" />
+                </div>
+                <span className="hidden md:inline text-sm font-bold text-white tracking-tight">
+                  {t.addRecipe}
+                </span>
               </button>
-            )}
-          </div>
 
-          {/* Mobile Search Icon */}
-          <button
-            onClick={() => setShowMobileSearch(true)}
-            className="md:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
-          >
-            <Search size={22} />
-          </button>
-
-          {/* Add Recipe */}
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowAddMenu(!showAddMenu);
-                setShowProfileMenu(false);
-              }}
-              className="h-11 px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all flex items-center gap-3 whitespace-nowrap active:scale-95 group shadow-xl"
-            >
-              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-                <Plus size={14} className="text-primary" />
-              </div>
-              <span className="hidden md:inline text-sm font-bold text-white tracking-tight">
-                {t.addRecipe}
-              </span>
-            </button>
-
-            <AnimatePresence>
-              {showAddMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.1 }}
-                  className="absolute top-full right-0 mt-3 w-60 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-3xl overflow-hidden py-2 z-50"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    onClick={handleCameraClick}
-                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
+              <AnimatePresence>
+                {showAddMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.1 }}
+                    className="absolute top-full right-0 mt-3 w-60 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-3xl overflow-hidden py-2 z-50"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
-                      <CameraCaptureIcon size={16} />
+                    <button
+                      onClick={handleCameraClick}
+                      className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
+                        <CameraCaptureIcon size={16} />
+                      </div>
+                      <span>{t.takePhoto}</span>
+                    </button>
+                    <button
+                      onClick={handleUploadClick}
+                      className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
+                        <UploadIcon size={16} />
+                      </div>
+                      <span>{t.uploadImage}</span>
+                    </button>
+                    <button
+                      onClick={handleUrlClick}
+                      className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
+                        <LinkIcon size={16} />
+                      </div>
+                      <span>{t.fromUrl}</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* User Profile */}
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowProfileMenu(!showProfileMenu);
+                  setShowAddMenu(false);
+                }}
+                className="h-11 w-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all overflow-hidden shadow-xl"
+              >
+                {user?.user_metadata?.avatar_url ? (
+                  <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
+                ) : (
+                  user?.email?.[0]?.toUpperCase() || '?'
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showProfileMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.1 }}
+                    className="absolute top-full right-0 mt-3 w-56 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-3xl overflow-hidden py-2 z-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="px-4 py-2 border-b border-white/5 mb-1">
+                      <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black">{t.signedInAs}</p>
+                      <p className="text-white font-bold truncate text-sm">{user.email}</p>
                     </div>
-                    <span>{t.takePhoto}</span>
-                  </button>
-                  <button
-                    onClick={handleUploadClick}
-                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
-                      <UploadIcon size={16} />
-                    </div>
-                    <span>{t.uploadImage}</span>
-                  </button>
-                  <button
-                    onClick={handleUrlClick}
-                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
-                      <LinkIcon size={16} />
-                    </div>
-                    <span>{t.fromUrl}</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* User Profile */}
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowProfileMenu(!showProfileMenu);
-                setShowAddMenu(false);
-              }}
-              className="h-11 w-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all overflow-hidden shadow-xl"
-            >
-              {user?.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
-              ) : (
-                user?.email?.[0]?.toUpperCase() || '?'
-              )}
-            </button>
-
-            <AnimatePresence>
-              {showProfileMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.1 }}
-                  className="absolute top-full right-0 mt-3 w-56 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-3xl overflow-hidden py-2 z-50"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="px-4 py-2 border-b border-white/5 mb-1">
-                    <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black">{t.signedInAs}</p>
-                    <p className="text-white font-bold truncate text-sm">{user.email}</p>
-                  </div>
-                  <button
-                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold"
-                  >
-                    <Settings size={18} />
-                    <span>{t.settings || "Instellingen"}</span>
-                  </button>
-                  <button
-                    onClick={signOut}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-bold"
-                  >
-                    <LogOut size={18} />
-                    <span>{t.signOut}</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <button
+                      className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold"
+                    >
+                      <Settings size={18} />
+                      <span>{t.settings || "Instellingen"}</span>
+                    </button>
+                    <button
+                      onClick={signOut}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-bold"
+                    >
+                      <LogOut size={18} />
+                      <span>{t.signOut}</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </header>
@@ -639,88 +641,7 @@ function Home({ activeTasks, setActiveTasks }) {
         )}
       </AnimatePresence>
 
-      {/* Mobile Search Overlay */}
-      <AnimatePresence>
-        {showMobileSearch && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[70] bg-[#000000] flex flex-col pt-safe"
-          >
-            <div className="flex items-center gap-4 px-6 py-4 border-b border-white/10 mt-safe-top glass-panel !border-none">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder={t.searchPlaceholder}
-                  className="input-standard !rounded-full pl-10 py-3"
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                />
-                {searchQuery && (
-                  <button
-                    onClick={clearSearch}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={() => {
-                  setShowMobileSearch(false);
-                  if (!searchQuery) clearSearch();
-                }}
-                className="text-white font-medium px-2"
-              >
-                {t.cancel}
-              </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              {/* Mobile Search Results */}
-              {(instantFilteredRecipes || searchResults) && searchQuery && (
-                <div className="space-y-4 pb-20">
-                  {(instantFilteredRecipes || searchResults).length > 0 ? (
-                    (instantFilteredRecipes || searchResults).map(recipe => (
-                      <div
-                        key={recipe.id}
-                        onClick={() => {
-                          navigate(`/recipe/${recipe.id}`);
-                          setShowMobileSearch(false);
-                        }}
-                        className="flex items-center gap-4 p-3 glass-card rounded-[var(--radius-btn)] active:bg-white/10"
-                      >
-                        {recipe.image_url ? (
-                          <img src={recipe.image_url} alt={recipe.title} className="w-16 h-16 rounded-[var(--radius-btn)] object-cover" />
-                        ) : (
-                          <div className="w-16 h-16 rounded-[var(--radius-btn)] bg-white/10 flex items-center justify-center">
-                            <ChefHat size={24} className="text-white/20" />
-                          </div>
-                        )}
-                        <div>
-                          <h4 className="font-bold text-white line-clamp-1">{recipe.title}</h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            {recipe.cuisine && <span className="text-xs text-muted-foreground uppercase">{recipe.cuisine}</span>}
-                            {recipe.cook_time && <span className="text-xs text-muted-foreground">• {recipe.cook_time}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-muted-foreground py-10">
-                      {t.noResults} <span className="text-primary">"{searchQuery}"</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       {/* URL Input Modal */}
       <AnimatePresence>
         {showUrlInput && (
@@ -777,7 +698,7 @@ function Home({ activeTasks, setActiveTasks }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[70] bg-[#000000] flex flex-col pt-safe"
+            className="fixed inset-0 z-[70] bg-[#000000] flex flex-col pt-safe px-6 md:px-12 lg:px-20"
           >
             <div className="flex items-center gap-4 px-6 py-4 border-b border-white/10 mt-safe-top glass-panel !border-none">
               <div className="relative flex-1">
@@ -895,7 +816,7 @@ function Home({ activeTasks, setActiveTasks }) {
 
             {/* Hero Content - Anchored to bottom like Detail Page */}
             <div className="absolute bottom-0 left-0 right-0 z-20 pb-12 pointer-events-none">
-              <div className="px-6 md:px-16 w-full flex flex-col items-start gap-4">
+              <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 w-full flex flex-col items-start gap-4">
                 {heroRecipe ? (
                   <>
                     <motion.div
@@ -960,7 +881,7 @@ function Home({ activeTasks, setActiveTasks }) {
         )}
 
         {/* Content Area - No negative margins for better mobile stability */}
-        <div className={`relative z-20 space-y-12 pb-24 bg-background ${searchQuery ? 'pt-32' : 'pt-12'}`}>
+        <div className={`relative z-20 space-y-12 pb-24 bg-background max-w-[1600px] mx-auto ${searchQuery ? 'pt-32' : 'pt-12'}`}>
           <RecipeList
             recipes={displayRecipes}
             isEmptyState={isEmptyState}

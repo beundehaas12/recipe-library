@@ -142,37 +142,39 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                 </motion.div>
 
                 {/* Cinematic Floating Header - Completely transparent background version */}
-                <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex justify-between items-center">
-                    <Link to="/" className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto">
-                        <ArrowLeft size={20} />
-                    </Link>
+                <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-6 md:px-12 lg:px-20 py-4">
+                    <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
+                        <Link to="/" className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto">
+                            <ArrowLeft size={20} />
+                        </Link>
 
-                    <div className="flex gap-3 pointer-events-auto">
-                        {isEditing ? (
-                            <div className="flex gap-2">
-                                <button onClick={handleSave} className="btn-primary !py-2 !px-4 text-sm !text-black">Opslaan</button>
-                                <button onClick={handleCancel} className="btn-secondary !py-2 !px-4 text-sm">Annuleren</button>
-                            </div>
-                        ) : (
-                            <>
-                                <button onClick={() => setIsEditing(true)} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center">
-                                    <Edit size={20} />
-                                </button>
-                                <label className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center cursor-pointer">
-                                    <Camera size={20} />
-                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file && onImageUpdate) onImageUpdate(file); }} />
-                                </label>
-                                <button onClick={onDelete} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center !bg-red-500/10 !text-red-500 !border-red-500/20 hover:!bg-red-500/20 transition-all">
-                                    <Trash2 size={20} />
-                                </button>
-                            </>
-                        )}
+                        <div className="flex gap-3 pointer-events-auto">
+                            {isEditing ? (
+                                <div className="flex gap-2">
+                                    <button onClick={handleSave} className="btn-primary !py-2 !px-4 text-sm !text-black">Opslaan</button>
+                                    <button onClick={handleCancel} className="btn-secondary !py-2 !px-4 text-sm">Annuleren</button>
+                                </div>
+                            ) : (
+                                <>
+                                    <button onClick={() => setIsEditing(true)} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center">
+                                        <Edit size={20} />
+                                    </button>
+                                    <label className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center cursor-pointer">
+                                        <Camera size={20} />
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file && onImageUpdate) onImageUpdate(file); }} />
+                                    </label>
+                                    <button onClick={onDelete} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center !bg-red-500/10 !text-red-500 !border-red-500/20 hover:!bg-red-500/20 transition-all">
+                                        <Trash2 size={20} />
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </header>
 
                 {/* Header Content */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col justify-end pb-12">
-                    <div className="max-w-7xl mx-auto px-6 md:px-12 w-full">
+                    <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 w-full">
                         {isEditing ? (
                             <div className="bg-black/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10 space-y-4 max-w-2xl">
                                 <input
@@ -227,7 +229,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
             </div>
 
             {/* Main Content Grid */}
-            <div className="max-w-7xl mx-auto px-6 md:px-12 mt-12 relative z-20">
+            <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 mt-12 relative z-20">
                 <div className="grid lg:grid-cols-[400px_1fr] gap-12 lg:gap-24">
 
                     {/* Left Column: Stats & Ingredients */}

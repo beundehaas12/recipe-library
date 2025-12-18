@@ -38,8 +38,8 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
 
-    --radius: 1.5rem;
-    --radius-btn: 1rem;
+    --radius: 1.25rem;
+    --radius-btn: 2rem;
 
     /* Animation Speeds */
     --transition-fast: 200ms cubic-bezier(0.4, 0, 0.2, 1);
