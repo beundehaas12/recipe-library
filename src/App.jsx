@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { supabase, uploadTempImage, deleteTempImage } from './lib/supabase';
+import { supabase, uploadTempImage, uploadSourceImage, deleteTempImage } from './lib/supabase';
 import { extractRecipeFromImage, extractRecipeFromText } from './lib/xai';
 import { processHtmlForRecipe } from './lib/htmlParser';
 import { translations as t } from './lib/translations';
