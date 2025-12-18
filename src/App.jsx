@@ -482,18 +482,11 @@ function Home({ activeTasks, setActiveTasks }) {
 
             {/* Add Recipe */}
             <div className="relative">
-              {/* Mobile: Direct to native picker */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Mobile: directly trigger native file picker for camera/photo library
-                  if (window.innerWidth < 768) {
-                    cameraInputRef.current?.click();
-                  } else {
-                    // Desktop: show dropdown menu
-                    setShowAddMenu(!showAddMenu);
-                    setShowProfileMenu(false);
-                  }
+                  setShowAddMenu(!showAddMenu);
+                  setShowProfileMenu(false);
                 }}
                 className="w-11 h-11 md:h-11 md:w-auto md:px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all flex items-center justify-center md:gap-3 whitespace-nowrap active:scale-95 group shadow-xl"
               >
@@ -516,6 +509,7 @@ function Home({ activeTasks, setActiveTasks }) {
                     className="absolute top-full right-0 mt-3 w-60 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-3xl overflow-hidden py-2 z-50"
                     onClick={(e) => e.stopPropagation()}
                   >
+                    {/* Media option - triggers native iOS picker */}
                     <button
                       onClick={handleCameraClick}
                       className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
@@ -523,17 +517,9 @@ function Home({ activeTasks, setActiveTasks }) {
                       <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
                         <CameraCaptureIcon size={16} />
                       </div>
-                      <span>{t.takePhoto}</span>
+                      <span>Media</span>
                     </button>
-                    <button
-                      onClick={handleUploadClick}
-                      className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
-                        <UploadIcon size={16} />
-                      </div>
-                      <span>{t.uploadImage}</span>
-                    </button>
+                    {/* URL option */}
                     <button
                       onClick={handleUrlClick}
                       className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
@@ -541,7 +527,7 @@ function Home({ activeTasks, setActiveTasks }) {
                       <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
                         <LinkIcon size={16} />
                       </div>
-                      <span>{t.fromUrl}</span>
+                      <span>URL</span>
                     </button>
                   </motion.div>
                 )}
