@@ -351,6 +351,20 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                     </div>
                                                 </div>
                                             )}
+                                            {/* AI Tags - Consolidated here */}
+                                            {recipe.ai_tags && recipe.ai_tags.length > 0 && !isEditing && (
+                                                <div className="pt-4 border-t border-white/5">
+                                                    <span className="text-[10px] text-white/40 uppercase font-bold tracking-wider block mb-2">{t.aiTags || "AI Tags"}</span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {recipe.ai_tags.map((tag, idx) => (
+                                                            <span key={idx} className="px-3 py-1.5 bg-white/[0.03] text-white/70 text-[10px] font-semibold rounded-lg hover:bg-primary/20 hover:text-primary transition-all cursor-default border border-white/10">
+                                                                {tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* Review with Grok Button */}
                                             <div className="pt-6 border-t border-white/5">
                                                 <button
@@ -501,43 +515,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                             </AnimatePresence>
                         </div>
 
-                        {/* AI Tags Section */}
-                        {recipe.ai_tags && recipe.ai_tags.length > 0 && !isEditing && (
-                            <div className="bg-zinc-900/80 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all">
-                                <div
-                                    className="flex items-center justify-between cursor-pointer group/stat"
-                                    onClick={() => toggleSection('ai')}
-                                >
-                                    <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                        <Sparkles size={14} className="text-muted-foreground/50" />
-                                        {t.aiTags}
-                                    </h3>
-                                    <motion.div animate={{ rotate: expandedSections.ai ? 0 : -90 }} className="text-muted-foreground group-hover/stat:text-white transition-colors">
-                                        <ChevronDown size={20} />
-                                    </motion.div>
-                                </div>
 
-                                <AnimatePresence>
-                                    {expandedSections.ai && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: 'auto', opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                                            className="overflow-hidden"
-                                        >
-                                            <div className="flex flex-wrap gap-2 pt-6">
-                                                {recipe.ai_tags.map((tag, idx) => (
-                                                    <span key={idx} className="px-3 py-1.5 bg-white/[0.03] text-white/70 text-xs font-semibold rounded-lg hover:bg-primary/20 hover:text-primary transition-all cursor-default border border-white/10">
-                                                        {tag}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        )}
 
                         {/* Extraction History Section */}
                         {recipe.extraction_history && !isEditing && (
