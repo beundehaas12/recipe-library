@@ -28,6 +28,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     });
     const [isAIProcessing, setIsAIProcessing] = useState(false);
     const [showSourceModal, setShowSourceModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const toggleSection = (section) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -219,7 +220,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         <Camera size={20} />
                                         <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file && onImageUpdate) onImageUpdate(file); }} />
                                     </label>
-                                    <button onClick={onDelete} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center !bg-red-500/10 !text-red-500 !border-red-500/20 hover:!bg-red-500/20 transition-all">
+                                    <button onClick={() => setShowDeleteModal(true)} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center !bg-red-500/10 !text-red-500 !border-red-500/20 hover:!bg-red-500/20 transition-all">
                                         <Trash2 size={20} />
                                     </button>
                                 </>
@@ -712,8 +713,8 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                 ))}
                             </div>
 
-                            {/* Raw OCR Section (Requested for transparency/debugging) */}
-                            {recipe.extraction_history?.raw_ocr && (
+                            {/* Raw OCR Section - Only for non-photo recipes */}
+                            {recipe.extraction_history?.raw_ocr && !recipe.original_image_url && recipe.source_type !== 'image' && (
                                 <div className="mt-20 pt-16 border-t border-white/5">
                                     <div className="flex items-center gap-3 mb-8">
                                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary/60">
@@ -735,8 +736,8 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                 </div>
                             )}
 
-                            {/* Reasoning Section (Requested by user) */}
-                            {recipe.extraction_history?.reasoning && (
+                            {/* Reasoning Section - Only for non-photo recipes */}
+                            {recipe.extraction_history?.reasoning && !recipe.original_image_url && recipe.source_type !== 'image' && (
                                 <div className="mt-12 pt-12 border-t border-white/5">
                                     <div className="flex items-center gap-3 mb-8">
                                         <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
@@ -811,6 +812,58 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                             {/* Modal Footer */}
                             <div className="p-6 border-t border-white/5 bg-black/20 backdrop-blur-md flex justify-center">
                                 <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em] italic">AI Analyse Bronmateriaal</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Confirmation Modal */}
+            <AnimatePresence>
+                {showDeleteModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowDeleteModal(false)}
+                            className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative w-full max-w-md bg-zinc-900/95 backdrop-blur-2xl rounded-3xl overflow-hidden border border-white/10 shadow-2xl"
+                        >
+                            {/* Modal Header */}
+                            <div className="p-6 pb-4 text-center">
+                                <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mx-auto mb-4">
+                                    <Trash2 size={32} />
+                                </div>
+                                <h2 className="text-xl font-black text-white mb-2">Recept verwijderen?</h2>
+                                <p className="text-white/50 text-sm">
+                                    Weet je zeker dat je <span className="text-white font-medium">"{recipe.title}"</span> wilt verwijderen? Dit kan niet ongedaan worden gemaakt.
+                                </p>
+                            </div>
+
+                            {/* Modal Actions */}
+                            <div className="p-6 pt-2 flex flex-col gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        onDelete();
+                                    }}
+                                    className="w-full h-12 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-all"
+                                >
+                                    <Trash2 size={18} />
+                                    Ja, verwijder dit recept
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteModal(false)}
+                                    className="w-full h-12 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white/70 font-bold rounded-xl border border-white/10 transition-all"
+                                >
+                                    Annuleren
+                                </button>
                             </div>
                         </motion.div>
                     </div>
