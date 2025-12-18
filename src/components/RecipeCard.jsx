@@ -259,21 +259,60 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         className="overflow-hidden"
                                     >
                                         <div className="pt-6 space-y-6">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="bg-white/[0.03] rounded-2xl p-4 border border-white/5 space-y-2">
-                                                    <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                                                        <Clock size={14} className="text-muted-foreground/50" />
-                                                        {t.prepTime}
-                                                    </div>
-                                                    <div className="text-white font-bold text-lg">{recipe.prep_time || '-'}</div>
-                                                </div>
-                                                <div className="bg-white/[0.03] rounded-2xl p-4 border border-white/5 space-y-2">
-                                                    <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                                                        <Clock size={14} className="text-muted-foreground/50" />
-                                                        {t.cookTime}
-                                                    </div>
-                                                    <div className="text-white font-bold text-lg">{recipe.cook_time || '-'}</div>
-                                                </div>
+                                            <div className="space-y-4">
+                                                {/* Total Time Display */}
+                                                {(() => {
+                                                    const parseTimeToMinutes = (timeStr) => {
+                                                        if (!timeStr) return 0;
+                                                        const lower = String(timeStr).toLowerCase();
+                                                        let total = 0;
+                                                        const hourMatch = lower.match(/(\d+)\s*(?:h|uur|hour|u)/);
+                                                        if (hourMatch) total += parseInt(hourMatch[1]) * 60;
+                                                        const minuteMatch = lower.match(/(\d+)\s*(?:m|min|minuten)/);
+                                                        if (minuteMatch) total += parseInt(minuteMatch[1]);
+                                                        if (total === 0 && !isNaN(parseInt(lower))) total = parseInt(lower);
+                                                        return total;
+                                                    };
+
+                                                    const formatMinutes = (minutes) => {
+                                                        if (!minutes) return '-';
+                                                        if (minutes < 60) return `${minutes} min`;
+                                                        const h = Math.floor(minutes / 60);
+                                                        const m = minutes % 60;
+                                                        return m === 0 ? `${h} u` : `${h} u ${m} min`;
+                                                    };
+
+                                                    const prepMin = parseTimeToMinutes(recipe.prep_time);
+                                                    const cookMin = parseTimeToMinutes(recipe.cook_time);
+                                                    const totalMin = prepMin + cookMin;
+
+                                                    return (
+                                                        <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5 space-y-4">
+                                                            <div className="space-y-1">
+                                                                <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                                                    <Clock size={14} className="text-muted-foreground/50" />
+                                                                    Totale tijd
+                                                                </div>
+                                                                <div className="text-white font-black text-3xl">
+                                                                    {totalMin > 0 ? formatMinutes(totalMin) : (recipe.prep_time || recipe.cook_time || '-')}
+                                                                </div>
+                                                            </div>
+
+                                                            {(prepMin > 0 || cookMin > 0) && (
+                                                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                                                                    <div className="space-y-1">
+                                                                        <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{t.prepTime}</div>
+                                                                        <div className="text-white font-bold">{recipe.prep_time || '-'}</div>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{t.cookTime}</div>
+                                                                        <div className="text-white font-bold">{recipe.cook_time || '-'}</div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
 
                                             {/* Servings Adjustment Row - Matches Ingredient List Style */}
@@ -398,7 +437,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                         </div>
 
                         {/* Ingredients Card */}
-                        <div className="glass-card !border-0 rounded-[var(--radius)] p-6 shadow-xl transition-all">
+                        <div className="bg-zinc-900/30 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all">
                             <div
                                 className="flex items-center justify-between cursor-pointer group/stat"
                                 onClick={() => toggleSection('ingredients')}
@@ -464,7 +503,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
                         {/* AI Tags Section */}
                         {recipe.ai_tags && recipe.ai_tags.length > 0 && !isEditing && (
-                            <div className="glass-card !border-0 rounded-[var(--radius)] p-6 shadow-xl transition-all">
+                            <div className="bg-zinc-900/30 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all">
                                 <div
                                     className="flex items-center justify-between cursor-pointer group/stat"
                                     onClick={() => toggleSection('ai')}
@@ -502,7 +541,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
                         {/* Extraction History Section */}
                         {recipe.extraction_history && !isEditing && (
-                            <div className="glass-card !border-0 rounded-[var(--radius)] p-6 shadow-xl transition-all">
+                            <div className="bg-zinc-900/30 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all">
                                 <div
                                     className="flex items-center justify-between cursor-pointer group/stat"
                                     onClick={() => toggleSection('history')}
