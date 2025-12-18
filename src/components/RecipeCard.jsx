@@ -26,8 +26,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         ai: true,
         history: false
     });
-    const [isReviewing, setIsReviewing] = useState(false);
-    const [isReAnalyzing, setIsReAnalyzing] = useState(false);
+    const [isAIProcessing, setIsAIProcessing] = useState(false);
     const [showSourceModal, setShowSourceModal] = useState(false);
 
     const toggleSection = (section) => {
@@ -124,35 +123,58 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
     const sourceLangName = languageNames[recipe.source_language] || recipe.source_language || t.languageUnknown;
 
-    const handleReAnalyze = async () => {
-        const imageSource = recipe.original_image_url || ((recipe.source_type === 'image' || recipe.source_url?.includes('/storage/v1/object/public/')) ? recipe.source_url : null);
-
-        if (!imageSource) {
-            alert("Dit recept heeft geen originele foto om opnieuw te analyseren.");
-            return;
-        }
-
-        setIsReAnalyzing(true);
+    const handleAIImprovement = async () => {
+        setIsAIProcessing(true);
         try {
-            const { recipe: freshRecipe, usage } = await reAnalyzeRecipeFromStoredImage(imageSource);
+            const isPhoto = !!recipe.original_image_url || recipe.source_type === 'image';
+            let freshRecipe, usage;
+
+            if (isPhoto) {
+                // Path 1: Vision Re-analysis
+                const imageSource = recipe.original_image_url || (recipe.source_url?.includes('/storage/v1/object/public/') ? recipe.source_url : null);
+                if (!imageSource) throw new Error("Originele foto niet gevonden.");
+
+                const result = await reAnalyzeRecipeFromStoredImage(imageSource);
+                freshRecipe = result.recipe;
+                usage = result.usage;
+            } else {
+                // Path 2: Text-based Review
+                const sourceData = recipe.extraction_history?.raw_response || '';
+                const result = await reviewRecipeWithAI(recipe, sourceData);
+                freshRecipe = result.recipe;
+                usage = result.usage;
+            }
+
+            // Calculate changes
+            const changes = [];
+            if (freshRecipe.title !== recipe.title) changes.push(`Titel aangepast`);
+            if (JSON.stringify(freshRecipe.ingredients) !== JSON.stringify(recipe.ingredients)) changes.push('Ingrediënten verbeterd');
+            if (JSON.stringify(freshRecipe.instructions) !== JSON.stringify(recipe.instructions)) changes.push('Instructies verfijnd');
+            if (changes.length === 0) changes.push(isPhoto ? 'Nieuwe visuele scan uitgevoerd' : 'AI-check uitgevoerd');
+
+            const reviewEntry = {
+                timestamp: new Date().toISOString(),
+                tokens_used: usage.total_tokens,
+                cost: (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000,
+                changes: changes,
+                type: isPhoto ? 'vision_reanalysis' : 'text_review'
+            };
 
             await onUpdate({
                 ...freshRecipe,
                 extraction_history: {
                     ...recipe.extraction_history,
-                    re_analyzed_at: new Date().toISOString(),
-                    re_analysis_tokens: usage.total_tokens
+                    reviews: [...(recipe.extraction_history?.reviews || []), reviewEntry]
                 },
-                // Merge tags, ensuring they are unique
                 ai_tags: Array.from(new Set([...(freshRecipe.ai_tags || []), ...(recipe.ai_tags || [])]))
             });
 
-            alert("Recept succesvol verbeterd met een nieuwe AI vision-scan!");
         } catch (error) {
-            console.error("Re-analysis failed:", error);
-            alert("Er ging iets mis bij het opnieuw analyseren.");
+            console.error("AI improvement failed:", error);
+            // alert only on actual error, but user wants silent success
+            alert("Er ging iets mis: " + error.message);
         } finally {
-            setIsReAnalyzing(false);
+            setIsAIProcessing(false);
         }
     };
 
@@ -388,25 +410,12 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                         </div>
 
                                                         {recipe.original_image_url ? (
-                                                            <div className="flex flex-wrap gap-2">
-                                                                <button
-                                                                    onClick={() => setShowSourceModal(true)}
-                                                                    className="flex items-center gap-2 text-white/60 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-white/10"
-                                                                >
-                                                                    Open foto <Image size={12} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={handleReAnalyze}
-                                                                    disabled={isReAnalyzing}
-                                                                    className="flex items-center gap-2 text-primary/80 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-primary/20 bg-primary/5 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                >
-                                                                    {isReAnalyzing ? (
-                                                                        <>Verbeteren... <Loader2 size={12} className="animate-spin" /></>
-                                                                    ) : (
-                                                                        <>Verbeter met AI <Sparkles size={12} /></>
-                                                                    )}
-                                                                </button>
-                                                            </div>
+                                                            <button
+                                                                onClick={() => setShowSourceModal(true)}
+                                                                className="flex items-center gap-2 text-white/60 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-white/10"
+                                                            >
+                                                                Open foto <Image size={12} />
+                                                            </button>
                                                         ) : recipe.source_url && (
                                                             <a
                                                                 href={recipe.source_url}
@@ -436,83 +445,31 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                             )}
 
                                             {/* Review with Grok Button */}
+                                            {/* Unified AI Improvement Button */}
                                             <div className="pt-6 border-t border-white/5">
                                                 <button
-                                                    onClick={async () => {
-                                                        setIsReviewing(true);
-                                                        try {
-                                                            const originalData = {
-                                                                title: recipe.title,
-                                                                description: recipe.description,
-                                                                ingredients: recipe.ingredients,
-                                                                instructions: recipe.instructions,
-                                                                servings: recipe.servings,
-                                                                prep_time: recipe.prep_time,
-                                                                cook_time: recipe.cook_time,
-                                                                difficulty: recipe.difficulty,
-                                                                cuisine: recipe.cuisine,
-                                                                author: recipe.author
-                                                            };
-
-                                                            const sourceData = recipe.extraction_history?.raw_response || '';
-                                                            const { recipe: correctedRecipe, usage } = await reviewRecipeWithAI(originalData, sourceData);
-
-                                                            // Track what was changed
-                                                            const changes = [];
-                                                            if (correctedRecipe.title !== originalData.title) changes.push(`Title: "${originalData.title}" → "${correctedRecipe.title}"`);
-                                                            if (correctedRecipe.prep_time !== originalData.prep_time) changes.push(`Prep time: ${originalData.prep_time || 'geen'} → ${correctedRecipe.prep_time || 'geen'}`);
-                                                            if (correctedRecipe.cook_time !== originalData.cook_time) changes.push(`Cook time: ${originalData.cook_time || 'geen'} → ${correctedRecipe.cook_time || 'geen'}`);
-                                                            if (JSON.stringify(correctedRecipe.ingredients) !== JSON.stringify(originalData.ingredients)) changes.push('Ingredients corrected');
-                                                            if (JSON.stringify(correctedRecipe.instructions) !== JSON.stringify(originalData.instructions)) changes.push('Instructions corrected');
-                                                            if (correctedRecipe.servings !== originalData.servings) changes.push(`Servings: ${originalData.servings} → ${correctedRecipe.servings}`);
-                                                            if (correctedRecipe.difficulty !== originalData.difficulty) changes.push(`Difficulty set to: ${correctedRecipe.difficulty}`);
-                                                            if (correctedRecipe.cuisine !== originalData.cuisine) changes.push(`Cuisine set to: ${correctedRecipe.cuisine}`);
-
-                                                            if (changes.length === 0) changes.push('No significant changes needed');
-
-                                                            // Create review entry
-                                                            const reviewEntry = {
-                                                                timestamp: new Date().toISOString(),
-                                                                tokens_used: usage.total_tokens,
-                                                                cost: (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000,
-                                                                changes: changes
-                                                            };
-
-                                                            // Update extraction_history with review
-                                                            const updatedHistory = {
-                                                                ...recipe.extraction_history,
-                                                                reviews: [...(recipe.extraction_history.reviews || []), reviewEntry]
-                                                            };
-                                                            // Update via onUpdate callback with corrected data and updated history
-                                                            onUpdate({
-                                                                ...correctedRecipe,
-                                                                extraction_history: updatedHistory,
-                                                                ai_tags: (recipe.ai_tags || []).filter(t => t !== '📊 schema' && t !== '🤖 grok-reviewed')
-                                                            });
-
-                                                            // Successfully updated
-                                                        } catch (error) {
-                                                            console.error('Review failed:', error);
-                                                        } finally {
-                                                            setIsReviewing(false);
-                                                        }
-                                                    }}
-                                                    disabled={isReviewing}
-                                                    className="w-full h-[40px] flex items-center justify-center gap-2 px-4 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm font-bold rounded-lg border border-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    onClick={handleAIImprovement}
+                                                    disabled={isAIProcessing}
+                                                    className="w-full h-14 flex items-center justify-center gap-3 bg-primary/10 hover:bg-primary/20 text-primary font-bold px-6 rounded-2xl border border-primary/20 transition-all group/ai disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    <div className="flex items-center gap-2 pointer-events-none">
-                                                        {isReviewing ? (
-                                                            <Loader2 size={16} className="animate-spin" />
-                                                        ) : (
-                                                            <Zap size={16} />
-                                                        )}
-                                                        <span>{isReviewing ? 'Reviewing...' : 'Review with Grok'}</span>
-                                                    </div>
+                                                    {isAIProcessing ? (
+                                                        <>
+                                                            <Loader2 size={20} className="animate-spin text-primary" />
+                                                            <span className="animate-pulse">Aan het analyseren...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Sparkles size={20} className="group-hover/ai:scale-110 transition-transform text-primary" />
+                                                            <span>
+                                                                {(!!recipe.original_image_url || recipe.source_type === 'image')
+                                                                    ? "Analyseer foto opnieuw"
+                                                                    : "Analyseer website opnieuw"}
+                                                            </span>
+                                                        </>
+                                                    )}
                                                 </button>
-                                                <p className="text-[10px] text-white/30 mt-2 text-center">
-                                                    AI will review and fix parsing issues
-                                                </p>
                                             </div>
+
                                         </div>
                                     </motion.div>
                                 )}
