@@ -255,19 +255,35 @@ export async function uploadSourceImage(file, userId) {
 }
 
 /**
- * Delete a temporary image from storage.
- * Should be called after successful recipe processing.
+ * Delete an image from storage using its public URL.
+ * Automatically extracts the storage path from the URL.
  * 
- * @param {string} path - Storage path of the image to delete
+ * @param {string} url - Public URL of the image to delete
  * @returns {Promise<void>}
  */
-export async function deleteTempImage(path) {
-    const { error } = await supabase.storage
-        .from('recipe-images')
-        .remove([path]);
+export async function deleteImageByUrl(url) {
+    if (!url) return;
 
-    if (error) {
-        // Log but don't throw - deletion failure shouldn't break the flow
-        console.warn('Failed to delete temp image:', error);
+    try {
+        // Supabase public URL format: .../storage/v1/object/public/[bucket]/[path]
+        const bucketMatch = url.match(/\/public\/([^\/]+)\/(.*)$/);
+        if (!bucketMatch) {
+            console.warn('Could not parse Supabase URL for deletion:', url);
+            return;
+        }
+
+        const bucket = bucketMatch[1];
+        const path = bucketMatch[2];
+
+        console.log(`Deleting from ${bucket}: ${path}`);
+        const { error } = await supabase.storage
+            .from(bucket)
+            .remove([path]);
+
+        if (error) {
+            console.warn(`Failed to delete image at ${path}:`, error);
+        }
+    } catch (e) {
+        console.warn('Error in deleteImageByUrl:', e);
     }
 }

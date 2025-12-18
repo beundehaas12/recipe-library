@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { supabase, uploadTempImage, uploadSourceImage, deleteTempImage } from './lib/supabase';
+import { supabase, uploadTempImage, uploadSourceImage, deleteImageByUrl } from './lib/supabase';
 import { extractRecipeFromImage, extractRecipeFromText } from './lib/xai';
 import { processHtmlForRecipe } from './lib/htmlParser';
 import { translations as t } from './lib/translations';
@@ -968,12 +968,9 @@ function RecipePage({ activeTasks, setActiveTasks }) {
 
     setLoading(true);
     try {
-      if (recipe.image_url) {
-        try {
-          const oldFileName = recipe.image_url.split('/').pop();
-          if (oldFileName) await supabase.storage.from('recipe-images').remove([oldFileName]);
-        } catch (err) { console.warn(err); }
-      }
+      // Cleanup associated images
+      if (recipe.image_url) await deleteImageByUrl(recipe.image_url);
+      if (recipe.original_image_url) await deleteImageByUrl(recipe.original_image_url);
 
       const { error } = await supabase.from('recipes').delete().eq('id', recipe.id);
       if (error) throw error;
