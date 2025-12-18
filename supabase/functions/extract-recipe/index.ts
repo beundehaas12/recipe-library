@@ -20,7 +20,35 @@ import OpenAI from "https://esm.sh/openai@4"
 // After the first call, subsequent calls only pay ~25% of the input token cost.
 // DO NOT modify this prompt frequently - changes invalidate the cache.
 // ==============================================================================
-const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie assistent. Analyseer recepten en retourneer de data als JSON.`
+const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie expert. Analyseer de afbeelding of tekst en voer deze twee stappen uit:
+
+STAP 1: RAW OCR
+Transcribeer ALLE zichtbare tekst van de afbeelding letterlijk en volledig.
+
+STAP 2: GESTRUCTUREERDE JSON
+Extraheer de informatie uit de OCR en zet deze om in dit JSON formaat:
+{
+  "title": "...",
+  "description": "...",
+  "ingredients": [{"amount": number|null, "unit": "...", "item": "..."}],
+  "instructions": ["...", "..."],
+  "servings": number,
+  "prep_time": "...",
+  "cook_time": "...",
+  "difficulty": "Easy|Medium|Hard",
+  "cuisine": "...",
+  "ai_tags": ["Nederlandse zoektags"]
+}
+
+OUTPUT:
+Geef je antwoord in dit exacte formaat:
+[RAW_OCR_START]
+(hier de volledige transcriptie)
+[RAW_OCR_END]
+
+[JSON_START]
+(hier de JSON output)
+[JSON_END]`
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -51,44 +79,48 @@ serve(async (req) => {
             apiKey: Deno.env.get("XAI_API_KEY")
         })
 
-        // Build user message - SIMPLE like Grok.com
+        // Build user message
         const userContent = type === 'image'
             ? [
-                { type: "text", text: "Analyseer dit recept en geef de data als JSON." },
+                { type: "text", text: "Voer OCR uit en extraheer het recept als JSON." },
                 { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
             ]
-            : `Analyseer dit recept en geef de data als JSON:\n\n${textContent}`
+            : `Voer OCR uit en extraheer het recept als JSON uit:\n\n${textContent}`
 
-        console.log(`Processing ${type} request...`)
+        console.log(`Processing ${type} request with grok-4-1...`)
 
         const response = await xai.chat.completions.create({
-            model: "grok-2-vision-1212",  // Latest flagship vision model, better accuracy
+            model: "grok-4-1",  // Flagship model
             messages: [
-                { role: "system", content: FIXED_SYSTEM_PROMPT },  // CACHED by xAI
+                { role: "system", content: FIXED_SYSTEM_PROMPT },
                 { role: "user", content: userContent }
             ],
-            max_tokens: 2000,
-            temperature: 0.2  // Low temperature for consistent JSON output
+            max_tokens: 4000,
+            temperature: 0.1
         })
 
-        // Parse the response
         const content = response.choices[0].message.content
-        let recipe
 
+        // Extract parts using markers
+        const rawOcrMatch = content.match(/\[RAW_OCR_START\]([\s\S]*?)\[RAW_OCR_END\]/)
+        const jsonMatch = content.match(/\[JSON_START\]([\s\S]*?)\[JSON_END\]/)
+
+        const raw_ocr = rawOcrMatch ? rawOcrMatch[1].trim() : ''
+        const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.replace(/```json/g, '').replace(/```/g, '').trim()
+
+        let recipe = {}
         try {
-            // Clean up potential markdown code blocks
-            const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim()
             recipe = JSON.parse(jsonStr)
-        } catch (parseError) {
-            console.error('JSON parse error:', parseError)
-            throw new Error('Failed to parse recipe JSON from AI response')
+        } catch (e) {
+            console.error('Failed to parse inner JSON:', e)
+            throw new Error('AI response structure was invalid')
         }
 
-        // Return recipe + token usage + raw response for debugging
         return new Response(
             JSON.stringify({
                 recipe,
-                raw_response: content, // For debugging
+                raw_ocr,
+                raw_response: content,
                 usage: {
                     prompt_tokens: response.usage?.prompt_tokens || 0,
                     completion_tokens: response.usage?.completion_tokens || 0,

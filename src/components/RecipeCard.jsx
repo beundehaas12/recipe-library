@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2 } from 'lucide-react';
+import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
 import { reviewRecipeWithAI } from '../lib/xai';
@@ -673,6 +673,29 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Raw OCR Section (Requested for transparency/debugging) */}
+                            {recipe.extraction_history?.raw_ocr && (
+                                <div className="mt-20 pt-16 border-t border-white/5">
+                                    <div className="flex items-center gap-3 mb-8">
+                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary/60">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white leading-none mb-1">Originele Transcriptie</h3>
+                                            <p className="text-xs text-white/30 uppercase tracking-widest font-bold">Volledige OCR door Grok 4</p>
+                                        </div>
+                                    </div>
+                                    <div className="glass-card !bg-black/40 rounded-2xl p-8 border border-white/5 shadow-2xl relative overflow-hidden group/ocr">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/ocr:opacity-30 transition-opacity">
+                                            <FileText size={120} />
+                                        </div>
+                                        <div className="relative font-mono text-sm text-gray-400 leading-relaxed whitespace-pre-wrap max-h-[600px] overflow-y-auto custom-scrollbar">
+                                            {recipe.extraction_history.raw_ocr}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

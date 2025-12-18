@@ -240,7 +240,7 @@ function Home() {
 
       // Step 2: Call xAI via Edge Function
       console.log('Calling xAI via Edge Function...');
-      const { recipe, usage, raw_response } = await extractRecipeFromImage(signedUrl);
+      const { recipe, usage, raw_response, raw_ocr } = await extractRecipeFromImage(signedUrl);
       setTokenUsage(usage);  // Store for display
       console.log('Recipe extracted!', { tokens: usage });
       console.log('Raw AI response:', raw_response);
@@ -253,8 +253,9 @@ function Home() {
       };
       extractionHistory.estimated_cost_eur =
         (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
-      extractionHistory.raw_response = raw_response; // Store raw output for debugging
-      extractionHistory.notes.push('AI extracted recipe from image');
+      extractionHistory.raw_response = raw_response;
+      extractionHistory.raw_ocr = raw_ocr; // Store the literal transcription
+      extractionHistory.notes.push('AI extracted recipe from image (Combined OCR + Structure)');
 
       // Step 3: Skip deletion for debugging - images stay in storage
       console.log('DEBUG: Keeping temp image for inspection:', imagePath);
