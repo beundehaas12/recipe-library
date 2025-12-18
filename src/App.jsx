@@ -23,11 +23,6 @@ function Home({ activeTasks, setActiveTasks }) {
   const navigate = useNavigate();
   const { scrollY } = useScroll();
 
-  const headerBgColor = useTransform(scrollY, [0, 200], ['rgba(9, 9, 11, 0)', 'rgba(9, 9, 11, 0.4)']);
-  const headerBlurFilter = useTransform(scrollY, [0, 200], ['blur(0px)', 'blur(8px)']);
-  const heroScale = useTransform(scrollY, [0, 500], [1, 1.1]);
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0.3]);
-
   useEffect(() => {
     if (user) {
       fetchRecipes();
@@ -516,18 +511,8 @@ function Home({ activeTasks, setActiveTasks }) {
 
       {/* Cinematic Navbar */}
       <header
-        className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between transition-colors duration-500"
+        className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between bg-background/40 backdrop-blur-md border-b border-white/5"
       >
-        {/* Gradient Blur Background Layer - Extended Height */}
-        <motion.div
-          style={{
-            backgroundColor: headerBgColor,
-            backdropFilter: headerBlurFilter,
-            WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
-            maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)'
-          }}
-          className="absolute top-0 left-0 right-0 h-32 -z-10 pointer-events-none"
-        />
         <div className="flex items-center gap-3">
           <div className="bg-primary/20 backdrop-blur-md border border-primary/50 text-primary p-2 rounded-xl">
             <ChefHat size={24} />
@@ -830,12 +815,10 @@ function Home({ activeTasks, setActiveTasks }) {
       <BackgroundTaskBar />
 
       <main className="relative min-h-screen">
-        {/* HERO SECTION - Single Featured Item Style */}
-        {/* Only show Hero content if NOT searching */}
         {!searchQuery && (
-          <div className="relative w-full h-[85dvh] md:h-[95dvh] overflow-hidden">
+          <div className="relative w-full h-[70dvh] md:h-[80dvh] overflow-hidden">
             {/* Background */}
-            <motion.div style={{ scale: heroScale, opacity: heroOpacity }} className="absolute inset-0">
+            <div className="absolute inset-0">
               {heroRecipe?.image_url ? (
                 <img
                   src={heroRecipe.image_url}
@@ -850,7 +833,7 @@ function Home({ activeTasks, setActiveTasks }) {
               {/* Cinematic Vignettes */}
               <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-black/60" />
               <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
-            </motion.div>
+            </div>
 
             {/* Hero Content - Use pointer-events-none to prevent blocking the RecipeList below it */}
             <div className="absolute bottom-0 left-0 max-w-4xl p-6 md:p-16 z-30 flex flex-col items-start gap-6 pb-40 md:pb-56 pointer-events-none">
@@ -918,7 +901,7 @@ function Home({ activeTasks, setActiveTasks }) {
 
         {/* Content Area - Floating above hero bottom */}
         {/* If searching, normalize top margin. If NOT searching, use negative margin to float over hero */}
-        <div className={`relative z-20 space-y-12 pb-24 bg-gradient-to-b from-transparent to-background ${searchQuery ? 'pt-32' : '-mt-32 md:-mt-48'}`}>
+        <div className={`relative z-20 space-y-12 pb-24 ${searchQuery ? 'pt-32' : 'pt-12'}`}>
           <RecipeList
             recipes={displayRecipes}
             isEmptyState={isEmptyState}
