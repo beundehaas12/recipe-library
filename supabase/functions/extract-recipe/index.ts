@@ -87,7 +87,7 @@ serve(async (req) => {
         const userContent = type === 'image'
             ? [
                 { type: "text", text: "Extract recipe as JSON." },
-                { type: "image_url", image_url: { url: signedUrl, detail: "low" } }
+                { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
             ]
             : `Extract recipe as JSON from:\n\n${textContent}`
 
