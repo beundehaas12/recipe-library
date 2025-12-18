@@ -235,7 +235,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                     {/* Left Column: Stats & Ingredients */}
                     <div className="space-y-6">
                         {/* Stats Card */}
-                        <div className="bg-zinc-900/30 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all border border-white/5">
+                        <div className="bg-zinc-900/30 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all">
                             <div
                                 className="flex items-center justify-between cursor-pointer group/stat"
                                 onClick={() => toggleSection('about')}
@@ -685,7 +685,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                             <p className="text-xs text-white/30 uppercase tracking-widest font-bold">Volledige OCR door Grok 4</p>
                                         </div>
                                     </div>
-                                    <div className="bg-zinc-900/30 backdrop-blur-md rounded-2xl p-8 border border-white/5 shadow-2xl relative overflow-hidden group/ocr">
+                                    <div className="bg-zinc-900/30 backdrop-blur-md rounded-2xl p-8 shadow-2xl relative overflow-hidden group/ocr">
                                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/ocr:opacity-30 transition-opacity">
                                             <FileText size={120} />
                                         </div>
