@@ -786,7 +786,6 @@ function Home({ activeTasks, setActiveTasks }) {
         onChange={handleFileChange}
         className="hidden"
         accept="image/*"
-        capture="environment"
       />
 
 
