@@ -235,7 +235,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                     {/* Left Column: Stats & Ingredients */}
                     <div className="space-y-6">
                         {/* Stats Card */}
-                        <div className="glass-card !border-0 rounded-[var(--radius)] p-6 shadow-xl transition-all">
+                        <div className="bg-zinc-900/30 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all border border-white/5">
                             <div
                                 className="flex items-center justify-between cursor-pointer group/stat"
                                 onClick={() => toggleSection('about')}
@@ -260,14 +260,14 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                     >
                                         <div className="pt-6 space-y-6">
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-2">
+                                                <div className="bg-white/[0.03] rounded-2xl p-4 border border-white/5 space-y-2">
                                                     <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                                                         <Clock size={14} className="text-muted-foreground/50" />
                                                         {t.prepTime}
                                                     </div>
                                                     <div className="text-white font-bold text-lg">{recipe.prep_time || '-'}</div>
                                                 </div>
-                                                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-2">
+                                                <div className="bg-white/[0.03] rounded-2xl p-4 border border-white/5 space-y-2">
                                                     <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                                                         <Clock size={14} className="text-muted-foreground/50" />
                                                         {t.cookTime}
@@ -410,7 +410,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         >
                                             <div className="flex flex-wrap gap-2 pt-6">
                                                 {recipe.ai_tags.map((tag, idx) => (
-                                                    <span key={idx} className="px-3 py-1.5 glass-card !bg-white/5 !backdrop-blur-none text-white/70 text-xs font-semibold rounded-lg hover:bg-primary/20 hover:text-primary transition-all cursor-default border-white/10">
+                                                    <span key={idx} className="px-3 py-1.5 bg-white/[0.03] text-white/70 text-xs font-semibold rounded-lg hover:bg-primary/20 hover:text-primary transition-all cursor-default border border-white/10">
                                                         {tag}
                                                     </span>
                                                 ))}
@@ -467,15 +467,15 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                 {/* Stats Grid */}
                                                 {recipe.extraction_history.ai_used && recipe.extraction_history.tokens && (
                                                     <div className="grid grid-cols-3 gap-3">
-                                                        <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
                                                             <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Tokens</div>
                                                             <div className="text-white font-bold">{recipe.extraction_history.tokens.total?.toLocaleString()}</div>
                                                         </div>
-                                                        <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
                                                             <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Cost</div>
                                                             <div className="text-white font-bold">€{recipe.extraction_history.estimated_cost_eur?.toFixed(4)}</div>
                                                         </div>
-                                                        <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
                                                             <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Time</div>
                                                             <div className="text-white font-bold">{(recipe.extraction_history.processing_time_ms / 1000).toFixed(1)}s</div>
                                                         </div>
@@ -484,7 +484,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
                                                 {/* Processing Time (for schema-only) */}
                                                 {!recipe.extraction_history.ai_used && recipe.extraction_history.processing_time_ms && (
-                                                    <div className="bg-white/5 rounded-xl p-3 border border-white/5 inline-block">
+                                                    <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5 inline-block">
                                                         <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Processing Time</div>
                                                         <div className="text-white font-bold">{recipe.extraction_history.processing_time_ms}ms</div>
                                                     </div>
@@ -685,7 +685,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                             <p className="text-xs text-white/30 uppercase tracking-widest font-bold">Volledige OCR door Grok 4</p>
                                         </div>
                                     </div>
-                                    <div className="glass-card !bg-black/40 rounded-2xl p-8 border border-white/5 shadow-2xl relative overflow-hidden group/ocr">
+                                    <div className="bg-zinc-900/30 backdrop-blur-md rounded-2xl p-8 border border-white/5 shadow-2xl relative overflow-hidden group/ocr">
                                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/ocr:opacity-30 transition-opacity">
                                             <FileText size={120} />
                                         </div>
@@ -708,7 +708,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                             <p className="text-xs text-white/30 uppercase tracking-widest font-bold">Logische stappen door Grok 4.1</p>
                                         </div>
                                     </div>
-                                    <div className="glass-card !bg-primary/5 rounded-2xl p-8 border border-primary/10 shadow-lg relative overflow-hidden group/reasoning">
+                                    <div className="bg-primary/5 backdrop-blur-md rounded-2xl p-8 border border-primary/10 shadow-lg relative overflow-hidden group/reasoning">
                                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover/reasoning:opacity-10 transition-opacity">
                                             <Info size={120} />
                                         </div>
