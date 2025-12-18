@@ -1097,77 +1097,93 @@ function AuthenticatedApp() {
     if (activeTasks.length === 0) return null;
 
     return (
-      <div className="fixed bottom-24 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
+      <>
+        {/* Mobile Backdrop Blur */}
         <AnimatePresence>
-          {activeTasks.map((task) => (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, x: 50, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.9 }}
-              className={`pointer-events-auto flex items-center gap-4 bg-[#18181b]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl min-w-[300px] max-w-sm ${task.status === 'error' ? 'border-red-500/30' :
-                task.status === 'done' ? 'border-primary/30' : ''
-                }`}
-            >
-              <div className="relative">
-                {task.status === 'processing' && (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="text-primary"
-                  >
-                    <Loader2 size={24} />
-                  </motion.div>
-                )}
-                {task.status === 'done' && (
-                  <div className="text-primary">
-                    <CheckCircle2 size={24} />
-                  </div>
-                )}
-                {task.status === 'error' && (
-                  <div className="text-red-500">
-                    <AlertCircle size={24} />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-white/40 uppercase tracking-widest font-black mb-0.5">
-                  {task.type === 'image' ? 'Beeld Analyse' : 'URL Analyse'}
-                </p>
-                <p className="text-white font-bold truncate text-sm">
-                  {task.name}
-                </p>
-                {task.status === 'error' && (
-                  <p className="text-[10px] text-red-400 mt-1 line-clamp-1">{task.error}</p>
-                )}
-              </div>
-
-              {task.status === 'done' && task.resultId && (
-                <button
-                  onClick={() => {
-                    navigate(`/recipe/${task.resultId}`);
-                    setActiveTasks(prev => prev.filter(t => t.id !== task.id));
-                  }}
-                  className="bg-primary/20 hover:bg-primary/30 text-primary p-2 rounded-xl transition-colors"
-                  title="Bekijk recept"
-                >
-                  <ArrowRight size={18} />
-                </button>
-              )}
-
-              {task.status !== 'processing' && (
-                <button
-                  onClick={() => setActiveTasks(prev => prev.filter(t => t.id !== task.id))}
-                  className="text-white/20 hover:text-white/60 p-1"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </motion.div>
-          ))}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-md md:hidden pointer-events-auto"
+          />
         </AnimatePresence>
-      </div>
+
+        <div className="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 z-[100] flex items-center justify-center md:items-end md:justify-end p-6 pointer-events-none">
+          <div className="flex flex-col gap-3 w-full max-w-sm pointer-events-none">
+            <AnimatePresence>
+              {activeTasks.map((task) => (
+                <motion.div
+                  key={task.id}
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, x: 20 }}
+                  className={`pointer-events-auto flex items-center gap-4 bg-[#18181b]/95 backdrop-blur-2xl border border-white/10 rounded-full p-2 pl-4 pr-3 shadow-2xl w-full ${task.status === 'error' ? 'border-red-500/30' :
+                    task.status === 'done' ? 'border-primary/30' : ''
+                    }`}
+                >
+                  <div className="relative flex-shrink-0">
+                    {task.status === 'processing' && (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="text-primary"
+                      >
+                        <Loader2 size={24} />
+                      </motion.div>
+                    )}
+                    {task.status === 'done' && (
+                      <div className="text-primary bg-primary/10 p-2 rounded-full">
+                        <CheckCircle2 size={18} />
+                      </div>
+                    )}
+                    {task.status === 'error' && (
+                      <div className="text-red-500 bg-red-500/10 p-2 rounded-full">
+                        <AlertCircle size={18} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-white font-bold truncate text-sm">
+                      {task.status === 'processing'
+                        ? (task.type === 'image' ? 'Recept wordt geanalyseerd...' : 'URL wordt onderzocht...')
+                        : task.status === 'done' ? 'Recept is klaar!' : 'Er ging iets mis'}
+                    </p>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest font-black truncate">
+                      {task.name}
+                    </p>
+                    {task.status === 'error' && (
+                      <p className="text-[10px] text-red-400 mt-0.5 line-clamp-1">{task.error}</p>
+                    )}
+                  </div>
+
+                  {task.status === 'done' && task.resultId && (
+                    <button
+                      onClick={() => {
+                        navigate(`/recipe/${task.resultId}`);
+                        setActiveTasks(prev => prev.filter(t => t.id !== task.id));
+                      }}
+                      className="bg-primary hover:bg-primary/90 text-black p-2 rounded-full transition-all active:scale-90 flex items-center gap-2 px-4 shadow-lg shadow-primary/20"
+                    >
+                      <span className="text-[10px] font-black uppercase tracking-wider">Bekijk</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  )}
+
+                  {task.status !== 'processing' && (
+                    <button
+                      onClick={() => setActiveTasks(prev => prev.filter(t => t.id !== task.id))}
+                      className="text-white/20 hover:text-white/60 p-2 hover:bg-white/5 rounded-full transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+      </>
     );
   };
 
