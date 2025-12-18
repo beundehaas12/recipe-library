@@ -354,13 +354,14 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                             {/* AI Tags - Consolidated here */}
                                             {recipe.ai_tags && recipe.ai_tags.length > 0 && !isEditing && (
                                                 <div className="pt-4 border-t border-white/5">
-                                                    <span className="text-[10px] text-white/40 uppercase font-bold tracking-wider block mb-2">{t.aiTags || "AI Tags"}</span>
                                                     <div className="flex flex-wrap gap-2">
-                                                        {recipe.ai_tags.map((tag, idx) => (
-                                                            <span key={idx} className="px-3 py-1.5 bg-white/[0.03] text-white/70 text-[10px] font-semibold rounded-lg hover:bg-primary/20 hover:text-primary transition-all cursor-default border border-white/10">
-                                                                {tag}
-                                                            </span>
-                                                        ))}
+                                                        {recipe.ai_tags
+                                                            .filter(tag => tag !== '🤖 grok-reviewed')
+                                                            .map((tag, idx) => (
+                                                                <span key={idx} className="px-3 py-1.5 bg-white/[0.03] text-white/70 text-[10px] font-semibold rounded-lg hover:bg-primary/20 hover:text-primary transition-all cursor-default border border-white/10">
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
                                                     </div>
                                                 </div>
                                             )}
@@ -413,12 +414,11 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                                 ...recipe.extraction_history,
                                                                 reviews: [...(recipe.extraction_history.reviews || []), reviewEntry]
                                                             };
-
                                                             // Update via onUpdate callback with corrected data and updated history
                                                             onUpdate({
                                                                 ...correctedRecipe,
                                                                 extraction_history: updatedHistory,
-                                                                ai_tags: ['🤖 grok-reviewed', ...(recipe.ai_tags || []).filter(t => t !== '📊 schema' && t !== '🤖 grok-reviewed')]
+                                                                ai_tags: (recipe.ai_tags || []).filter(t => t !== '📊 schema' && t !== '🤖 grok-reviewed')
                                                             });
 
                                                             // Successfully updated
