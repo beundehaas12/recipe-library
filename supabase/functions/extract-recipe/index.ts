@@ -51,7 +51,13 @@ CRITICAL RULES:
 5. If no unit exists (e.g. "2 eggs"), set unit to null
 6. servings must be a number
 7. If the content is NOT a recipe or is unreadable: return {"error": "Not a recipe"}
-8. Output ONLY valid JSON - no markdown code blocks, no extra text, no explanations`
+8. Output ONLY valid JSON - no markdown code blocks, no extra text, no explanations
+
+TIME EXTRACTION (IMPORTANT):
+- Look carefully for prep_time/cook_time in the image (often shown as icons with clock, or labels like "Bereidingstijd", "Voorbereiding", "Prep Time", "Kooktijd", etc.)
+- Common locations: top of recipe, near title, in a sidebar, or as icons
+- Format times as human-readable strings: "15 min", "1 uur", "1h 30min", "45 minuten"
+- If times are not visible, estimate based on the recipe complexity and ingredients`
 
 // CORS headers for browser requests
 const corsHeaders = {
