@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2, FileText } from 'lucide-react';
+import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2, FileText, Image, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
 import { reviewRecipeWithAI } from '../lib/xai';
@@ -337,15 +337,37 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                 </div>
                                             </div>
 
-                                            {/* Source Info */}
-                                            {(recipe.author || recipe.cookbook_name || recipe.source_url) && (
+                                            {/* Source Info - Dynamic for Website vs Photo */}
+                                            {(recipe.source_url || recipe.original_image_url || recipe.author || recipe.cookbook_name) && (
                                                 <div className="pt-4 border-t border-white/5">
                                                     <span className="text-[10px] text-white/40 uppercase font-bold tracking-wider block mb-2">{t.source || "Bron"}</span>
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-white font-medium text-sm">{recipe.author || recipe.cookbook_name || "Onbekend"}</span>
-                                                        {recipe.source_url && (
-                                                            <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-white/10">
-                                                                Open link <ExternalLink size={12} />
+                                                        <div className="flex flex-col">
+                                                            <span className="text-white font-medium text-sm">
+                                                                {recipe.author || recipe.cookbook_name || (recipe.original_image_url ? "Foto" : "Website URL")}
+                                                            </span>
+                                                            {recipe.source_type === 'image' || recipe.original_image_url ? (
+                                                                <span className="text-[10px] text-white/30 uppercase font-bold tracking-tight">foto</span>
+                                                            ) : (recipe.source_url && (
+                                                                <span className="text-[10px] text-white/30 uppercase font-bold tracking-tight">website URL</span>
+                                                            ))}
+                                                        </div>
+
+                                                        {recipe.original_image_url ? (
+                                                            <button
+                                                                onClick={() => setShowSourceModal(true)}
+                                                                className="flex items-center gap-2 text-white/60 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-white/10"
+                                                            >
+                                                                Open foto <Image size={12} />
+                                                            </button>
+                                                        ) : recipe.source_url && (
+                                                            <a
+                                                                href={recipe.source_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 text-white/60 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-white/10"
+                                                            >
+                                                                Open <ExternalLink size={12} />
                                                             </a>
                                                         )}
                                                     </div>
@@ -744,6 +766,57 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                     </div>
                 </div>
             </div>
-        </div >
+            {/* Source Photo Modal */}
+            <AnimatePresence>
+                {showSourceModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-12">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowSourceModal(false)}
+                            className="absolute inset-0 bg-black/95 backdrop-blur-2xl"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative w-full h-full max-w-5xl bg-zinc-900/50 rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex flex-col pt-safe"
+                        >
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-black/20 backdrop-blur-md">
+                                <div className="space-y-1">
+                                    <h2 className="text-xl font-black text-white flex items-center gap-3">
+                                        <Image size={24} className="text-primary" />
+                                        Originele Bronfoto
+                                    </h2>
+                                    <p className="text-xs text-white/40 font-bold uppercase tracking-widest">Gescand op {new Date(recipe.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowSourceModal(false)}
+                                    className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors border border-white/10"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Image Container */}
+                            <div className="flex-1 overflow-auto p-4 md:p-8 flex items-center justify-center bg-black/40">
+                                <img
+                                    src={recipe.original_image_url}
+                                    alt="Bron Recept"
+                                    className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                                />
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="p-6 border-t border-white/5 bg-black/20 backdrop-blur-md flex justify-center">
+                                <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em] italic">AI Analyse Bronmateriaal</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }

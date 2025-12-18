@@ -181,13 +181,13 @@ function Home({ activeTasks, setActiveTasks }) {
         author,
         cookbook_name,
         isbn,
-        source_url: sourceInfo.url || null,
+        source_url: sourceInfo.url || (sourceInfo.type === 'image' ? sourceInfo.original_image_url : null),
         source_type: sourceInfo.type || 'manual',
         source_language: source_language || 'en',
         ai_tags: ai_tags || [],
         extraction_history: extractionHistory,
         image_url: null,
-        original_image_url: null,
+        original_image_url: sourceInfo.original_image_url || null,
       };
 
       console.log('Inserting recipe data:', insertData);
@@ -253,10 +253,11 @@ function Home({ activeTasks, setActiveTasks }) {
     };
 
     try {
-      console.log('Uploading image to Supabase Storage...');
-      const { path, signedUrl } = await uploadTempImage(file, user.id);
+      console.log('Uploading source image to Supabase Storage...');
+      const { path, publicUrl, signedUrl } = await uploadSourceImage(file, user.id);
       imagePath = path;
-      extractionHistory.notes.push('Image uploaded to Supabase Storage');
+      extractionHistory.notes.push(`Image uploaded to Supabase Storage (permanent): ${path}`);
+      extractionHistory.source_url = publicUrl;
 
       console.log('Calling xAI via Edge Function...');
       const { recipe, usage, raw_response, raw_ocr, reasoning } = await extractRecipeFromImage(signedUrl);
@@ -269,12 +270,10 @@ function Home({ activeTasks, setActiveTasks }) {
       extractionHistory.reasoning = reasoning;
       extractionHistory.notes.push('AI extracted recipe from image (OCR + Reasoning + JSON)');
 
-      console.log('DEBUG: Keeping temp image for inspection:', imagePath);
-      extractionHistory.notes.push(`DEBUG: Image kept at ${imagePath}`);
       extractionHistory.processing_time_ms = Date.now() - startTime;
       recipe.ai_tags = ['🤖 grok', ...(recipe.ai_tags || [])];
 
-      await saveRecipeToDb(recipe, { type: 'image' }, extractionHistory, taskId);
+      await saveRecipeToDb(recipe, { type: 'image', original_image_url: publicUrl }, extractionHistory, taskId);
 
     } catch (error) {
       console.error('Error processing recipe:', error);

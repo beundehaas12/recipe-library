@@ -211,6 +211,50 @@ export async function uploadTempImage(file, userId) {
 }
 
 /**
+ * Upload image to source storage permanently.
+ * Used when a recipe is added via photo to keep the source for reference.
+ * 
+ * @param {File} file - Image file to upload
+ * @param {string} userId - User ID for folder organization
+ * @returns {Promise<{path: string, publicUrl: string, signedUrl: string}>}
+ */
+export async function uploadSourceImage(file, userId) {
+    // Process image for optimal quality
+    const jpegBlob = await processImageForOcr(file);
+
+    // Create unique filename in user's sources folder (no temp prefix)
+    const baseName = file.name.replace(/\.[^/.]+$/, '');
+    const filename = `sources/${userId}/${Date.now()}_${baseName.replace(/[^a-zA-Z0-9.-]/g, '_')}.jpg`;
+
+    console.log(`Uploading source image: ${filename}`);
+
+    const { error: uploadError } = await supabase.storage
+        .from('recipe-images')
+        .upload(filename, jpegBlob, {
+            contentType: 'image/jpeg',
+            upsert: false
+        });
+
+    if (uploadError) throw new Error(`Source upload failed: ${uploadError.message}`);
+
+    // Get Public URL
+    const { data: { publicUrl } } = supabase.storage
+        .from('recipe-images')
+        .getPublicUrl(filename);
+
+    // Also generate a signed URL for immediate use if needed (2min expiry)
+    const { data: signedData, error: signedError } = await supabase.storage
+        .from('recipe-images')
+        .createSignedUrl(filename, 120);
+
+    return {
+        path: filename,
+        publicUrl,
+        signedUrl: signedData?.signedUrl || publicUrl
+    };
+}
+
+/**
  * Delete a temporary image from storage.
  * Should be called after successful recipe processing.
  * 
@@ -227,4 +271,3 @@ export async function deleteTempImage(path) {
         console.warn('Failed to delete temp image:', error);
     }
 }
-
