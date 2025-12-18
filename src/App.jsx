@@ -254,10 +254,10 @@ function Home() {
         (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
       extractionHistory.notes.push('AI extracted recipe from image');
 
-      // Step 3: Delete temp image (only on success)
-      console.log('Deleting temp image...');
-      await deleteTempImage(imagePath);
-      extractionHistory.notes.push('Temporary image deleted');
+      // Step 3: Skip deletion for debugging - images stay in storage
+      console.log('DEBUG: Keeping temp image for inspection:', imagePath);
+      // await deleteTempImage(imagePath);
+      extractionHistory.notes.push(`DEBUG: Image kept at ${imagePath}`);
 
       // Calculate processing time
       extractionHistory.processing_time_ms = Date.now() - startTime;
