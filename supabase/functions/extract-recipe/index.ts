@@ -60,7 +60,7 @@ serve(async (req) => {
             : `Voer OCR uit en extraheer het recept als JSON uit:\n\n${textContent}`
 
         const response = await xai.chat.completions.create({
-            model: "grok-4-fast-reasoning",
+            model: "grok-4-1-fast-reasoning",
             messages: [
                 { role: "system", content: FIXED_SYSTEM_PROMPT },
                 { role: "user", content: userContent }
