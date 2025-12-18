@@ -20,29 +20,7 @@ import OpenAI from "https://esm.sh/openai@4"
 // After the first call, subsequent calls only pay ~25% of the input token cost.
 // DO NOT modify this prompt frequently - changes invalidate the cache.
 // ==============================================================================
-const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie expert. Analyseer afbeeldingen en tekst van recepten en retourneer de data als JSON.
-
-Output formaat:
-{
-  "title": "string",
-  "description": "string (max 200 tekens)",
-  "ingredients": [{"amount": number|null, "unit": "string|null", "item": "string"}],
-  "instructions": ["stap 1", "stap 2", ...],
-  "servings": number,
-  "prep_time": "string",
-  "cook_time": "string",
-  "difficulty": "Easy|Medium|Hard",
-  "cuisine": "string",
-  "author": "string|null",
-  "cookbook_name": "string|null",
-  "source_language": "nl|en|de|fr|es|it",
-  "ai_tags": ["Nederlandse zoektags"]
-}
-
-Regels:
-- Lees ALLE tekst nauwkeurig
-- Behoud originele taal
-- Output alleen JSON`
+const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie assistent. Analyseer recepten en retourneer de data als JSON.`
 
 // CORS headers for browser requests
 const corsHeaders = {
