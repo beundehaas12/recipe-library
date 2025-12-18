@@ -3,7 +3,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2, FileText, Image, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
-import { reviewRecipeWithAI } from '../lib/xai';
+import { reviewRecipeWithAI, reAnalyzeRecipeFromStoredImage } from '../lib/xai';
 
 // Language code to Dutch name mapping
 const languageNames = {
@@ -27,6 +27,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         history: false
     });
     const [isReviewing, setIsReviewing] = useState(false);
+    const [isReAnalyzing, setIsReAnalyzing] = useState(false);
     const [showSourceModal, setShowSourceModal] = useState(false);
 
     const toggleSection = (section) => {
@@ -122,6 +123,38 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     };
 
     const sourceLangName = languageNames[recipe.source_language] || recipe.source_language || t.languageUnknown;
+
+    const handleReAnalyze = async () => {
+        const imageSource = recipe.original_image_url || ((recipe.source_type === 'image' || recipe.source_url?.includes('/storage/v1/object/public/')) ? recipe.source_url : null);
+
+        if (!imageSource) {
+            alert("Dit recept heeft geen originele foto om opnieuw te analyseren.");
+            return;
+        }
+
+        setIsReAnalyzing(true);
+        try {
+            const { recipe: freshRecipe, usage } = await reAnalyzeRecipeFromStoredImage(imageSource);
+
+            await onUpdate({
+                ...freshRecipe,
+                extraction_history: {
+                    ...recipe.extraction_history,
+                    re_analyzed_at: new Date().toISOString(),
+                    re_analysis_tokens: usage.total_tokens
+                },
+                // Merge tags, ensuring they are unique
+                ai_tags: Array.from(new Set([...(freshRecipe.ai_tags || []), ...(recipe.ai_tags || [])]))
+            });
+
+            alert("Recept succesvol verbeterd met een nieuwe AI vision-scan!");
+        } catch (error) {
+            console.error("Re-analysis failed:", error);
+            alert("Er ging iets mis bij het opnieuw analyseren.");
+        } finally {
+            setIsReAnalyzing(false);
+        }
+    };
 
     return (
         <div className="bg-background min-h-screen pb-20 overflow-x-hidden scroll-smooth">
@@ -355,12 +388,25 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                         </div>
 
                                                         {recipe.original_image_url ? (
-                                                            <button
-                                                                onClick={() => setShowSourceModal(true)}
-                                                                className="flex items-center gap-2 text-white/60 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-white/10"
-                                                            >
-                                                                Open foto <Image size={12} />
-                                                            </button>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                <button
+                                                                    onClick={() => setShowSourceModal(true)}
+                                                                    className="flex items-center gap-2 text-white/60 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-white/10"
+                                                                >
+                                                                    Open foto <Image size={12} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={handleReAnalyze}
+                                                                    disabled={isReAnalyzing}
+                                                                    className="flex items-center gap-2 text-primary/80 text-xs font-bold hover:text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors border border-primary/20 bg-primary/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    {isReAnalyzing ? (
+                                                                        <>Verbeteren... <Loader2 size={12} className="animate-spin" /></>
+                                                                    ) : (
+                                                                        <>Verbeter met AI <Sparkles size={12} /></>
+                                                                    )}
+                                                                </button>
+                                                            </div>
                                                         ) : recipe.source_url && (
                                                             <a
                                                                 href={recipe.source_url}
