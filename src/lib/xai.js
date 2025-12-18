@@ -71,32 +71,35 @@ export async function extractRecipeFromText(textContent) {
 
 /**
  * Reviews and corrects existing recipe data using AI.
- * Useful for fixing issues with schema-parsed data.
+ * Compares the current structured data against the original source data.
  * 
  * @param {Object} recipeData - Current recipe data to review
+ * @param {string} sourceData - Original source text or OCR data
  * @returns {Promise<{recipe: Object, usage: {prompt_tokens: number, completion_tokens: number, total_tokens: number}}>}
- * @throws {Error} If review fails or Edge Function returns an error
  */
-export async function reviewRecipeWithAI(recipeData) {
+export async function reviewRecipeWithAI(recipeData, sourceData) {
     // Format the current recipe as text for AI review
-    const reviewPrompt = `REVIEW AND CORRECT THIS RECIPE DATA:
+    const reviewPrompt = `STAP 1: BRONVERGELIJKING
+Vergelijk de huidige gestructureerde data met de originele brongegevens (Source Data).
 
-Current data (may have parsing errors):
+Source Data (De Waarheid):
+${sourceData || 'Geen brongegevens beschikbaar.'}
+
+Huidige Data (Mogelijk incompleet of foutief):
 ${JSON.stringify(recipeData, null, 2)}
 
-YOU MAY IMPROVE:
-- Cooking time, prep time, servings (correct if obviously wrong)
-- Difficulty level, cuisine type
-- Separate kitchen tools from actual ingredients (e.g., "baking sheet" is a tool, not an ingredient)
-- Fix HTML artifacts or encoding issues (e.g., "&amp;" → "&")
-- Fix malformed numbers (e.g., "1/2 1/4" → "3/4")
+STAP 2: CORRECTIES
+Identificeer en corrigeer op basis van de Source Data:
+- Missende velden (bijv. bereidingstijden, porties, cuisine) die wel in de bron staan.
+- Verkeerd geparsde hoeveelheden of eenheden.
+- Verkeerde veldplaatsing (gereedschap bij ingrediënten, etc.).
+- Fix HTML artifacts (bijv. "&amp;") en malvormde getallen.
 
-YOU MUST PRESERVE EXACTLY (do NOT rewrite or rephrase):
-- The exact wording of descriptions
-- The exact wording of each ingredient (only fix formatting, not text)
-- The exact wording of each instruction step
+STAP 3: BEHOUD VAN TEKST
+Behoud de exacte bewoording van instructies en de namen van ingrediënten uit de brongegevens. Herschrijf niets, corrigeer alleen de structuur en metadata.
 
-Return the CORRECTED recipe in the standard JSON format.`;
+OUTPUT:
+Return de GECORRIGEERDE recept data in het standaard JSON formaat.`;
 
     const { data, error } = await supabase.functions.invoke('extract-recipe', {
         body: {

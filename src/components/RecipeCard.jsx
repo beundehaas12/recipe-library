@@ -568,7 +568,8 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                                     author: recipe.author
                                                                 };
 
-                                                                const { recipe: correctedRecipe, usage } = await reviewRecipeWithAI(originalData);
+                                                                const sourceData = recipe.extraction_history?.raw_response || '';
+                                                                const { recipe: correctedRecipe, usage } = await reviewRecipeWithAI(originalData, sourceData);
 
                                                                 // Track what was changed
                                                                 const changes = [];
