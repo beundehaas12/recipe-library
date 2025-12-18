@@ -5,16 +5,6 @@ import { translations as t } from '../lib/translations';
 import RecipeThumbnail from './RecipeThumbnail';
 
 export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQuery }) {
-    const scrollContainerRef = useRef(null);
-
-    const scroll = (direction) => {
-        if (scrollContainerRef.current) {
-            const { current } = scrollContainerRef;
-            const scrollAmount = direction === 'left' ? -current.offsetWidth : current.offsetWidth;
-            current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        }
-    };
-
     // No recipes yet state
     if (isEmptyState) {
         return (
@@ -52,11 +42,11 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
         );
     }
 
-    // Horizontal "Shelf" View
+    // Responsive Grid View
     return (
-        <div className="relative group/shelf py-12">
+        <div className="relative py-12">
             {/* Header - Aligned with Hero (px-6 md:px-16) */}
-            <div className="px-6 md:px-16 mb-6">
+            <div className="px-6 md:px-16 mb-10">
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
                         {t.myCookbook}
@@ -64,38 +54,18 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
                             {recipes.length}
                         </span>
                     </h2>
-
-                    {/* Desktop Scroll Controls */}
-                    <div className="hidden md:flex gap-2">
-                        <button
-                            onClick={() => scroll('left')}
-                            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 text-white backdrop-blur-md border border-white/10 transition-all flex items-center justify-center active:scale-90"
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
-                        <button
-                            onClick={() => scroll('right')}
-                            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 text-white backdrop-blur-md border border-white/10 transition-all flex items-center justify-center active:scale-90"
-                        >
-                            <ChevronRight size={20} />
-                        </button>
-                    </div>
                 </div>
             </div>
 
-            {/* Scroll Container - Aligned with Header via padding */}
-            <div
-                ref={scrollContainerRef}
-                className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory scrollbar-hide scroll-smooth px-6 md:px-16 scroll-px-6 md:scroll-px-16"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
+            {/* Grid Container - Aligned with Header via padding */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 px-6 md:px-16">
                 {recipes.map((recipe, index) => (
                     <motion.div
                         key={recipe.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.05, duration: 0.4 }}
-                        className="snap-start"
+                        transition={{ delay: index * 0.03, duration: 0.3 }}
+                        className="w-full"
                     >
                         <RecipeThumbnail recipe={recipe} t={t} />
                     </motion.div>

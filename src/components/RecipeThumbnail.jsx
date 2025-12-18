@@ -43,7 +43,7 @@ export default function RecipeThumbnail({ recipe, t }) {
     return (
         <Link
             to={`/recipe/${recipe.id}`}
-            className="block group relative w-48 md:w-64 flex-none active:scale-[0.98] transition-transform duration-200"
+            className="block group relative w-full active:scale-[0.98] transition-transform duration-200"
         >
             <motion.div
                 ref={ref}

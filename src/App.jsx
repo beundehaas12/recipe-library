@@ -407,84 +407,7 @@ function Home({ activeTasks, setActiveTasks }) {
     }
   };
 
-  // --- Background Tasks UI Component ---
-  const BackgroundTaskBar = () => {
-    if (activeTasks.length === 0) return null;
 
-    return (
-      <div className="fixed bottom-24 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
-        <AnimatePresence>
-          {activeTasks.map((task) => (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, x: 50, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.9 }}
-              className={`pointer-events-auto flex items-center gap-4 bg-[#18181b]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl min-w-[300px] max-w-sm ${task.status === 'error' ? 'border-red-500/30' :
-                task.status === 'done' ? 'border-primary/30' : ''
-                }`}
-            >
-              <div className="relative">
-                {task.status === 'processing' && (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="text-primary"
-                  >
-                    <Loader2 size={24} />
-                  </motion.div>
-                )}
-                {task.status === 'done' && (
-                  <div className="text-primary">
-                    <CheckCircle2 size={24} />
-                  </div>
-                )}
-                {task.status === 'error' && (
-                  <div className="text-red-500">
-                    <AlertCircle size={24} />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-white/40 uppercase tracking-widest font-black mb-0.5">
-                  {task.type === 'image' ? 'Beeld Analyse' : 'URL Analyse'}
-                </p>
-                <p className="text-white font-bold truncate text-sm">
-                  {task.name}
-                </p>
-                {task.status === 'error' && (
-                  <p className="text-[10px] text-red-400 mt-1 line-clamp-1">{task.error}</p>
-                )}
-              </div>
-
-              {task.status === 'done' && task.resultId && (
-                <button
-                  onClick={() => {
-                    navigate(`/recipe/${task.resultId}`);
-                    setActiveTasks(prev => prev.filter(t => t.id !== task.id));
-                  }}
-                  className="bg-primary/20 hover:bg-primary/30 text-primary p-2 rounded-xl transition-colors"
-                  title="Bekijk recept"
-                >
-                  <ArrowRight size={18} />
-                </button>
-              )}
-
-              {task.status !== 'processing' && (
-                <button
-                  onClick={() => setActiveTasks(prev => prev.filter(t => t.id !== task.id))}
-                  className="text-white/20 hover:text-white/60 p-1"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-    );
-  };
 
   // Display logic: Prioritize instant filter for immediate feedback
   // If DB search returns empty but instant filter has results, keep the instant results
@@ -517,36 +440,32 @@ function Home({ activeTasks, setActiveTasks }) {
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 selection:bg-primary selection:text-white" onClick={() => { setShowAddMenu(false); setShowProfileMenu(false); }}>
 
-      {/* Cinematic Navbar */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between transition-all duration-500 ${scrolled ? 'bg-background/80 backdrop-blur-xl border-b border-white/5 shadow-lg' : 'bg-transparent'
-          }`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/20 backdrop-blur-md border border-primary/50 text-primary p-2 rounded-xl">
-            <ChefHat size={24} />
+      {/* Cinematic Navbar - Transparent by default like Detail Page */}
+      <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <div className="bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full">
+            <ChefHat size={22} />
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden md:block">
             {t.appTitle}
           </h1>
         </div>
 
-        {/* Search Bar & Actions */}
-        <div className="flex items-center gap-4 flex-1 justify-end max-w-2xl">
+        <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto">
           {/* Search Input */}
           <div className="relative w-full max-w-md hidden md:block group">
-            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-hover:text-white transition-colors" />
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 group-hover:text-white transition-colors z-10" />
             <input
               type="text"
               placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="input-standard !rounded-full pl-10 h-11"
+              className="w-full bg-black/40 backdrop-blur-md border border-white/10 rounded-full pl-11 pr-4 h-11 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all shadow-xl"
             />
             {searchQuery && (
               <button
                 onClick={clearSearch}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors"
               >
                 <X size={16} />
               </button>
@@ -554,22 +473,22 @@ function Home({ activeTasks, setActiveTasks }) {
           </div>
 
           {/* Mobile Search Icon */}
-          {/* Mobile Search Icon */}
           <button
             onClick={() => setShowMobileSearch(true)}
-            className="md:hidden p-2 text-white hover:bg-white/10 rounded-full transition-colors"
+            className="md:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
           >
             <Search size={22} />
           </button>
 
           {/* Add Recipe */}
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
+          <div className="relative">
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setShowAddMenu(!showAddMenu);
                 setShowProfileMenu(false);
               }}
-              className="h-11 px-4 rounded-full bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-all flex items-center gap-2.5 whitespace-nowrap active:scale-95 group shadow-xl"
+              className="h-11 px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all flex items-center gap-3 whitespace-nowrap active:scale-95 group shadow-xl"
             >
               <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
                 <Plus size={14} className="text-primary" />
@@ -586,7 +505,8 @@ function Home({ activeTasks, setActiveTasks }) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.1 }}
-                  className="absolute top-full right-0 mt-2 w-56 bg-[#18181b] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1.5 z-50 ring-1 ring-black/50"
+                  className="absolute top-full right-0 mt-3 w-60 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-3xl overflow-hidden py-2 z-50"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     onClick={handleCameraClick}
@@ -620,14 +540,15 @@ function Home({ activeTasks, setActiveTasks }) {
             </AnimatePresence>
           </div>
 
-          {/* User Avatar & Dropdown */}
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
+          {/* User Profile */}
+          <div className="relative">
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setShowProfileMenu(!showProfileMenu);
                 setShowAddMenu(false);
               }}
-              className="h-11 w-11 shrink-0 rounded-full bg-card border border-white/10 flex items-center justify-center text-xs font-bold text-white shadow-xl hover:scale-105 hover:border-primary/50 transition-all overflow-hidden"
+              className="h-11 w-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all overflow-hidden shadow-xl"
             >
               {user?.user_metadata?.avatar_url ? (
                 <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
@@ -643,27 +564,25 @@ function Home({ activeTasks, setActiveTasks }) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.1 }}
-                  className="absolute top-full right-0 mt-2 w-48 bg-[#18181b] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1.5 z-50 ring-1 ring-black/50"
+                  className="absolute top-full right-0 mt-3 w-56 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-3xl overflow-hidden py-2 z-50"
+                  onClick={(e) => e.stopPropagation()}
                 >
+                  <div className="px-4 py-2 border-b border-white/5 mb-1">
+                    <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black">{t.signedInAs}</p>
+                    <p className="text-white font-bold truncate text-sm">{user.email}</p>
+                  </div>
                   <button
-                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-medium cursor-default"
+                    className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold"
                   >
-                    <Settings size={16} />
-                    <span>{t.settings}</span>
+                    <Settings size={18} />
+                    <span>{t.settings || "Instellingen"}</span>
                   </button>
                   <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        await signOut();
-                      } catch (error) {
-                        console.error('Logout error:', error);
-                      }
-                    }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-red-500/10 text-red-400 flex items-center gap-3 transition-colors text-sm font-medium"
+                    onClick={signOut}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-bold"
                   >
-                    <LogOut size={16} />
-                    <span>{t.logout}</span>
+                    <LogOut size={18} />
+                    <span>{t.signOut}</span>
                   </button>
                 </motion.div>
               )}
@@ -728,7 +647,137 @@ function Home({ activeTasks, setActiveTasks }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[70] bg-[#09090b] flex flex-col pt-safe"
+            className="fixed inset-0 z-[70] bg-[#000000] flex flex-col pt-safe"
+          >
+            <div className="flex items-center gap-4 px-6 py-4 border-b border-white/10 mt-safe-top glass-panel !border-none">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder={t.searchPlaceholder}
+                  className="input-standard !rounded-full pl-10 py-3"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setShowMobileSearch(false);
+                  if (!searchQuery) clearSearch();
+                }}
+                className="text-white font-medium px-2"
+              >
+                {t.cancel}
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {/* Mobile Search Results */}
+              {(instantFilteredRecipes || searchResults) && searchQuery && (
+                <div className="space-y-4 pb-20">
+                  {(instantFilteredRecipes || searchResults).length > 0 ? (
+                    (instantFilteredRecipes || searchResults).map(recipe => (
+                      <div
+                        key={recipe.id}
+                        onClick={() => {
+                          navigate(`/recipe/${recipe.id}`);
+                          setShowMobileSearch(false);
+                        }}
+                        className="flex items-center gap-4 p-3 glass-card rounded-[var(--radius-btn)] active:bg-white/10"
+                      >
+                        {recipe.image_url ? (
+                          <img src={recipe.image_url} alt={recipe.title} className="w-16 h-16 rounded-[var(--radius-btn)] object-cover" />
+                        ) : (
+                          <div className="w-16 h-16 rounded-[var(--radius-btn)] bg-white/10 flex items-center justify-center">
+                            <ChefHat size={24} className="text-white/20" />
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-bold text-white line-clamp-1">{recipe.title}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            {recipe.cuisine && <span className="text-xs text-muted-foreground uppercase">{recipe.cuisine}</span>}
+                            {recipe.cook_time && <span className="text-xs text-muted-foreground">• {recipe.cook_time}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-10">
+                      {t.noResults} <span className="text-primary">"{searchQuery}"</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* URL Input Modal */}
+      <AnimatePresence>
+        {showUrlInput && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setShowUrlInput(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="glass-panel w-full max-w-md p-8 rounded-[var(--radius)] shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-2xl font-bold text-white mb-2">{t.pasteUrl}</h3>
+              <p className="text-muted-foreground text-sm mb-6">Plak een link van je favoriete receptensite.</p>
+
+              <input
+                type="url"
+                placeholder="https://example.com/lekker-recept"
+                className="input-standard mb-6 !py-4 text-lg"
+                value={urlInputValue}
+                onChange={(e) => setUrlInputValue(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUrlInput(false)}
+                  className="btn-secondary flex-1"
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  onClick={() => processUrl(urlInputValue)}
+                  disabled={!urlInputValue}
+                  className="btn-primary flex-1 !text-black"
+                >
+                  {t.analyzeUrl}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Search Overlay */}
+      <AnimatePresence>
+        {showMobileSearch && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[70] bg-[#000000] flex flex-col pt-safe"
           >
             <div className="flex items-center gap-4 px-6 py-4 border-b border-white/10 mt-safe-top glass-panel !border-none">
               <div className="relative flex-1">
@@ -803,7 +852,6 @@ function Home({ activeTasks, setActiveTasks }) {
         )}
       </AnimatePresence>
 
-      {/* Hidden File Inputs */}
       <input
         type="file"
         ref={fileInputRef}
@@ -820,8 +868,6 @@ function Home({ activeTasks, setActiveTasks }) {
         capture="environment"
       />
 
-      {/* Background Tasks Progress Bar */}
-      <BackgroundTaskBar />
 
       <main className="relative min-h-screen">
         {!searchQuery && (
@@ -839,7 +885,7 @@ function Home({ activeTasks, setActiveTasks }) {
                 />
               ) : (
                 // Default Gradient if no recipe or image
-                <div className="w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-[#09090b] to-[#09090b]" />
+                <div className="w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-[#000000] to-[#000000]" />
               )}
 
               {/* Cinematic Vignettes */}
@@ -849,7 +895,7 @@ function Home({ activeTasks, setActiveTasks }) {
 
             {/* Hero Content - Anchored to bottom like Detail Page */}
             <div className="absolute bottom-0 left-0 right-0 z-20 pb-12 pointer-events-none">
-              <div className="max-w-7xl mx-auto px-6 md:px-12 w-full flex flex-col items-start gap-4">
+              <div className="px-6 md:px-16 w-full flex flex-col items-start gap-4">
                 {heroRecipe ? (
                   <>
                     <motion.div
@@ -923,7 +969,7 @@ function Home({ activeTasks, setActiveTasks }) {
           />
         </div>
       </main>
-    </div>
+    </div >
   );
 }
 
@@ -1093,15 +1139,15 @@ function AuthenticatedApp() {
     if (activeTasks.length === 0) return null;
 
     return (
-      <div className="fixed bottom-28 left-0 right-0 md:left-auto md:right-6 md:bottom-24 z-[100] flex flex-col items-center md:items-end px-6 gap-3 pointer-events-none">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3 pointer-events-none w-full max-w-md px-6">
         <AnimatePresence>
           {activeTasks.map((task) => (
             <motion.div
               key={task.id}
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, x: 20 }}
-              className={`pointer-events-auto flex items-center gap-4 bg-[#1c1c1f] border border-white/10 rounded-full p-2 pl-4 pr-3 shadow-2xl w-full max-w-sm ${task.status === 'error' ? 'border-red-500/30' :
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={`pointer-events-auto flex items-center gap-4 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-full p-2 pl-4 pr-3 shadow-2xl w-full ${task.status === 'error' ? 'border-red-500/30' :
                 task.status === 'done' ? 'border-primary/30' : ''
                 }`}
             >
@@ -1112,17 +1158,17 @@ function AuthenticatedApp() {
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                     className="text-primary"
                   >
-                    <Loader2 size={24} />
+                    <Loader2 size={22} />
                   </motion.div>
                 )}
                 {task.status === 'done' && (
                   <div className="text-primary bg-primary/10 p-2 rounded-full">
-                    <CheckCircle2 size={18} />
+                    <CheckCircle2 size={16} />
                   </div>
                 )}
                 {task.status === 'error' && (
                   <div className="text-red-500 bg-red-500/10 p-2 rounded-full">
-                    <AlertCircle size={18} />
+                    <AlertCircle size={16} />
                   </div>
                 )}
               </div>
