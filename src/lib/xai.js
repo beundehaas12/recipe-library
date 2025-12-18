@@ -14,24 +14,32 @@
 import { supabase } from './supabase';
 
 /**
- * Extracts recipe data from an image via signed URL.
- * The image should be uploaded to Supabase Storage first.
- * 
- * @param {string} signedUrl - Signed URL to the image in Supabase Storage
- * @returns {Promise<{recipe: Object, usage: {prompt_tokens: number, completion_tokens: number, total_tokens: number}}>}
- * @throws {Error} If extraction fails or Edge Function returns an error
+ * @typedef {Object} TokenUsage
+ * @property {number} prompt_tokens - Tokens used in the prompt
+ * @property {number} completion_tokens - Tokens used in the AI response
+ * @property {number} total_tokens - Total tokens consumed
  */
-export async function extractRecipeFromImage(signedUrl) {
-    const { data, error } = await supabase.functions.invoke('extract-recipe', {
-        body: {
-            type: 'image',
-            signedUrl
-        }
-    });
+
+/**
+ * @typedef {Object} ExtractionResult
+ * @property {Object} recipe - The extracted or corrected recipe data
+ * @property {TokenUsage} usage - AI token usage statistics
+ */
+
+/**
+ * Common handler for invoking Supabase Edge Functions with standardized error handling.
+ * 
+ * @param {string} functionName - Name of the edge function to invoke
+ * @param {Object} body - Request payload
+ * @returns {Promise<ExtractionResult>}
+ * @throws {Error} Standardized error with descriptive message
+ */
+async function invokeEdgeFunction(functionName, body) {
+    const { data, error } = await supabase.functions.invoke(functionName, { body });
 
     if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Failed to extract recipe from image');
+        console.error(`Edge function error [${functionName}]:`, error);
+        throw new Error(error.message || `Failed to invoke ${functionName}`);
     }
 
     if (data.error) {
@@ -39,6 +47,20 @@ export async function extractRecipeFromImage(signedUrl) {
     }
 
     return data;
+}
+
+/**
+ * Extracts recipe data from an image via signed URL.
+ * The image should be uploaded to Supabase Storage first.
+ * 
+ * @param {string} signedUrl - Signed URL to the image in Supabase Storage
+ * @returns {Promise<ExtractionResult>}
+ */
+export async function extractRecipeFromImage(signedUrl) {
+    return invokeEdgeFunction('extract-recipe', {
+        type: 'image',
+        signedUrl
+    });
 }
 
 /**
@@ -46,76 +68,60 @@ export async function extractRecipeFromImage(signedUrl) {
  * Used for URL-based recipe extraction.
  * 
  * @param {string} textContent - Raw text or HTML content containing the recipe
- * @returns {Promise<{recipe: Object, usage: {prompt_tokens: number, completion_tokens: number, total_tokens: number}}>}
- * @throws {Error} If extraction fails or Edge Function returns an error
+ * @returns {Promise<ExtractionResult>}
  */
 export async function extractRecipeFromText(textContent) {
-    const { data, error } = await supabase.functions.invoke('extract-recipe', {
-        body: {
-            type: 'text',
-            textContent
-        }
+    return invokeEdgeFunction('extract-recipe', {
+        type: 'text',
+        textContent
     });
-
-    if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Failed to extract recipe from text');
-    }
-
-    if (data.error) {
-        throw new Error(data.error);
-    }
-
-    return data;
 }
 
 /**
  * Reviews and corrects existing recipe data using AI.
- * Compares the current structured data against the original source data.
+ * Compares current structured data against original source data via a dedicated AI protocol.
  * 
  * @param {Object} recipeData - Current recipe data to review
  * @param {string} sourceData - Original source text or OCR data
- * @returns {Promise<{recipe: Object, usage: {prompt_tokens: number, completion_tokens: number, total_tokens: number}}>}
+ * @returns {Promise<ExtractionResult>}
  */
 export async function reviewRecipeWithAI(recipeData, sourceData) {
-    // Format the current recipe as text for AI review
-    const reviewPrompt = `STAP 1: BRONVERGELIJKING
-Vergelijk de huidige gestructureerde data met de originele brongegevens (Source Data).
-
-Source Data (De Waarheid):
-${sourceData || 'Geen brongegevens beschikbaar.'}
-
-Huidige Data (Mogelijk incompleet of foutief):
-${JSON.stringify(recipeData, null, 2)}
-
-STAP 2: CORRECTIES
-Identificeer en corrigeer op basis van de Source Data:
-- Missende velden (bijv. bereidingstijden, porties, cuisine) die wel in de bron staan.
-- Verkeerd geparsde hoeveelheden of eenheden.
-- Verkeerde veldplaatsing (gereedschap bij ingrediënten, etc.).
-- Fix HTML artifacts (bijv. "&amp;") en malvormde getallen.
-
-STAP 3: BEHOUD VAN TEKST
-Behoud de exacte bewoording van instructies en de namen van ingrediënten uit de brongegevens. Herschrijf niets, corrigeer alleen de structuur en metadata.
-
-OUTPUT:
-Return de GECORRIGEERDE recept data in het standaard JSON formaat.`;
-
-    const { data, error } = await supabase.functions.invoke('extract-recipe', {
-        body: {
-            type: 'text',
-            textContent: reviewPrompt
-        }
+    return invokeEdgeFunction('extract-recipe', {
+        type: 'review',
+        recipeData,
+        sourceData: sourceData || 'Geen brongegevens beschikbaar.'
     });
+}
 
-    if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Failed to review recipe');
+/**
+ * Re-analyzes a recipe using its original stored image.
+ * This performs a full vision extraction again, which is more powerful than a review
+ * because it allows the AI to re-examine the visual source material.
+ * 
+ * @param {string} imagePath - The storage path or public URL of the original image
+ * @returns {Promise<ExtractionResult>}
+ */
+export async function reAnalyzeRecipeFromStoredImage(imagePath) {
+    let path = imagePath;
+
+    // If a full URL is provided, extract the storage path
+    if (imagePath.includes('/storage/v1/object/public/')) {
+        const bucketMatch = imagePath.match(/\/public\/([^\/]+)\/(.*)$/);
+        if (bucketMatch) {
+            path = bucketMatch[2];
+        }
     }
 
-    if (data.error) {
-        throw new Error(data.error);
+    // 1. Generate a new signed URL (valid for 1 hour)
+    const { data: signedData, error: signedError } = await supabase.storage
+        .from('recipe-images')
+        .createSignedUrl(path, 3600);
+
+    if (signedError) {
+        console.error('Failed to generate signed URL for re-analysis:', signedError);
+        throw new Error(`Kwaliteitsverbetering mislukt: ${signedError.message}`);
     }
 
-    return data;
+    // 2. Call the regular image extraction with the new signed URL
+    return extractRecipeFromImage(signedData.signedUrl);
 }
