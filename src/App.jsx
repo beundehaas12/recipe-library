@@ -21,10 +21,15 @@ function Home({ activeTasks, setActiveTasks }) {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [tokenUsage, setTokenUsage] = useState(null);
   const navigate = useNavigate();
-  const { scrollY } = useScroll();
+  const [scrolled, setScrolled] = useState(false);
 
-  const headerBgColor = useTransform(scrollY, [0, 200], ['rgba(9, 9, 11, 0)', 'rgba(9, 9, 11, 0.4)']);
-  const headerBlurFilter = useTransform(scrollY, [0, 200], ['blur(0px)', 'blur(8px)']);
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -514,18 +519,9 @@ function Home({ activeTasks, setActiveTasks }) {
 
       {/* Cinematic Navbar */}
       <header
-        className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between transition-colors duration-500"
+        className={`fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between transition-all duration-500 ${scrolled ? 'bg-background/80 backdrop-blur-xl border-b border-white/5 shadow-lg' : 'bg-transparent'
+          }`}
       >
-        {/* Gradient Blur Background Layer - Extended Height */}
-        <motion.div
-          style={{
-            backgroundColor: headerBgColor,
-            backdropFilter: headerBlurFilter,
-            WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
-            maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)'
-          }}
-          className="absolute top-0 left-0 right-0 h-32 -z-10 pointer-events-none"
-        />
         <div className="flex items-center gap-3">
           <div className="bg-primary/20 backdrop-blur-md border border-primary/50 text-primary p-2 rounded-xl">
             <ChefHat size={24} />
@@ -848,8 +844,8 @@ function Home({ activeTasks, setActiveTasks }) {
               <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
             </div>
 
-            {/* Hero Content - Use pointer-events-none to prevent blocking the RecipeList below it */}
-            <div className="absolute bottom-0 left-0 max-w-4xl p-6 md:p-16 z-30 flex flex-col items-start gap-6 pb-40 md:pb-56 pointer-events-none">
+            {/* Hero Content - Standard layout with significant top padding */}
+            <div className="relative z-30 flex flex-col items-start gap-6 p-6 md:p-16 pt-72 md:pt-96 pb-24 md:pb-32 pointer-events-none">
               {heroRecipe ? (
                 <>
                   <motion.div
@@ -872,7 +868,7 @@ function Home({ activeTasks, setActiveTasks }) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] drop-shadow-2xl font-display max-w-3xl pointer-events-auto"
+                    className="text-5xl md:text-7xl lg:text-9xl font-black text-white leading-[0.9] drop-shadow-2xl font-display max-w-4xl pointer-events-auto"
                   >
                     {heroRecipe.title}
                   </motion.h2>
@@ -881,7 +877,7 @@ function Home({ activeTasks, setActiveTasks }) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="text-gray-200 text-lg md:text-xl line-clamp-3 max-w-xl drop-shadow-md font-medium leading-relaxed pointer-events-auto"
+                    className="text-gray-200 text-lg md:text-xl line-clamp-3 max-w-2xl drop-shadow-md font-medium leading-relaxed pointer-events-auto"
                   >
                     {heroRecipe.description || ''}
                   </motion.p>
@@ -899,7 +895,6 @@ function Home({ activeTasks, setActiveTasks }) {
                       <span>{t.startCooking}</span>
                       <ArrowRight size={20} className="group-hover/btn:translate-x-1 transition-transform" />
                     </button>
-
                   </motion.div>
                 </>
               ) : (
@@ -912,9 +907,8 @@ function Home({ activeTasks, setActiveTasks }) {
           </div>
         )}
 
-        {/* Content Area - Floating above hero bottom */}
-        {/* If searching, normalize top margin. If NOT searching, use negative margin to float over hero */}
-        <div className={`relative z-20 space-y-12 pb-24 bg-gradient-to-b from-transparent to-background ${searchQuery ? 'pt-32' : '-mt-32 md:-mt-48'}`}>
+        {/* Content Area - No negative margins for better mobile stability */}
+        <div className={`relative z-20 space-y-12 pb-24 bg-gradient-to-b from-transparent to-background ${searchQuery ? 'pt-32' : 'pt-12'}`}>
           <RecipeList
             recipes={displayRecipes}
             isEmptyState={isEmptyState}
