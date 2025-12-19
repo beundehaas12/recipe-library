@@ -123,6 +123,20 @@ ALTER TABLE recipe_steps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recipe_tools ENABLE ROW LEVEL SECURITY;
 
 -- Policies: Users can only access their own recipe's data
+-- Drop existing policies first (for idempotency)
+DROP POLICY IF EXISTS "Users can view their recipe ingredients" ON recipe_ingredients;
+DROP POLICY IF EXISTS "Users can insert their recipe ingredients" ON recipe_ingredients;
+DROP POLICY IF EXISTS "Users can update their recipe ingredients" ON recipe_ingredients;
+DROP POLICY IF EXISTS "Users can delete their recipe ingredients" ON recipe_ingredients;
+DROP POLICY IF EXISTS "Users can view their recipe steps" ON recipe_steps;
+DROP POLICY IF EXISTS "Users can insert their recipe steps" ON recipe_steps;
+DROP POLICY IF EXISTS "Users can update their recipe steps" ON recipe_steps;
+DROP POLICY IF EXISTS "Users can delete their recipe steps" ON recipe_steps;
+DROP POLICY IF EXISTS "Users can view their recipe tools" ON recipe_tools;
+DROP POLICY IF EXISTS "Users can insert their recipe tools" ON recipe_tools;
+DROP POLICY IF EXISTS "Users can update their recipe tools" ON recipe_tools;
+DROP POLICY IF EXISTS "Users can delete their recipe tools" ON recipe_tools;
+
 CREATE POLICY "Users can view their recipe ingredients" ON recipe_ingredients
     FOR SELECT USING (
         recipe_id IN (SELECT id FROM recipes WHERE user_id = auth.uid())
