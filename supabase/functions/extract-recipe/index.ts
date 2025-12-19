@@ -142,7 +142,7 @@ Geef ALLEEN de verbeterde JSON.`
                     contents: [{ parts }],
                     generationConfig: {
                         temperature: 0,
-                        maxOutputTokens: 4000
+                        maxOutputTokens: 8192
                     }
                 })
             }
