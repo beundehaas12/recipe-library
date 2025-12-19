@@ -19,8 +19,8 @@ DOEL: Extraheer ALLE receptinformatie met maximale nauwkeurigheid in één keer.
 OUTPUT JSON STRUCTUUR:
 {
   "title": string (exacte titel zoals weergegeven),
-  "description": string (korte samenvatting van het gerecht),
-  "introduction": string|null (introductietekst als aanwezig),
+  "description": string|null (ALLEEN als er letterlijk een beschrijving/introductie bij het recept staat, anders null - VERZIN NIETS),
+  "introduction": string|null (introductietekst als letterlijk aanwezig),
   "ingredients": [{ 
     "amount": number|null, 
     "unit": string|null, 
@@ -48,6 +48,7 @@ REGELS:
 3. Splits hoeveelheden correct: "500g bloem" → amount: 500, unit: "g", name: "bloem"
 4. Bewaar ingrediëntgroepen als ze er zijn.
 5. Include "raw_text" met ALLE zichtbare tekst voor auditabiliteit.
+6. description en introduction: ALLEEN letterlijke tekst uit de bron, NOOIT zelf samenvatten of genereren.
 6. Bereidingstijd en portieaantal zijn CRUCIAAL - zoek ze actief.
 `
 
