@@ -83,7 +83,7 @@ serve(async (req: Request) => {
             throw new Error("GEMINI_API_KEY not configured")
         }
 
-        let systemInstruction = IMPROVED_SYSTEM_PROMPT
+        let systemPrompt = IMPROVED_SYSTEM_PROMPT
         let parts: any[] = []
 
         if (type === 'image') {
@@ -108,13 +108,13 @@ serve(async (req: Request) => {
             console.log('Image size:', imageBuffer.byteLength, 'bytes')
 
             parts = [
-                { text: "Analyse de afbeelding grondig en extraheer het recept. Geef ALLEEN de JSON output." },
-                { inlineData: { mimeType, data: base64 } }
+                { text: systemPrompt + "\n\nAnalyse de afbeelding grondig en extraheer het recept. Geef ALLEEN de JSON output." },
+                { inline_data: { mime_type: mimeType, data: base64 } }
             ]
         } else if (type === 'text') {
-            parts = [{ text: `Extraheer het recept uit de volgende tekst:\n\n${textContent}\n\nGeef ALLEEN de JSON output.` }]
+            parts = [{ text: systemPrompt + `\n\nExtraheer het recept uit de volgende tekst:\n\n${textContent}\n\nGeef ALLEEN de JSON output.` }]
         } else if (type === 'review' || type === 'vision_review') {
-            systemInstruction = `Je bent een recept-validatie expert.
+            systemPrompt = `Je bent een recept-validatie expert.
 HUIDIGE DATA:
 ${JSON.stringify(recipeData, null, 2)}
 
@@ -133,11 +133,11 @@ Geef ALLEEN de verbeterde JSON.`
                 base64 = btoa(base64)
                 const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
                 parts = [
-                    { text: "Verbeter de receptdata op basis van de afbeelding." },
-                    { inlineData: { mimeType, data: base64 } }
+                    { text: systemPrompt + "\n\nVerbeter de receptdata op basis van de afbeelding." },
+                    { inline_data: { mime_type: mimeType, data: base64 } }
                 ]
             } else {
-                parts = [{ text: "Valideer en verbeter de receptdata." }]
+                parts = [{ text: systemPrompt + "\n\nValideer en verbeter de receptdata." }]
             }
         } else {
             throw new Error(`Unsupported type: ${type}`)
@@ -145,19 +145,17 @@ Geef ALLEEN de verbeterde JSON.`
 
         console.log('Calling Gemini API...')
 
-        // USER'S EXACT URL
+        // User's exact URL with v1 API format
         const geminiResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash:generateContent?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    systemInstruction: { parts: [{ text: systemInstruction }] },
                     contents: [{ parts }],
                     generationConfig: {
                         temperature: 0,
-                        maxOutputTokens: 4000,
-                        responseMimeType: "application/json"
+                        maxOutputTokens: 4000
                     }
                 })
             }
