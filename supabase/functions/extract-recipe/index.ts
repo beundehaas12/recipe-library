@@ -168,11 +168,21 @@ Geef ALLEEN de verbeterde JSON.`
         }
 
         const geminiData = await geminiResponse.json()
+        console.log('Gemini response structure:', JSON.stringify({
+            hasCandidate: !!geminiData.candidates?.[0],
+            finishReason: geminiData.candidates?.[0]?.finishReason,
+            safetyRatings: geminiData.candidates?.[0]?.safetyRatings,
+            blockReason: geminiData.promptFeedback?.blockReason,
+            contentParts: geminiData.candidates?.[0]?.content?.parts?.length
+        }))
+
         const content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
         if (!content) {
-            console.error('Empty response:', JSON.stringify(geminiData).substring(0, 500))
-            throw new Error('Empty response from Gemini')
+            const blockReason = geminiData.promptFeedback?.blockReason
+            const finishReason = geminiData.candidates?.[0]?.finishReason
+            console.error('Empty response details:', JSON.stringify(geminiData, null, 2).substring(0, 2000))
+            throw new Error(`Empty response from Gemini (block: ${blockReason}, finish: ${finishReason})`)
         }
 
         // Parse JSON
