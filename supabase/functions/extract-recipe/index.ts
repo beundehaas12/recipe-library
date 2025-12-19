@@ -134,6 +134,42 @@ async function fetchAndEncodeImage(signedUrl: string): Promise<{ base64: string;
 }
 
 // =============================================================================
+// HELPER: Safe JSON parse with cleanup
+// =============================================================================
+function safeJsonParse(text: string): any {
+    let cleaned = text.trim();
+
+    // Remove markdown code fences if present
+    if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.slice(7);
+    } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.slice(3);
+    }
+    if (cleaned.endsWith('```')) {
+        cleaned = cleaned.slice(0, -3);
+    }
+    cleaned = cleaned.trim();
+
+    // Fix common JSON issues from LLMs
+    // 1. Replace single quotes with double quotes (but not inside strings)
+    // 2. Remove trailing commas before ] or }
+    cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+
+    // Try to extract JSON object if there's extra content
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+        cleaned = jsonMatch[0];
+    }
+
+    try {
+        return JSON.parse(cleaned);
+    } catch (e) {
+        console.error("JSON parse failed, raw text:", text.substring(0, 500));
+        throw new Error(`Invalid JSON from AI: ${(e as Error).message}`);
+    }
+}
+
+// =============================================================================
 // HELPER: Call Gemini API
 // =============================================================================
 async function callGemini(parts: any[], apiKey: string, expectJson = true): Promise<{ text: string; usage: any }> {
@@ -204,7 +240,7 @@ serve(async (req: Request) => {
             console.log("Calling Gemini for image extraction...")
             const { text, usage } = await callGemini(parts, GEMINI_API_KEY)
 
-            const recipe = JSON.parse(text)
+            const recipe = safeJsonParse(text)
             const rawText = recipe.raw_text || text
 
             // Remove raw_text from recipe object (stored separately)
@@ -226,7 +262,7 @@ serve(async (req: Request) => {
             console.log("Calling Gemini for text extraction...")
             const { text, usage } = await callGemini(parts, GEMINI_API_KEY)
 
-            const recipe = JSON.parse(text)
+            const recipe = safeJsonParse(text)
             const rawText = recipe.raw_text || text
             delete recipe.raw_text
 
@@ -256,7 +292,7 @@ Analyseer opnieuw en verbeter de structuur. Behoud correcte feiten, corrigeer fo
             console.log("Calling Gemini for review...")
             const { text, usage } = await callGemini(parts, GEMINI_API_KEY)
 
-            const recipe = JSON.parse(text)
+            const recipe = safeJsonParse(text)
             delete recipe.raw_text
 
             result = { recipe, usage, raw_response: text }
@@ -277,7 +313,7 @@ Analyseer opnieuw en verbeter de structuur. Behoud correcte feiten, corrigeer fo
             console.log("Calling Gemini for enrichment...")
             const { text, usage } = await callGemini(parts, GEMINI_API_KEY)
 
-            const enrichments = JSON.parse(text)
+            const enrichments = safeJsonParse(text)
 
             result = { enrichments, usage }
         }
