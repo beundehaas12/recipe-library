@@ -126,11 +126,11 @@ Geef ALLEEN de verbeterde JSON.`
                 base64 = btoa(base64)
                 const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
                 parts = [
-                    { text: systemPrompt + "\n\nOPDRACHT: 'FULL DETAILED REVIEW'.\n1. Check ELK detail op consistentie. (Staan alle ingrediënten uit de tekst in de lijst? Kloppen de tijden met de instructies?)\n2. VERRIJK de structuur: Splits '500g bloem' ALTIJD in amount/unit/name.\n3. Voeg 'group_name' toe als dat logisch is (bv. 'Saus', 'Deeg').\n4. Behoud de BRON-waarheid heilig. Verander niets aan de feitelijke inhoud, alleen de structuur en consistentie." },
+                    { text: systemPrompt + "\n\nMODUS: 'SAFE ENRICHMENT'.\nDOEL: Verrijk de structuur ZONDER de bron-waarheid te veranderen.\n\nREGELS:\n1. SPLITSEN: '500g bloem' -> { amount: 500, unit: 'g', name: 'bloem' }. Verander de tekst NIET.\n2. AANVULLEN: Zoek ontbrekende tijden (prep/cook) of categorieën.\n3. VERBODEN: Verander GEEN aantallen of ingrediënt-namen die je ziet op de foto. De foto is de waarheid.\n4. CONSISTENTIE: Als instructies tijd noemen die in metadata mist, voeg die toe." },
                     { inline_data: { mime_type: mimeType, data: base64 } }
                 ]
             } else {
-                parts = [{ text: systemPrompt + "\n\nOPDRACHT: 'FULL DETAILED REVIEW'.\n1. Check consistentie tussen instructies en ingrediënten.\n2. Verbeter de datastructuur (splits units/amounts).\n3. Verander GEEN feiten, maar fix overduidelijke fouten in de data-structuur." }]
+                parts = [{ text: systemPrompt + "\n\nMODUS: 'SAFE ENRICHMENT'.\n1. Behoud alle feitelijke waarden.\n2. Verbeter alleen de JSON structuur (splitsen van strings).\n3. Voeg ontbrekende metadata toe indien logisch afleidbaar." }]
             }
         } else {
             throw new Error(`Unsupported type: ${type}`)

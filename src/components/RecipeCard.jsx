@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
 import { reviewRecipeWithAI, reAnalyzeRecipeFromStoredImage } from '../lib/xai';
 
+import { RecipeReviewModal } from './RecipeReviewModal';
+
 // Language code to Dutch name mapping
 const languageNames = {
     nl: t.languageNL,
@@ -34,6 +36,10 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     const [isAIProcessing, setIsAIProcessing] = useState(false);
     const [showSourceModal, setShowSourceModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    // New state for AI Review
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [pendingRecipe, setPendingRecipe] = useState(null);
 
     const toggleSection = (section) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -170,41 +176,24 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
             // Calculate changes
             const changes = [];
-            if (freshRecipe.title !== recipe.title) changes.push(`Titel aangepast`);
-            if (JSON.stringify(freshRecipe.ingredients) !== JSON.stringify(recipe.ingredients)) changes.push('Ingrediënten verbeterd');
-            if (JSON.stringify(freshRecipe.instructions) !== JSON.stringify(recipe.instructions)) changes.push('Instructies verfijnd');
-            if (changes.length === 0) changes.push(isPhoto ? 'Nieuwe visuele scan uitgevoerd' : 'AI-check uitgevoerd');
-
-            const reviewEntry = {
-                timestamp: new Date().toISOString(),
-                tokens_used: usage.total_tokens,
-                cost: (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000,
-                changes: changes,
-                type: isPhoto ? 'vision_reanalysis' : 'text_review'
-            };
-
-            // CRITICAL: Merge AI results with existing recipe, keeping existing data as base
-            // Only apply AI corrections on top of existing data to prevent data loss
-            await onUpdate({
-                ...recipe,  // Keep ALL existing recipe fields as base
-                // Only update content fields from AI (if they exist)
-                title: freshRecipe.title || recipe.title,
-                description: freshRecipe.description || recipe.description,
-                ingredients: freshRecipe.ingredients?.length > 0 ? freshRecipe.ingredients : recipe.ingredients,
-                instructions: freshRecipe.instructions?.length > 0 ? freshRecipe.instructions : recipe.instructions,
-                servings: freshRecipe.servings || recipe.servings,
-                prep_time: freshRecipe.prep_time || recipe.prep_time,
-                cook_time: freshRecipe.cook_time || recipe.cook_time,
-                difficulty: freshRecipe.difficulty || recipe.difficulty,
-                cuisine: freshRecipe.cuisine || recipe.cuisine,
-                // Merge extraction history
-                extraction_history: {
+            // Instead of auto-saving, show the review modal
+            if (freshRecipe) {
+                // Ensure ID is preserved for the update logic
+                freshRecipe.id = recipe.id;
+                // Add review entry for history tracking
+                freshRecipe.extraction_history = {
                     ...recipe.extraction_history,
-                    reviews: [...(recipe.extraction_history?.reviews || []), reviewEntry]
-                },
-                // Merge AI tags (unique)
-                ai_tags: Array.from(new Set([...(freshRecipe.ai_tags || []), ...(recipe.ai_tags || [])]))
-            });
+                    reviews: [...(recipe.extraction_history?.reviews || []), {
+                        timestamp: new Date().toISOString(),
+                        tokens_used: usage.total_tokens,
+                        type: isPhoto ? 'vision_reanalysis' : 'text_review',
+                        changes: ['Review pending...']
+                    }]
+                };
+
+                setPendingRecipe(freshRecipe);
+                setShowReviewModal(true);
+            }
 
         } catch (error) {
             console.error("AI improvement failed:", error);
@@ -213,6 +202,24 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         } finally {
             setIsAIProcessing(false);
         }
+    };
+
+    const handleConfirmReview = async (improvedRecipe) => {
+        // Merge the improved recipe with the original ID just to be safe
+        console.log('✅ Applying AI improvements:', improvedRecipe);
+        await onUpdate({
+            ...recipe,           // Base: original
+            ...improvedRecipe,   // Overlay: improvements
+            id: recipe.id        // Critical: keep ID
+        });
+        setShowReviewModal(false);
+        setPendingRecipe(null);
+    };
+
+    const handleCancelReview = () => {
+        console.log('❌ AI improvements cancelled by user');
+        setShowReviewModal(false);
+        setPendingRecipe(null);
     };
 
     return (
@@ -1096,6 +1103,18 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                             </div>
                         </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
+
+            {/* AI Review Modal */}
+            <AnimatePresence>
+                {showReviewModal && pendingRecipe && (
+                    <RecipeReviewModal
+                        original={recipe}
+                        enriched={pendingRecipe}
+                        onConfirm={handleConfirmReview}
+                        onCancel={handleCancelReview}
+                    />
                 )}
             </AnimatePresence>
         </div>
