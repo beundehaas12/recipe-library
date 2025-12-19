@@ -147,7 +147,7 @@ Geef ALLEEN de verbeterde JSON.`
 
         // User's exact URL with v1 API format
         const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
