@@ -311,13 +311,11 @@ async function callLLM(
         // Default to Gemini
         const parts: any[] = [{ text: prompt }]
         if (imageUrl) {
-            // For Gemini, we need to fetch and inline the image
-            const imgResponse = await fetch(imageUrl)
-            const imgBuffer = await imgResponse.arrayBuffer()
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)))
+            // Use the safe chunked encoding to avoid stack overflow
+            const { base64, mimeType } = await fetchAndEncodeImage(imageUrl)
             parts.push({
                 inline_data: {
-                    mime_type: 'image/jpeg',
+                    mime_type: mimeType,
                     data: base64
                 }
             })
