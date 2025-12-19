@@ -126,11 +126,11 @@ Geef ALLEEN de verbeterde JSON.`
                 base64 = btoa(base64)
                 const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
                 parts = [
-                    { text: systemPrompt + "\n\nFOCUS OP STRUCTUUR EN RIJKDOM: Splits ingrediënten in aantal/eenheid/naam. Voeg categorieën toe. Behoud de exacte inhoud van de bron." },
+                    { text: systemPrompt + "\n\nOPDRACHT: 'FULL DETAILED REVIEW'.\n1. Check ELK detail op consistentie. (Staan alle ingrediënten uit de tekst in de lijst? Kloppen de tijden met de instructies?)\n2. VERRIJK de structuur: Splits '500g bloem' ALTIJD in amount/unit/name.\n3. Voeg 'group_name' toe als dat logisch is (bv. 'Saus', 'Deeg').\n4. Behoud de BRON-waarheid heilig. Verander niets aan de feitelijke inhoud, alleen de structuur en consistentie." },
                     { inline_data: { mime_type: mimeType, data: base64 } }
                 ]
             } else {
-                parts = [{ text: systemPrompt + "\n\nValideer en verbeter de structuur. Verander geen feitelijke waarden als ze al kloppen." }]
+                parts = [{ text: systemPrompt + "\n\nOPDRACHT: 'FULL DETAILED REVIEW'.\n1. Check consistentie tussen instructies en ingrediënten.\n2. Verbeter de datastructuur (splits units/amounts).\n3. Verander GEEN feiten, maar fix overduidelijke fouten in de data-structuur." }]
             }
         } else {
             throw new Error(`Unsupported type: ${type}`)
