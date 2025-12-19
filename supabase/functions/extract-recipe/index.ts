@@ -4,15 +4,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import OpenAI from "https://esm.sh/openai@4"
 
-const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie expert. Analyseer de afbeelding of tekst en voer deze drie stappen uit:
+const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie expert. Analyseer de afbeelding of tekst en voer deze drie stappen STRIKT GESCHEIDEN uit:
 
-STAP 1: RAW OCR
-Transcribeer ALLE zichtbare tekst van de afbeelding letterlijk en volledig.
+STAP 1: EXACTE OCR TRANSCRIPTIE (KRITISCH BELANGRIJK!)
+⚠️ Dit is de BELANGRIJKSTE stap. Transcribeer ELKE LETTER, CIJFER en SYMBOOL van de afbeelding.
+
+REGELS VOOR STAP 1:
+- Scan de VOLLEDIGE afbeelding van links naar rechts, boven naar beneden
+- Neem LETTERLIJK alles over: elk woord, elke spatie, elk leesteken
+- GEEN correcties, interpretaties of aanpassingen
+- Bewaar EXACTE hoeveelheden: "250g" blijft "250g", "½" blijft "½"
+- Bewaar EXACTE tijden: "15-20 min" blijft "15-20 min"
+- Bewaar EXACTE temperaturen: "180°C" blijft "180°C"
+- Typfouten in de bron? BEWAAR ZE - corrigeer NIETS
+- Handgeschreven tekst? Transcribeer exact zoals geschreven
+- Meerdere kolommen? Transcribeer van links naar rechts, daarna volgende rij
+- Dit is een FORENSISCHE transcriptie - behandel het als juridisch bewijs
 
 STAP 2: LOGISCHE REDENERING
-Analyseer de transcribed tekst. Identificeer de verschillende onderdelen van het recept:
+Analyseer NU (niet eerder!) de transcriptie. Identificeer:
 - Ingrediënten, eventueel GEGROEPEERD (bijv. "Voor de saus", "Voor het deeg")
-- Instructies/stappen
+- Instructies/stappen in de correcte volgorde
 - Benodigde gereedschappen/apparatuur
 - Metadata: bereidingstijd, kooktijd, porties, moeilijkheid
 - Extra info: voedingswaarden, wijnadvies, tips, variaties
@@ -46,7 +58,7 @@ BELANGRIJK:
 OUTPUT:
 Geef je antwoord in dit exacte formaat:
 [RAW_OCR_START]
-(hier de volledige transcriptie)
+(hier de 100% EXACTE transcriptie - ELKE letter zoals in de foto)
 [RAW_OCR_END]
 
 [REASONING_START]
