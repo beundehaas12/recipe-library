@@ -42,7 +42,9 @@ export function RecipeReviewModal({ original, enriched, onConfirm, onCancel }) {
                                 <Check size={12} /> Toegevoegd: {key}
                             </div>
                             <div className="text-white font-medium">
-                                {Array.isArray(val) ? val.join(', ') : String(val)}
+                                {Array.isArray(val)
+                                    ? val.map(item => (typeof item === 'object' && item.name) ? item.name : String(item)).join(', ')
+                                    : String(val)}
                             </div>
                         </div>
                     ))}

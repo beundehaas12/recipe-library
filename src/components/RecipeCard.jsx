@@ -502,9 +502,9 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                                 <>
                                                                     <Sparkles size={18} className="group-hover/ai:scale-110 transition-transform text-primary" />
                                                                     <span className="text-sm">
-                                                                        {(!!recipe.original_image_url || recipe.source_type === 'image')
-                                                                            ? "Analyseer foto opnieuw"
-                                                                            : "Analyseer website opnieuw"}
+                                                                        {(recipe.ingredients && recipe.ingredients.length > 0)
+                                                                            ? ((!!recipe.original_image_url || recipe.source_type === 'image') ? "Analyseer foto opnieuw" : "Analyseer website opnieuw")
+                                                                            : "Start AI Analyse"}
                                                                     </span>
                                                                 </>
                                                             )}

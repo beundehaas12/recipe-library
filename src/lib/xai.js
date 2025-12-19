@@ -1,39 +1,9 @@
 /**
- * xAI Recipe Extraction Client
- * 
- * Frontend client for the secure xAI Grok integration via Supabase Edge Functions.
- * 
- * ARCHITECTURE:
- * - Frontend calls Supabase Edge Function (extract-recipe)
- * - Edge Function calls xAI API with server-side API key
- * - API key is NEVER exposed to the browser
- * 
- * @module xai
+ * xAI Recipe Extraction Client - Simplified
+ * CLEAN SLATE REFACTOR
  */
-
 import { supabase } from './supabase';
 
-/**
- * @typedef {Object} TokenUsage
- * @property {number} prompt_tokens - Tokens used in the prompt
- * @property {number} completion_tokens - Tokens used in the AI response
- * @property {number} total_tokens - Total tokens consumed
- */
-
-/**
- * @typedef {Object} ExtractionResult
- * @property {Object} recipe - The extracted or corrected recipe data
- * @property {TokenUsage} usage - AI token usage statistics
- */
-
-/**
- * Common handler for invoking Supabase Edge Functions with standardized error handling.
- * 
- * @param {string} functionName - Name of the edge function to invoke
- * @param {Object} body - Request payload
- * @returns {Promise<ExtractionResult>}
- * @throws {Error} Standardized error with descriptive message
- */
 async function invokeEdgeFunction(functionName, body) {
     const { data, error } = await supabase.functions.invoke(functionName, { body });
 
@@ -43,102 +13,6 @@ async function invokeEdgeFunction(functionName, body) {
     }
 
     if (data.error) {
-        // CLIENT-SIDE FALLBACK: If backend failed to parse JSON but returned raw content,
-        // try to fix it here on the client. This handles cases where backend is outdated.
-        if (data.error.includes('Invalid JSON') && data.rawContent) {
-            console.warn('Backend failed to parse JSON, attempting client-side repair...');
-            try {
-                let jsonStr = data.rawContent;
-
-                // 1. Extract JSON block if wrapped in markdown
-                const codeBlockMatch = jsonStr.match(/```json?\n?([\s\S]*?)\n?```/);
-                if (codeBlockMatch) jsonStr = codeBlockMatch[1];
-
-                // 2. Find outermost braces
-                if (!jsonStr.startsWith('{')) {
-                    const jsonStart = jsonStr.indexOf('{');
-                    const jsonEnd = jsonStr.lastIndexOf('}');
-                    if (jsonStart !== -1 && jsonEnd !== -1) {
-                        jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1);
-                    }
-                }
-
-                // 3. Aggressively clean (comments, trailing commas)
-                jsonStr = jsonStr
-                    .replace(/\/\/.*$/gm, '') // single-line comments
-                    .replace(/\/\*[\s\S]*?\*\//g, '') // multi-line comments
-                    .replace(/,(\s*[\}\]])/g, '$1') // trailing commas
-                    .trim();
-
-                // 4. TRUNCATION REPAIR: Auto-close missing braces/brackets
-
-                // First, robust cleanup of tail
-                jsonStr = jsonStr.trim();
-
-                // If ends with comma, remove it
-                if (jsonStr.endsWith(',')) {
-                    jsonStr = jsonStr.slice(0, -1);
-                }
-                // If ends with colon, append null to make key valid
-                if (jsonStr.endsWith(':')) {
-                    jsonStr += ' null';
-                }
-
-                if (!jsonStr.endsWith('}') && !jsonStr.endsWith(']')) {
-                    let openBraces = 0;
-                    let openBrackets = 0;
-                    let inString = false;
-                    let escape = false;
-
-                    for (let i = 0; i < jsonStr.length; i++) {
-                        const char = jsonStr[i];
-                        if (char === '\\' && !escape) {
-                            escape = true;
-                            continue;
-                        }
-                        if (char === '"' && !escape) {
-                            inString = !inString;
-                        }
-                        if (!inString) {
-                            if (char === '{') openBraces++;
-                            else if (char === '}') openBraces--;
-                            else if (char === '[') openBrackets++;
-                            else if (char === ']') openBrackets--;
-                        }
-                        escape = false;
-                    }
-
-                    // Handles edge case: truncated at backslash inside string
-                    if (inString && jsonStr.endsWith('\\')) {
-                        jsonStr = jsonStr.slice(0, -1);
-                    }
-
-                    // Close any open string first
-                    if (inString) jsonStr += '"';
-
-                    // Close arrays and objects 
-                    while (openBrackets > 0) { jsonStr += ']'; openBrackets--; }
-                    while (openBraces > 0) { jsonStr += '}'; openBraces--; }
-
-                    console.warn('Repaired truncated JSON by appending closing brackets/braces.');
-                }
-
-                const repairedRecipe = JSON.parse(jsonStr);
-
-                // If successful, return constructed result
-                return {
-                    recipe: repairedRecipe,
-                    usage: data.usage || { total_tokens: 0 },
-                    raw_response: data.rawContent
-                };
-
-            } catch (parseError) {
-                console.error('Client-side repair failed:', parseError);
-                // Throw original error if repair fails
-                throw new Error(data.error);
-            }
-        }
-
         throw new Error(data.error);
     }
 
@@ -146,25 +20,7 @@ async function invokeEdgeFunction(functionName, body) {
 }
 
 /**
- * Extracts recipe data from an image via signed URL.
- * The image should be uploaded to Supabase Storage first.
- * 
- * @param {string} signedUrl - Signed URL to the image in Supabase Storage
- * @returns {Promise<ExtractionResult>}
- */
-export async function extractRecipeFromImage(signedUrl) {
-    return invokeEdgeFunction('extract-recipe', {
-        type: 'image',
-        signedUrl
-    });
-}
-
-/**
  * Extracts recipe data from text/HTML content.
- * Used for URL-based recipe extraction.
- * 
- * @param {string} textContent - Raw text or HTML content containing the recipe
- * @returns {Promise<ExtractionResult>}
  */
 export async function extractRecipeFromText(textContent) {
     return invokeEdgeFunction('extract-recipe', {
@@ -175,75 +31,39 @@ export async function extractRecipeFromText(textContent) {
 
 /**
  * Reviews and corrects existing recipe data using AI.
- * Compares current structured data against original source data via a dedicated AI protocol.
- * 
- * @param {Object} recipeData - Current recipe data to review
- * @param {string} sourceData - Original source text or OCR data
- * @returns {Promise<ExtractionResult>}
  */
 export async function reviewRecipeWithAI(recipeData, sourceData) {
-    // Sanitize recipe data to remove heavy metadata that confuses the AI
-    const {
-        search_vector,
-        user_id,
-        created_at,
-        updated_at,
-        original_image_url,
-        image_url,
-        id,
-        translations,
-        ...cleanRecipe
-    } = recipeData;
+    // Sanitize heavy metadata
+    const { search_vector, user_id, created_at, updated_at, ...cleanRecipe } = recipeData;
 
     return invokeEdgeFunction('extract-recipe', {
         type: 'review',
         recipeData: cleanRecipe,
-        sourceData: sourceData || 'Geen brongegevens beschikbaar.'
+        sourceData: sourceData || 'Geen brongegevens.'
     });
 }
 
 /**
- * Re-analyzes a recipe using its original stored image with smart validation.
- * Combines vision analysis with existing recipe data to validate and enrich.
- * 
- * @param {string} imagePath - The storage path or public URL of the original image
- * @param {Object} recipeData - Existing recipe data to validate against
- * @returns {Promise<ExtractionResult>}
+ * Re-analyzes a recipe using its original stored image.
  */
 export async function reAnalyzeRecipeFromStoredImage(imagePath, recipeData = {}) {
     let path = imagePath;
 
-    // If a full URL is provided, extract the storage path
+    // Handle full URL if present
     if (imagePath.includes('/storage/v1/object/public/')) {
-        const bucketMatch = imagePath.match(/\/public\/([^\/]+)\/(.*)$/);
-        if (bucketMatch) {
-            path = bucketMatch[2];
-        }
+        const match = imagePath.match(/\/public\/([^\/]+)\/(.*)$/);
+        if (match) path = match[2];
     }
 
-    // 1. Generate a new signed URL (valid for 1 hour)
-    const { data: signedData, error: signedError } = await supabase.storage
+    // Generate signed URL
+    const { data: signedData, error } = await supabase.storage
         .from('recipe-images')
         .createSignedUrl(path, 3600);
 
-    if (signedError) {
-        console.error('Failed to generate signed URL for re-analysis:', signedError);
-        throw new Error(`Kwaliteitsverbetering mislukt: ${signedError.message}`);
-    }
+    if (error) throw new Error(`Signed URL fail: ${error.message}`);
 
-    // 2. Call vision_review with photo + existing recipe data for smart enrichment
-    // Sanitize recipe data to remove heavy metadata
-    const {
-        search_vector,
-        user_id,
-        created_at,
-        updated_at,
-        original_image_url,
-        image_url,
-        extract_history,
-        translations,
-        ...cleanRecipe
-    } = recipeData;
+    // Sanitize
+    const { search_vector, user_id, created_at, updated_at, extract_history, ...cleanRecipe } = recipeData;
 
     return invokeEdgeFunction('extract-recipe', {
         type: 'vision_review',

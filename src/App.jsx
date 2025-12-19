@@ -197,67 +197,42 @@ function Home({ activeTasks, setActiveTasks }) {
   };
 
   // =============================================================================
-  // RECIPE CAPTURE FLOW (xAI + Supabase Storage)
+  // RECIPE CAPTURE FLOW (Clean Slate - Manual AI)
   // =============================================================================
-  // 1. Upload image to Supabase Storage (temp folder)
-  // 2. Generate signed URL (2 min expiry)
-  // 3. Call Edge Function with signed URL (secure - no API key in browser)
-  // 4. Delete temp image on success
-  // 5. Save recipe to database
+  // 1. Upload image to Supabase Storage (permanent)
+  // 2. Save "Raw" recipe to DB (Title: "Concept Recept", No AI yet)
+  // 3. User manually triggers analysis in RecipeCard
   // =============================================================================
   const handleCapture = async (file) => {
     const taskId = Date.now().toString();
-    const taskName = file.name.substring(0, 20) + (file.name.length > 20 ? '...' : '');
+    const taskName = file.name.substring(0, 20);
 
-    // Add to background tasks with initial step
     setActiveTasks(prev => [{
       id: taskId,
       type: 'image',
       name: taskName,
       status: 'processing',
-      steps: [{ message: 'Preparing image...', done: false }]
-    }, ...prev]);
-
-    let imagePath = null;
-    const startTime = Date.now();
-    const extractionHistory = {
-      timestamp: new Date().toISOString(),
-      source_type: 'image',
-      source_url: null,
-      extraction_method: 'grok',
-      schema_used: false,
-      ai_used: true,
-      ai_model: 'grok-4-1-fast-reasoning',
-      tokens: null,
-      estimated_cost_eur: null,
-      processing_time_ms: null,
-      notes: []
-    };
+      steps: [{ message: 'Foto uploaden...', done: false }]
+    }]);
 
     try {
-      addTaskStep(taskId, 'Uploading to cloud...');
-      const { path, publicUrl, signedUrl } = await uploadSourceImage(file, user.id);
-      imagePath = path;
-      extractionHistory.notes.push(`Image uploaded to Supabase Storage (permanent): ${path}`);
-      extractionHistory.source_url = publicUrl;
+      // 1. Upload Image
+      addTaskStep(taskId, 'Opslaan in cloud...');
+      const { path, publicUrl } = await uploadSourceImage(file, user.id);
 
-      addTaskStep(taskId, 'AI is analyzing image...');
-      const { recipe, usage, raw_response, raw_ocr, reasoning } = await extractRecipeFromImage(signedUrl);
-      setTokenUsage(usage);
+      // 2. Save Placeholder Recipe (No AI)
+      addTaskStep(taskId, 'Concept aanmaken...');
 
-      addTaskStep(taskId, 'Extracting recipe details...');
-      extractionHistory.tokens = { prompt: usage.prompt_tokens, completion: usage.completion_tokens, total: usage.total_tokens };
-      extractionHistory.estimated_cost_eur = (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
-      extractionHistory.raw_response = raw_response;
-      extractionHistory.raw_ocr = raw_ocr;
-      extractionHistory.reasoning = reasoning;
-      extractionHistory.notes.push('AI extracted recipe from image (OCR + Reasoning + JSON)');
+      const newRecipeData = {
+        title: "Nieuw Recept (" + new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) + ")",
+        description: "Nog niet geanalyseerd. Klik op 'Analyseren' om te starten.",
+        ingredients: [],
+        instructions: [],
+        ai_tags: ['📷 concept']
+      };
 
-      extractionHistory.processing_time_ms = Date.now() - startTime;
-      recipe.ai_tags = ['🤖 grok', ...(recipe.ai_tags || [])];
+      await saveRecipeToDb(newRecipeData, { type: 'image', original_image_url: publicUrl }, null, taskId);
 
-      addTaskStep(taskId, 'Saving recipe...');
-      await saveRecipeToDb(recipe, { type: 'image', original_image_url: publicUrl }, extractionHistory, taskId);
       completeTaskSteps(taskId);
 
     } catch (error) {
