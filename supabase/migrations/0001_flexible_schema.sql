@@ -11,7 +11,15 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================================
--- 1. ADD NEW COLUMNS TO EXISTING RECIPES TABLE
+-- 1. DROP LEGACY COLUMNS FROM RECIPES TABLE (data is test only)
+-- ============================================================================
+
+-- Drop the old JSON array columns (replaced by normalized tables)
+ALTER TABLE recipes DROP COLUMN IF EXISTS ingredients;
+ALTER TABLE recipes DROP COLUMN IF EXISTS instructions;
+
+-- ============================================================================
+-- 2. ADD NEW COLUMNS TO EXISTING RECIPES TABLE
 -- ============================================================================
 
 -- JSONB column for flexible extra data (nutrition, pairings, tips, etc.)
