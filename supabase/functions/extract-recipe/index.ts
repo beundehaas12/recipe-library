@@ -359,16 +359,10 @@ serve(async (req: Request) => {
         if (type === 'image' || type === 'vision_review') {
             if (!signedUrl) throw new Error("No signedUrl provided for image analysis");
 
-            console.log("Fetching and encoding image...")
-            const { base64, mimeType } = await fetchAndEncodeImage(signedUrl)
+            const prompt = EXTRACTION_PROMPT + "\n\nExtraheer het recept uit deze afbeelding:";
 
-            const parts = [
-                { text: EXTRACTION_PROMPT + "\n\nExtraheer het recept uit deze afbeelding:" },
-                { inline_data: { mime_type: mimeType, data: base64 } }
-            ]
-
-            console.log("Calling Gemini for image extraction...")
-            const { text, usage } = await callGemini(parts, GEMINI_API_KEY)
+            console.log(`Calling ${selectedModel} for image extraction...`)
+            const { text, usage } = await callLLM(prompt, selectedModel, GEMINI_API_KEY!, XAI_API_KEY!, signedUrl)
 
             const recipe = safeJsonParse(text)
             const rawText = recipe.raw_text || text
@@ -378,7 +372,7 @@ serve(async (req: Request) => {
 
             result = {
                 recipe,
-                raw_extracted_data: { raw_text: rawText, gemini_response: text },
+                raw_extracted_data: { raw_text: rawText, ai_response: text },
                 usage
             }
         }
@@ -387,10 +381,10 @@ serve(async (req: Request) => {
         // TYPE: text - Extraction from HTML/text content
         // =================================================================
         else if (type === 'text') {
-            const parts = [{ text: EXTRACTION_PROMPT + `\n\nExtraheer het recept uit deze tekst:\n${textContent}` }]
+            const prompt = EXTRACTION_PROMPT + `\n\nExtraheer het recept uit deze tekst:\n${textContent}`
 
-            console.log("Calling Gemini for text extraction...")
-            const { text, usage } = await callGemini(parts, GEMINI_API_KEY)
+            console.log(`Calling ${selectedModel} for text extraction...`)
+            const { text, usage } = await callLLM(prompt, selectedModel, GEMINI_API_KEY!, XAI_API_KEY!)
 
             const recipe = safeJsonParse(text)
             const rawText = recipe.raw_text || text
@@ -398,7 +392,7 @@ serve(async (req: Request) => {
 
             result = {
                 recipe,
-                raw_extracted_data: { raw_text: rawText, gemini_response: text },
+                raw_extracted_data: { raw_text: rawText, ai_response: text },
                 usage
             }
         }
@@ -417,10 +411,8 @@ ${rawData || textContent || 'Geen beschikbaar'}
 
 Analyseer opnieuw en verbeter de structuur. Behoud correcte feiten, corrigeer fouten.`
 
-            const parts = [{ text: prompt }]
-
-            console.log("Calling Gemini for review...")
-            const { text, usage } = await callGemini(parts, GEMINI_API_KEY)
+            console.log(`Calling ${selectedModel} for review...`)
+            const { text, usage } = await callLLM(prompt, selectedModel, GEMINI_API_KEY!, XAI_API_KEY!)
 
             const recipe = safeJsonParse(text)
             delete recipe.raw_text
@@ -438,10 +430,8 @@ Analyseer opnieuw en verbeter de structuur. Behoud correcte feiten, corrigeer fo
                 .replace('{recipeData}', JSON.stringify(recipeData, null, 2))
                 .replace('{rawText}', rawData || 'Niet beschikbaar')
 
-            const parts = [{ text: prompt }]
-
-            console.log("Calling Gemini for enrichment...")
-            const { text, usage } = await callGemini(parts, GEMINI_API_KEY)
+            console.log(`Calling ${selectedModel} for enrichment...`)
+            const { text, usage } = await callLLM(prompt, selectedModel, GEMINI_API_KEY!, XAI_API_KEY!)
 
             const enrichments = safeJsonParse(text)
 
