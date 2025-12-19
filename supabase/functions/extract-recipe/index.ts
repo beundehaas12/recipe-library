@@ -10,22 +10,38 @@ STAP 1: RAW OCR
 Transcribeer ALLE zichtbare tekst van de afbeelding letterlijk en volledig.
 
 STAP 2: LOGISCHE REDENERING
-Analyseer de transcribed tekst. Identificeer de verschillende onderdelen van het recept. Besteed extra aandacht aan metadata die verstopt kan zijn, zoals bereidingstijden (prep/cook time), aantal porties en moeilijkheidsgraad. Als tijden niet expliciet genoemd worden, probeer ze dan logisch in te schatten op basis van de instructies.
+Analyseer de transcribed tekst. Identificeer de verschillende onderdelen van het recept:
+- Ingrediënten, eventueel GEGROEPEERD (bijv. "Voor de saus", "Voor het deeg")
+- Instructies/stappen
+- Benodigde gereedschappen/apparatuur
+- Metadata: bereidingstijd, kooktijd, porties, moeilijkheid
+- Extra info: voedingswaarden, wijnadvies, tips, variaties
 
 STAP 3: GESTRUCTUREERDE JSON
 Zet de informatie om in dit JSON formaat:
 {
   "title": "...",
   "description": "...",
-  "ingredients": [{"amount": number|null, "unit": "...", "item": "..."}],
-  "instructions": ["...", "..."],
+  "ingredients": [
+    {"amount": number|null, "unit": "...", "name": "...", "group_name": "...|null", "notes": "...|null"}
+  ],
+  "instructions": [
+    {"step_number": 1, "description": "...", "extra": {"tips": "...", "time": "..."} | null}
+  ],
+  "tools": [{"name": "...", "notes": "...|null"}],
   "servings": number,
   "prep_time": "...",
   "cook_time": "...",
   "difficulty": "Easy|Medium|Hard",
   "cuisine": "...",
-  "ai_tags": ["Nederlandse zoektags"]
+  "ai_tags": ["Nederlandse zoektags"],
+  "extra_data": {"nutrition": {...}, "pairings": [...], "tips": [...]}
 }
+
+BELANGRIJK:
+- "group_name" is voor ingrediënt groepen zoals "Voor de saus", "Hoofdgerecht", "Afwerking"
+- "tools" lijst bevat benodigde apparatuur (oven, blender, etc.)
+- "extra_data" bevat flexibele info die niet in standaardvelden past
 
 OUTPUT:
 Geef je antwoord in dit exacte formaat:
@@ -83,26 +99,25 @@ OPDRACHT:
 1. Vergelijk de bestaande data met de bron
 2. Corrigeer fouten (bijv. verkeerde ingrediënt hoeveelheden)
 3. Vul ontbrekende metadata aan (prep_time, cook_time, servings, difficulty)
-4. BEHOUD alle correcte informatie
-
-Let EXTRA op:
-- prep_time en cook_time: zoek naar tijdsaanduidingen in de bron (bijv. "25 minuten", "1 uur")
-- servings: aantal porties/personen
-- difficulty: schat in op basis van instructies
+4. Identificeer ingrediënt GROEPEN ("Voor de saus", "Hoofdgerecht", etc.)
+5. Identificeer benodigde GEREEDSCHAPPEN
+6. BEHOUD alle correcte informatie
 
 OUTPUT: Geef ALLEEN de gecorrigeerde/verrijkte JSON:
 [JSON_START]
 {
   "title": "...",
   "description": "...",
-  "ingredients": [{...}],
-  "instructions": ["..."],
+  "ingredients": [{"amount": number|null, "unit": "...", "name": "...", "group_name": "...|null", "notes": "...|null"}],
+  "instructions": [{"step_number": 1, "description": "...", "extra": {...}|null}],
+  "tools": [{"name": "...", "notes": "...|null"}],
   "servings": number,
   "prep_time": "...",
   "cook_time": "...",
   "difficulty": "Easy|Medium|Hard",
   "cuisine": "...",
-  "ai_tags": [...]
+  "ai_tags": [...],
+  "extra_data": {...}
 }
 [JSON_END]`;
             userContent = "Valideer en verrijk het recept. Geef de gecorrigeerde JSON.";
@@ -119,34 +134,36 @@ Bekijk de foto ZEER GRONDIG en vergelijk met de huidige data. Verbeter en verrij
 FOCUS OP ALLE RECEPT-ONDERDELEN:
 1. **TITEL**: Is deze correct en volledig?
 2. **BESCHRIJVING**: Voeg context toe als deze ontbreekt
-3. **INGREDIËNTEN**: Controleer ELKE ingrediënt - hoeveelheid, eenheid, naam. Mis je iets?
+3. **INGREDIËNTEN**: Controleer ELKE ingrediënt - hoeveelheid, eenheid, naam. Mis je iets? Let op GROEPEN ("Voor de saus", etc.)
 4. **INSTRUCTIES**: Zijn alle stappen aanwezig en in de juiste volgorde?
-5. **BEREIDINGSTIJD** (prep_time): Tijd voor voorbereiden (snijden, marineren, etc.)
-6. **KOOKTIJD** (cook_time): Tijd voor daadwerkelijk koken/bakken
-7. **PORTIES** (servings): Aantal personen/porties
-8. **MOEILIJKHEID** (difficulty): Easy/Medium/Hard - schat in op basis van technieken
-9. **KEUKEN** (cuisine): Italiaans, Nederlands, Aziatisch, etc.
-10. **AI TAGS**: Zoektags in het Nederlands
+5. **GEREEDSCHAPPEN**: Welke tools/apparaten zijn nodig?
+6. **BEREIDINGSTIJD** (prep_time): Tijd voor voorbereiden
+7. **KOOKTIJD** (cook_time): Tijd voor daadwerkelijk koken/bakken
+8. **PORTIES** (servings): Aantal personen/porties
+9. **MOEILIJKHEID** (difficulty): Easy/Medium/Hard
+10. **KEUKEN** (cuisine): Italiaans, Nederlands, etc.
+11. **AI TAGS**: Zoektags in het Nederlands
 
 BELANGRIJK:
 - Behoud wat CORRECT is
 - Corrigeer wat FOUT is
 - Vul aan wat ONTBREEKT
-- Wees GRONDIG - mis niets dat op de foto staat
 
 OUTPUT: Geef de verbeterde JSON:
 [JSON_START]
 {
   "title": "...",
   "description": "...",
-  "ingredients": [{"amount": number|null, "unit": "...", "item": "..."}],
-  "instructions": ["...", "..."],
+  "ingredients": [{"amount": number|null, "unit": "...", "name": "...", "group_name": "...|null", "notes": "...|null"}],
+  "instructions": [{"step_number": 1, "description": "...", "extra": {...}|null}],
+  "tools": [{"name": "...", "notes": "...|null"}],
   "servings": number,
   "prep_time": "...",
   "cook_time": "...",
   "difficulty": "Easy|Medium|Hard",
   "cuisine": "...",
-  "ai_tags": ["..."]
+  "ai_tags": [...],
+  "extra_data": {...}
 }
 [JSON_END]`;
             userContent = [

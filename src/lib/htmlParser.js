@@ -90,10 +90,10 @@ export function schemaToRecipe(schema) {
         return parts.length > 0 ? parts.join(' ') : null;
     };
 
-    // Parse ingredients - can be strings or HowToStep objects
+    // Parse ingredients - use `name` field for new schema
     const parseIngredients = (ingredients) => {
         if (!ingredients) return [];
-        return ingredients.map(ing => {
+        return ingredients.map((ing, idx) => {
             if (typeof ing === 'string') {
                 // Try to parse "2 cups flour" format
                 const match = ing.match(/^([\d.,\/]+)?\s*(\w+)?\s+(.+)$/);
@@ -101,24 +101,38 @@ export function schemaToRecipe(schema) {
                     return {
                         amount: match[1] ? parseFloat(match[1].replace(',', '.')) : null,
                         unit: match[2] || null,
-                        item: match[3]
+                        name: match[3],
+                        group_name: null,
+                        notes: null,
+                        order_index: idx
                     };
                 }
-                return { amount: null, unit: null, item: ing };
+                return { amount: null, unit: null, name: ing, group_name: null, notes: null, order_index: idx };
             }
-            return { amount: null, unit: null, item: String(ing) };
+            return { amount: null, unit: null, name: String(ing), group_name: null, notes: null, order_index: idx };
         });
     };
 
-    // Parse instructions - can be strings or HowToStep objects
+    // Parse instructions - return structured objects for new schema
     const parseInstructions = (instructions) => {
         if (!instructions) return [];
-        return instructions.map(step => {
-            if (typeof step === 'string') return step;
-            if (step.text) return step.text;
-            if (step.name) return step.name;
-            return String(step);
-        }).filter(Boolean);
+        return instructions.map((step, idx) => {
+            let description = '';
+            if (typeof step === 'string') {
+                description = step;
+            } else if (step.text) {
+                description = step.text;
+            } else if (step.name) {
+                description = step.name;
+            } else {
+                description = String(step);
+            }
+            return {
+                step_number: idx + 1,
+                description,
+                extra: null
+            };
+        }).filter(s => s.description);
     };
 
     return {
@@ -126,18 +140,20 @@ export function schemaToRecipe(schema) {
         description: schema.description || '',
         ingredients: parseIngredients(schema.recipeIngredient),
         instructions: parseInstructions(schema.recipeInstructions),
+        tools: [],  // Schema.org doesn't typically have this
         servings: parseInt(schema.recipeYield) || null,
-        prepTime: parseDuration(schema.prepTime),
-        cookTime: parseDuration(schema.cookTime),  // Don't fallback to totalTime - can be misleading
+        prep_time: parseDuration(schema.prepTime),
+        cook_time: parseDuration(schema.cookTime),
         difficulty: null, // Schema doesn't have this
         cuisine: schema.recipeCuisine || null,
         author: typeof schema.author === 'string' ? schema.author : schema.author?.name || null,
         cookbook_name: null,
         isbn: null,
-        source_language: 'en', // Will need detection
+        source_language: 'en',
         ai_tags: schema.keywords ?
             (typeof schema.keywords === 'string' ? schema.keywords.split(',').map(k => k.trim()) : schema.keywords)
-            : []
+            : [],
+        extra_data: {}
     };
 }
 

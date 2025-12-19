@@ -150,55 +150,12 @@ function Home({ activeTasks, setActiveTasks }) {
 
   const saveRecipeToDb = async (recipeData, sourceInfo = {}, extractionHistory = null, taskId = null) => {
     try {
-      const {
-        title,
-        description,
-        ingredients,
-        instructions,
-        servings,
-        prep_time,
-        cook_time,
-        difficulty,
-        cuisine,
-        author,
-        cookbook_name,
-        isbn,
-        source_language,
-        ai_tags
-      } = recipeData;
+      // Import dynamically to avoid circular dependencies
+      const { saveRecipe } = await import('./lib/recipeService');
 
-      const insertData = {
-        user_id: user.id,
-        title,
-        description,
-        ingredients,
-        instructions,
-        servings,
-        prep_time,
-        cook_time,
-        difficulty,
-        cuisine,
-        author,
-        cookbook_name,
-        isbn,
-        source_url: sourceInfo.url || (sourceInfo.type === 'image' ? sourceInfo.original_image_url : null),
-        source_type: sourceInfo.type || 'manual',
-        source_language: source_language || 'en',
-        ai_tags: ai_tags || [],
-        extraction_history: extractionHistory,
-        image_url: null,
-        original_image_url: sourceInfo.original_image_url || null,
-      };
+      console.log('Saving recipe with multi-table service:', recipeData.title);
 
-      console.log('Inserting recipe data:', insertData);
-
-      const { data: newRecipe, error: dbError } = await supabase
-        .from('recipes')
-        .insert([insertData])
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
+      const newRecipe = await saveRecipe(user.id, recipeData, sourceInfo, extractionHistory);
 
       setRecipes([newRecipe, ...recipes]);
 
@@ -897,13 +854,9 @@ function RecipePage({ activeTasks, setActiveTasks }) {
     async function fetchRecipe() {
       if (!id || !user) return;
       try {
-        const { data, error } = await supabase
-          .from('recipes')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (error) throw error;
+        // Use recipeService for joined data from normalized tables
+        const { fetchRecipeWithDetails } = await import('./lib/recipeService');
+        const data = await fetchRecipeWithDetails(id);
         setRecipe(data);
       } catch (error) {
         console.error('Error fetching recipe:', error);
@@ -982,29 +935,9 @@ function RecipePage({ activeTasks, setActiveTasks }) {
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('recipes')
-        .update({
-          title: updatedFields.title,
-          description: updatedFields.description,
-          ingredients: updatedFields.ingredients,
-          instructions: updatedFields.instructions,
-          prep_time: updatedFields.prep_time,
-          cook_time: updatedFields.cook_time,
-          servings: updatedFields.servings,
-          cuisine: updatedFields.cuisine,
-          difficulty: updatedFields.difficulty,
-          author: updatedFields.author,
-          cookbook_name: updatedFields.cookbook_name,
-          isbn: updatedFields.isbn,
-          source_url: updatedFields.source_url,
-          ai_tags: updatedFields.ai_tags,
-          extraction_history: updatedFields.extraction_history
-        })
-        .eq('id', recipe.id);
-
-      if (error) throw error;
-      setRecipe(prev => ({ ...prev, ...updatedFields }));
+      const { updateRecipe } = await import('./lib/recipeService');
+      const updatedRecipe = await updateRecipe(recipe.id, updatedFields);
+      setRecipe(prev => ({ ...prev, ...updatedFields, ...updatedRecipe }));
 
     } catch (error) {
       console.error("Update failed:", error);

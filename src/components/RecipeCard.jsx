@@ -114,10 +114,12 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     };
 
     const formatIngredient = (ing) => {
-        if (typeof ing === 'object' && ing !== null && 'item' in ing) {
+        // Support both old format (item) and new format (name)
+        if (typeof ing === 'object' && ing !== null && ('item' in ing || 'name' in ing)) {
             let amount = ing.amount;
             if (typeof amount === 'number') amount = Math.round(amount * scaleFactor * 100) / 100;
-            return (<span><span className="font-bold text-white">{amount}</span>{ing.unit && <span className="text-muted-foreground mx-1">{ing.unit}</span>}<span>{ing.item}</span></span>);
+            const ingredientName = ing.name || ing.item;
+            return (<span><span className="font-bold text-white">{amount}</span>{ing.unit && <span className="text-muted-foreground mx-1">{ing.unit}</span>}<span>{ingredientName}</span></span>);
         }
         return parseAndScaleString(String(ing));
     };
@@ -513,11 +515,16 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                     >
                                         <ul className="space-y-3 pt-6">
                                             {Array.isArray(recipe.ingredients) && recipe.ingredients.map((ingredient, idx) => {
-                                                let content = { amount: '', unit: '', item: '' };
-                                                if (typeof ingredient === 'object' && ingredient !== null && 'item' in ingredient) {
+                                                let content = { amount: '', unit: '', name: '' };
+                                                // Support both old format (item) and new format (name)
+                                                if (typeof ingredient === 'object' && ingredient !== null && ('item' in ingredient || 'name' in ingredient)) {
                                                     let amount = ingredient.amount;
                                                     if (typeof amount === 'number') amount = Math.round(amount * scaleFactor * 100) / 100;
-                                                    content = { amount: amount || '', unit: ingredient.unit || '', item: ingredient.item || '' };
+                                                    content = {
+                                                        amount: amount || '',
+                                                        unit: ingredient.unit || '',
+                                                        name: ingredient.name || ingredient.item || ''
+                                                    };
                                                 } else {
                                                     const str = String(ingredient);
                                                     const regex = /^(\d+(?:\.\d+)?|\d+\/\d+|\d+\s+\d+\/\d+)\s*([a-zA-Z]+)?\s+(.*)/;
@@ -531,14 +538,14 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                         } else if (amountStr.includes('/')) {
                                                             amount = eval(amountStr);
                                                         } else amount = parseFloat(amountStr);
-                                                        content = { amount: Math.round(amount * scaleFactor * 100) / 100, unit: match[2] || '', item: match[3] || '' };
+                                                        content = { amount: Math.round(amount * scaleFactor * 100) / 100, unit: match[2] || '', name: match[3] || '' };
                                                     } else {
-                                                        content = { item: str, amount: '', unit: '' };
+                                                        content = { name: str, amount: '', unit: '' };
                                                     }
                                                 }
                                                 return (
                                                     <li key={idx} className="grid grid-cols-[1fr_auto] gap-4 py-2 border-b border-white/5 last:border-0 hover:border-white/10 transition-colors items-baseline">
-                                                        <span className="text-gray-200 font-medium">{content.item}</span>
+                                                        <span className="text-gray-200 font-medium">{content.name}</span>
                                                         <span className="text-right whitespace-nowrap">
                                                             <span className="font-bold text-white">{content.amount}</span>
                                                             {content.unit && <span className="text-white/40 ml-1 text-xs uppercase tracking-wider font-bold">{content.unit}</span>}
@@ -716,16 +723,25 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                             <div className="space-y-10 relative">
                                 <div className="absolute left-[19px] top-4 bottom-4 w-[1px] bg-white/5" />
 
-                                {Array.isArray(recipe.instructions) && recipe.instructions.map((step, idx) => (
-                                    <div key={idx} className="group relative pl-12">
-                                        <div className="absolute left-0 top-0 w-10 h-10 rounded-full bg-background border border-white/10 flex items-center justify-center text-sm font-bold text-muted-foreground group-hover:border-primary/40 group-hover:text-white transition-all z-10">
-                                            {idx + 1}
+                                {Array.isArray(recipe.instructions) && recipe.instructions.map((step, idx) => {
+                                    // Support both old format (string) and new format (object with description)
+                                    const stepText = typeof step === 'object' && step.description
+                                        ? step.description
+                                        : String(step);
+                                    const stepNumber = typeof step === 'object' && step.step_number
+                                        ? step.step_number
+                                        : idx + 1;
+                                    return (
+                                        <div key={idx} className="group relative pl-12">
+                                            <div className="absolute left-0 top-0 w-10 h-10 rounded-full bg-background border border-white/10 flex items-center justify-center text-sm font-bold text-muted-foreground group-hover:border-primary/40 group-hover:text-white transition-all z-10">
+                                                {stepNumber}
+                                            </div>
+                                            <div className="pt-1">
+                                                <p className="text-xl text-gray-200 leading-relaxed font-medium group-hover:text-white transition-colors">{stepText}</p>
+                                            </div>
                                         </div>
-                                        <div className="pt-1">
-                                            <p className="text-xl text-gray-200 leading-relaxed font-medium group-hover:text-white transition-colors">{step}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
 
                             {/* Raw OCR Section - Only for non-photo recipes */}
