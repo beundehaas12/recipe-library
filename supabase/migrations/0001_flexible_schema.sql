@@ -14,6 +14,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. DROP LEGACY COLUMNS FROM RECIPES TABLE (data is test only)
 -- ============================================================================
 
+-- First drop the dependent view
+DROP VIEW IF EXISTS expanded_recipes CASCADE;
+
 -- Drop the old JSON array columns (replaced by normalized tables)
 ALTER TABLE recipes DROP COLUMN IF EXISTS ingredients;
 ALTER TABLE recipes DROP COLUMN IF EXISTS instructions;
