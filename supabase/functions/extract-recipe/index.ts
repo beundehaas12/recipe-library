@@ -247,8 +247,8 @@ async function callGemini(parts: any[], apiKey: string, expectJson = true): Prom
 // HELPER: Call Grok API (xAI)
 // =============================================================================
 async function callGrok(prompt: string, model: string, apiKey: string, imageUrl?: string): Promise<{ text: string; usage: any }> {
-    // Use grok-vision-beta for image analysis, otherwise grok-2
-    const modelId = imageUrl ? 'grok-vision-beta' : (model === 'grok-vision-beta' ? 'grok-vision-beta' : 'grok-2')
+    // Use the selected model directly (grok-4 or grok-4.1-fast)
+    const modelId = model.startsWith('grok-') ? model : 'grok-4.1-fast'
 
     const messages: any[] = [{
         role: 'user',

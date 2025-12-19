@@ -278,8 +278,8 @@ function Home({ activeTasks, setActiveTasks }) {
   // Available LLM models
   const llmModels = [
     { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google', description: 'Snel en efficiënt' },
-    { id: 'grok-2', name: 'Grok 2', provider: 'xAI', description: 'Geavanceerd redeneren' },
-    { id: 'grok-vision-beta', name: 'Grok Vision', provider: 'xAI', description: 'Multimodal met visie' },
+    { id: 'grok-4', name: 'Grok 4', provider: 'xAI', description: 'Geavanceerd redeneren' },
+    { id: 'grok-4.1-fast', name: 'Grok 4.1 Fast', provider: 'xAI', description: 'Nieuwste, snel & tool-calling' },
   ];
 
   const handleModelChange = (modelId) => {
