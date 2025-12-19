@@ -278,8 +278,8 @@ function Home({ activeTasks, setActiveTasks }) {
   // Available LLM models
   const llmModels = [
     { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google', description: 'Snel en efficiënt' },
-    { id: 'grok-4-1', name: 'Grok 4.1', provider: 'xAI', description: 'Geavanceerd redeneren' },
-    { id: 'grok-4-fast-reasoning', name: 'Grok 4 Fast Reasoning', provider: 'xAI', description: 'Snel met redeneren' },
+    { id: 'grok-2', name: 'Grok 2', provider: 'xAI', description: 'Geavanceerd redeneren' },
+    { id: 'grok-vision-beta', name: 'Grok Vision', provider: 'xAI', description: 'Multimodal met visie' },
   ];
 
   const handleModelChange = (modelId) => {
@@ -933,8 +933,8 @@ function Home({ activeTasks, setActiveTasks }) {
                         key={model.id}
                         onClick={() => handleModelChange(model.id)}
                         className={`w-full p-4 rounded-xl border transition-all text-left ${selectedModel === model.id
-                            ? 'border-primary bg-primary/10'
-                            : 'border-white/10 bg-white/5 hover:border-white/20'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-white/10 bg-white/5 hover:border-white/20'
                           }`}
                       >
                         <div className="flex items-center justify-between">
