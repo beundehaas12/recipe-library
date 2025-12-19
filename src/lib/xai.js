@@ -70,6 +70,43 @@ async function invokeEdgeFunction(functionName, body) {
                     .replace(/,(\s*[\}\]])/g, '$1') // trailing commas
                     .trim();
 
+                // 4. TRUNCATION REPAIR: Auto-close missing braces/brackets
+                if (!jsonStr.endsWith('}') && !jsonStr.endsWith(']')) {
+                    let openBraces = 0;
+                    let openBrackets = 0;
+                    let inString = false;
+                    let escape = false;
+
+                    for (let i = 0; i < jsonStr.length; i++) {
+                        const char = jsonStr[i];
+                        if (char === '\\' && !escape) {
+                            escape = true;
+                            continue;
+                        }
+                        if (char === '"' && !escape) {
+                            inString = !inString;
+                        }
+                        if (!inString) {
+                            if (char === '{') openBraces++;
+                            else if (char === '}') openBraces--;
+                            else if (char === '[') openBrackets++;
+                            else if (char === ']') openBrackets--;
+                        }
+                        escape = false;
+                    }
+
+                    // Close any open string first
+                    if (inString) jsonStr += '"';
+
+                    // Close arrays and objects in correct order (simplified: assuming mostly tail truncation)
+                    // Note: A perfect stack approach is better but complexity/risk tradeoff.
+                    // Since we just want to close the main structure:
+                    while (openBrackets > 0) { jsonStr += ']'; openBrackets--; }
+                    while (openBraces > 0) { jsonStr += '}'; openBraces--; }
+
+                    console.warn('Repaired truncated JSON by appending closing brackets/braces.');
+                }
+
                 const repairedRecipe = JSON.parse(jsonStr);
 
                 // If successful, return constructed result
