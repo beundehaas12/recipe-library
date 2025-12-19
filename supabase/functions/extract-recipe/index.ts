@@ -172,16 +172,30 @@ Geef ALLEEN de verbeterde JSON.`
             throw new Error(`Empty response from Gemini (block: ${blockReason}, finish: ${finishReason})`)
         }
 
-        // Parse JSON
+        // Parse JSON with multiple fallback strategies
         let jsonStr = content.trim()
+        console.log('Raw content first 300 chars:', jsonStr.substring(0, 300))
+
+        // Try code block extraction
         const codeBlockMatch = jsonStr.match(/```json?\n?([\s\S]*?)\n?```/)
-        if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim()
+        if (codeBlockMatch) {
+            jsonStr = codeBlockMatch[1].trim()
+        }
+
+        // Try to find JSON object directly
+        if (!jsonStr.startsWith('{')) {
+            const jsonStart = jsonStr.indexOf('{')
+            const jsonEnd = jsonStr.lastIndexOf('}')
+            if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+                jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1)
+            }
+        }
 
         let recipe = {}
         try {
             recipe = JSON.parse(jsonStr)
         } catch (e) {
-            console.error('JSON parse error:', content.substring(0, 500))
+            console.error('JSON parse error. Attempted to parse:', jsonStr.substring(0, 1000))
             throw new Error('Invalid JSON from AI')
         }
 
