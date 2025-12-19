@@ -309,6 +309,25 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
             {/* Main Content Grid */}
             <div className="max-w-[1600px] mx-auto px-4 lg:px-20 mt-12 relative z-20">
+
+                {/* Introduction/Story Section */}
+                {recipe.introduction && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="mb-12 max-w-3xl mx-auto"
+                    >
+                        <div className="relative bg-zinc-900/60 backdrop-blur-md rounded-[var(--radius)] p-8 border-l-4 border-primary/50">
+                            <div className="absolute top-4 left-4 text-primary/30 text-5xl font-serif">"</div>
+                            <p className="text-lg md:text-xl text-gray-300 leading-relaxed italic pl-8 pr-4">
+                                {recipe.introduction}
+                            </p>
+                            <div className="absolute bottom-4 right-6 text-primary/30 text-5xl font-serif">"</div>
+                        </div>
+                    </motion.div>
+                )}
+
                 <div className="grid lg:grid-cols-[400px_1fr] gap-12 lg:gap-24">
 
                     {/* Left Column: Stats & Ingredients */}

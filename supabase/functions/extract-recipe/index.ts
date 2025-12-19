@@ -1,6 +1,7 @@
 // Supabase Edge Function: extract-recipe
 // Using Google Gemini Flash for OCR and structured extraction
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { GoogleGenerativeAI } from "npm:@google/generative-ai"
 
 const IMPROVED_SYSTEM_PROMPT = `Je bent een uiterst precieze recept-extractie expert met visuele analysevaardigheden.
 Je taak is om een recept uit een afbeelding of tekst zo ACCURAAT en GETROUW mogelijk te extraheren.
@@ -22,6 +23,7 @@ KRITIEKE REGELS:
 - Groepeer ingrediënten logisch op basis van kopjes of visuele secties (bijv. "Vulling", "Velouté", "Paneren").
 - Identificeer benodigde gereedschappen (oven, blender, pan, frituurpan, etc.) uit de instructies.
 - Vul metadata (porties, tijden, moeilijkheidsgraad, keuken) alleen in als ze expliciet vermeld staan.
+- Extraheer introductie/verhaal tekst (vaak cursief/italic) EXACT zoals geschreven naar het "introduction" veld.
 
 INSTRUCTIES BELANGRIJK:
 - Elke stap moet LETTERLIJK overeenkomen met de tekst in de bron
@@ -34,6 +36,8 @@ Geef ALLEEN de JSON in exact dit formaat, zonder extra tekst, uitleg of secties.
 
 {
   "title": string,
+  "subtitle": string | null,
+  "introduction": string | null,
   "description": string,
   "ingredients": [
     {
@@ -66,19 +70,7 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Helper to encode ArrayBuffer to base64 without stack overflow
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer)
-    let binary = ''
-    const chunkSize = 8192 // Process in chunks to avoid stack overflow
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-        const chunk = bytes.slice(i, i + chunkSize)
-        binary += String.fromCharCode.apply(null, Array.from(chunk))
-    }
-    return btoa(binary)
-}
-
-serve(async (req) => {
+serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
@@ -92,8 +84,18 @@ serve(async (req) => {
             throw new Error("GEMINI_API_KEY not configured")
         }
 
-        let systemInstruction = IMPROVED_SYSTEM_PROMPT
-        let parts: any[] = []
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.0-flash-exp",
+            generationConfig: {
+                temperature: 0,
+                maxOutputTokens: 4000,
+                responseMimeType: "application/json"
+            }
+        })
+
+        let prompt = IMPROVED_SYSTEM_PROMPT + "\n\n"
+        let imagePart: any = null
 
         if (type === 'image') {
             console.log('Fetching image...')
@@ -102,26 +104,31 @@ serve(async (req) => {
                 throw new Error(`Failed to fetch image: ${imageResponse.status}`)
             }
             const imageBuffer = await imageResponse.arrayBuffer()
+            const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer).slice(0, 50000)))
+            // For large images, we need to fetch in chunks
+            let base64 = ''
+            const bytes = new Uint8Array(imageBuffer)
+            const chunkSize = 8192
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                const chunk = bytes.slice(i, i + chunkSize)
+                base64 += String.fromCharCode.apply(null, Array.from(chunk))
+            }
+            base64 = btoa(base64)
+
+            const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
             console.log('Image size:', imageBuffer.byteLength, 'bytes')
 
-            // Use chunked base64 encoding to avoid stack overflow
-            const base64Image = arrayBufferToBase64(imageBuffer)
-            const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
-            console.log('Base64 length:', base64Image.length)
-
-            parts = [
-                { text: "Analyse de afbeelding grondig en extraheer het recept volgens de instructies. Geef ALLEEN de JSON output." },
-                {
-                    inlineData: {
-                        mimeType: mimeType,
-                        data: base64Image
-                    }
+            imagePart = {
+                inlineData: {
+                    mimeType: mimeType,
+                    data: base64
                 }
-            ]
+            }
+            prompt += "Analyse de afbeelding grondig en extraheer het recept. Geef ALLEEN de JSON output."
         } else if (type === 'text') {
-            parts = [{ text: `Extraheer het recept uit de volgende tekst:\n\n${textContent}\n\nGeef ALLEEN de JSON output.` }]
+            prompt += `Extraheer het recept uit de volgende tekst:\n\n${textContent}\n\nGeef ALLEEN de JSON output.`
         } else if (type === 'review' || type === 'vision_review') {
-            systemInstruction = `Je bent een recept-validatie expert.
+            prompt = `Je bent een recept-validatie expert.
 Je hebt de huidige geëxtraheerde receptdata en (mogelijk) de originele afbeelding/tekst.
 Je taak is om de data te controleren, fouten te corrigeren en ontbrekende informatie aan te vullen – ALLEEN op basis van wat zichtbaar is.
 
@@ -142,20 +149,22 @@ Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
                     throw new Error(`Failed to fetch image: ${imageResponse.status}`)
                 }
                 const imageBuffer = await imageResponse.arrayBuffer()
-                const base64Image = arrayBufferToBase64(imageBuffer)
+                let base64 = ''
+                const bytes = new Uint8Array(imageBuffer)
+                const chunkSize = 8192
+                for (let i = 0; i < bytes.length; i += chunkSize) {
+                    const chunk = bytes.slice(i, i + chunkSize)
+                    base64 += String.fromCharCode.apply(null, Array.from(chunk))
+                }
+                base64 = btoa(base64)
                 const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
 
-                parts = [
-                    { text: "Bekijk de afbeelding opnieuw en verbeter de huidige receptdata waar nodig. Geef ALLEEN de JSON output." },
-                    {
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: base64Image
-                        }
+                imagePart = {
+                    inlineData: {
+                        mimeType: mimeType,
+                        data: base64
                     }
-                ]
-            } else {
-                parts = [{ text: "Valideer en verbeter de huidige receptdata op basis van de beschikbare informatie. Geef ALLEEN de JSON output." }]
+                }
             }
         } else {
             throw new Error(`Unsupported type: ${type}`)
@@ -163,40 +172,19 @@ Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
 
         console.log('Calling Gemini API...')
 
-        // Build request body as object first, then stringify
-        const requestBody = {
-            systemInstruction: { parts: [{ text: systemInstruction }] },
-            contents: [{ parts }],
-            generationConfig: {
-                temperature: 0.0,
-                maxOutputTokens: 4000,
-                responseMimeType: "application/json"
-            }
+        let result
+        if (imagePart) {
+            result = await model.generateContent([prompt, imagePart])
+        } else {
+            result = await model.generateContent(prompt)
         }
 
-        const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            }
-        )
+        const response = result.response
+        const content = response.text()
+        console.log('Gemini response received, length:', content.length)
 
-        if (!geminiResponse.ok) {
-            const errorText = await geminiResponse.text()
-            console.error('Gemini API error:', errorText)
-            throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText.substring(0, 200)}`)
-        }
-
-        const geminiData = await geminiResponse.json()
-        console.log('Gemini response received')
-
-        const content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
         if (!content) {
-            const blockReason = geminiData.candidates?.[0]?.finishReason
-            console.error('Empty or blocked response:', blockReason, JSON.stringify(geminiData).substring(0, 500))
-            throw new Error(`Empty response from Gemini (reason: ${blockReason})`)
+            throw new Error('Empty response from Gemini API')
         }
 
         // Parse JSON from response
@@ -217,7 +205,7 @@ Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
             throw new Error('Invalid JSON from AI')
         }
 
-        const usage = geminiData.usageMetadata || {}
+        const usage = response.usageMetadata || {}
 
         return new Response(
             JSON.stringify({
@@ -234,12 +222,13 @@ Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
                 status: 200
             }
         )
-    } catch (error) {
-        console.error('Edge function error:', error)
+    } catch (error: unknown) {
+        const err = error as Error
+        console.error('Edge function error:', err)
         return new Response(
             JSON.stringify({
-                error: error.message || 'Unknown error',
-                details: error.toString()
+                error: err.message || 'Unknown error',
+                details: err.toString()
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
