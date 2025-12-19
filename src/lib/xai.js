@@ -43,6 +43,49 @@ async function invokeEdgeFunction(functionName, body) {
     }
 
     if (data.error) {
+        // CLIENT-SIDE FALLBACK: If backend failed to parse JSON but returned raw content,
+        // try to fix it here on the client. This handles cases where backend is outdated.
+        if (data.error.includes('Invalid JSON') && data.rawContent) {
+            console.warn('Backend failed to parse JSON, attempting client-side repair...');
+            try {
+                let jsonStr = data.rawContent;
+
+                // 1. Extract JSON block if wrapped in markdown
+                const codeBlockMatch = jsonStr.match(/```json?\n?([\s\S]*?)\n?```/);
+                if (codeBlockMatch) jsonStr = codeBlockMatch[1];
+
+                // 2. Find outermost braces
+                if (!jsonStr.startsWith('{')) {
+                    const jsonStart = jsonStr.indexOf('{');
+                    const jsonEnd = jsonStr.lastIndexOf('}');
+                    if (jsonStart !== -1 && jsonEnd !== -1) {
+                        jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1);
+                    }
+                }
+
+                // 3. Aggressively clean (comments, trailing commas)
+                jsonStr = jsonStr
+                    .replace(/\/\/.*$/gm, '') // single-line comments
+                    .replace(/\/\*[\s\S]*?\*\//g, '') // multi-line comments
+                    .replace(/,(\s*[\}\]])/g, '$1') // trailing commas
+                    .trim();
+
+                const repairedRecipe = JSON.parse(jsonStr);
+
+                // If successful, return constructed result
+                return {
+                    recipe: repairedRecipe,
+                    usage: data.usage || { total_tokens: 0 },
+                    raw_response: data.rawContent
+                };
+
+            } catch (parseError) {
+                console.error('Client-side repair failed:', parseError);
+                // Throw original error if repair fails
+                throw new Error(data.error);
+            }
+        }
+
         throw new Error(data.error);
     }
 
