@@ -126,11 +126,11 @@ Geef ALLEEN de verbeterde JSON.`
                 base64 = btoa(base64)
                 const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
                 parts = [
-                    { text: systemPrompt + "\n\nVerbeter de receptdata op basis van de afbeelding. Zoek goed naar tijden!" },
+                    { text: systemPrompt + "\n\nFOCUS OP STRUCTUUR EN RIJKDOM: Splits ingrediënten in aantal/eenheid/naam. Voeg categorieën toe. Behoud de exacte inhoud van de bron." },
                     { inline_data: { mime_type: mimeType, data: base64 } }
                 ]
             } else {
-                parts = [{ text: systemPrompt + "\n\nValideer en verbeter de receptdata." }]
+                parts = [{ text: systemPrompt + "\n\nValideer en verbeter de structuur. Verander geen feitelijke waarden als ze al kloppen." }]
             }
         } else {
             throw new Error(`Unsupported type: ${type}`)
@@ -138,17 +138,18 @@ Geef ALLEEN de verbeterde JSON.`
 
         console.log('Calling Gemini API...')
 
-        // User's exact URL with v1 API format
+        // Use stable Gemini 1.5 Flash model
         const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts }],
                     generationConfig: {
-                        temperature: 0,
-                        maxOutputTokens: 8192
+                        temperature: 0.1, // Slight creativity for structure, but low for facts
+                        maxOutputTokens: 8192,
+                        responseMimeType: "application/json" // Force JSON mode
                     }
                 })
             }
