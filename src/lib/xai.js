@@ -1,15 +1,29 @@
 /**
- * Recipe AI Client - Gemini 3 Flash Integration
+ * Recipe AI Client - Multi-model LLM Integration
  * Handles all AI-powered recipe extraction and enrichment
+ * Supports: Gemini 3 Flash, Grok 4.1, Grok 4 Fast Reasoning
  */
 import { supabase } from './supabase';
+
+// =============================================================================
+// HELPER: Get selected LLM model
+// =============================================================================
+function getSelectedModel() {
+    return localStorage.getItem('llm_model') || 'gemini-3-flash-preview';
+}
 
 // =============================================================================
 // EDGE FUNCTION INVOKER
 // =============================================================================
 
 async function invokeEdgeFunction(functionName, body) {
-    const { data, error } = await supabase.functions.invoke(functionName, { body });
+    // Automatically include selected model in all requests
+    const bodyWithModel = {
+        ...body,
+        model: getSelectedModel()
+    };
+
+    const { data, error } = await supabase.functions.invoke(functionName, { body: bodyWithModel });
 
     if (error) {
         console.error(`Edge function error [${functionName}]:`, error);

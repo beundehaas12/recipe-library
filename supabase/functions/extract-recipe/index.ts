@@ -210,7 +210,7 @@ async function callGemini(parts: any[], apiKey: string, expectJson = true): Prom
                 contents: [{ parts }],
                 generationConfig: {
                     temperature: 0.1,
-                    maxOutputTokens: 16384, // Increased to handle long recipes
+                    maxOutputTokens: 16384,
                     responseMimeType: expectJson ? "application/json" : "text/plain"
                 }
             })
@@ -224,7 +224,6 @@ async function callGemini(parts: any[], apiKey: string, expectJson = true): Prom
 
     const data = await response.json()
 
-    // Check for truncation
     const finishReason = data.candidates?.[0]?.finishReason
     if (finishReason === 'MAX_TOKENS') {
         throw new Error('AI response was truncated. Recipe may be too complex - try a clearer photo.')
@@ -245,6 +244,88 @@ async function callGemini(parts: any[], apiKey: string, expectJson = true): Prom
 }
 
 // =============================================================================
+// HELPER: Call Grok API (xAI)
+// =============================================================================
+async function callGrok(prompt: string, model: string, apiKey: string, imageUrl?: string): Promise<{ text: string; usage: any }> {
+    const modelId = model === 'grok-4-1' ? 'grok-4-1' : 'grok-4-fast-reasoning'
+
+    const messages: any[] = [{
+        role: 'user',
+        content: imageUrl
+            ? [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: imageUrl } }
+            ]
+            : prompt
+    }]
+
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: modelId,
+            messages,
+            temperature: 0.1,
+            max_tokens: 16384,
+            response_format: { type: 'json_object' }
+        })
+    })
+
+    if (!response.ok) {
+        const err = await response.text()
+        throw new Error(`Grok API Error: ${err}`)
+    }
+
+    const data = await response.json()
+    const text = data.choices?.[0]?.message?.content || "{}"
+
+    const usage = {
+        total_tokens: data.usage?.total_tokens || 0,
+        prompt_tokens: data.usage?.prompt_tokens || 0,
+        completion_tokens: data.usage?.completion_tokens || 0
+    }
+
+    return { text, usage }
+}
+
+// =============================================================================
+// HELPER: Unified LLM call (routes to Gemini or Grok)
+// =============================================================================
+async function callLLM(
+    prompt: string,
+    model: string,
+    geminiKey: string,
+    xaiKey: string,
+    imageUrl?: string
+): Promise<{ text: string; usage: any; model: string }> {
+    if (model.startsWith('grok-')) {
+        if (!xaiKey) throw new Error('XAI_API_KEY not configured for Grok models')
+        const result = await callGrok(prompt, model, xaiKey, imageUrl)
+        return { ...result, model }
+    } else {
+        // Default to Gemini
+        const parts: any[] = [{ text: prompt }]
+        if (imageUrl) {
+            // For Gemini, we need to fetch and inline the image
+            const imgResponse = await fetch(imageUrl)
+            const imgBuffer = await imgResponse.arrayBuffer()
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)))
+            parts.push({
+                inline_data: {
+                    mime_type: 'image/jpeg',
+                    data: base64
+                }
+            })
+        }
+        const result = await callGemini(parts, geminiKey, true)
+        return { ...result, model: 'gemini-3-flash-preview' }
+    }
+}
+
+// =============================================================================
 // MAIN HANDLER
 // =============================================================================
 serve(async (req: Request) => {
@@ -253,11 +334,22 @@ serve(async (req: Request) => {
     }
 
     try {
-        const { signedUrl, type, textContent, recipeData, rawData, sourceUrl } = await req.json()
+        const { signedUrl, type, textContent, recipeData, rawData, sourceUrl, model } = await req.json()
         const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")
-        if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured")
+        const XAI_API_KEY = Deno.env.get("XAI_API_KEY")
 
-        console.log(`[extract-recipe] Processing type: ${type}`)
+        // Determine which model to use (default to Gemini)
+        const selectedModel = model || 'gemini-3-flash-preview'
+
+        // Validate API keys based on model
+        if (selectedModel.startsWith('grok-') && !XAI_API_KEY) {
+            throw new Error("XAI_API_KEY not configured for Grok models")
+        }
+        if (!selectedModel.startsWith('grok-') && !GEMINI_API_KEY) {
+            throw new Error("GEMINI_API_KEY not configured")
+        }
+
+        console.log(`[extract-recipe] Processing type: ${type}, model: ${selectedModel}`)
 
         let result: any = {}
 
