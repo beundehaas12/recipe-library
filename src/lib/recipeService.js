@@ -350,6 +350,7 @@ export async function updateRecipe(recipeId, updates) {
             cookbook_name: updates.cookbook_name,
             isbn: updates.isbn,
             source_url: updates.source_url,
+            image_url: updates.image_url,
             ai_tags: normalized.ai_tags,
             extraction_history: updates.extraction_history,
             extra_data: normalized.extra_data

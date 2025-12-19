@@ -255,6 +255,56 @@ export async function uploadSourceImage(file, userId) {
 }
 
 /**
+ * Upload an external image URL to Supabase storage.
+ * Fetches the image, processes it, and stores permanently.
+ * 
+ * @param {string} imageUrl - External image URL to download and store
+ * @param {string} userId - User ID for folder organization
+ * @returns {Promise<{path: string, publicUrl: string}>}
+ */
+export async function uploadExternalImage(imageUrl, userId) {
+    console.log(`Fetching external image: ${imageUrl.substring(0, 80)}...`);
+
+    // Fetch the image
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+
+    const blob = await response.blob();
+
+    // Convert to File for processing
+    const file = new File([blob], 'external_image.jpg', { type: blob.type || 'image/jpeg' });
+
+    // Process and resize if needed
+    const processedBlob = await resizeIfNeeded(blob, MAX_IMAGE_DIMENSION);
+
+    // Create unique filename
+    const filename = `sources/${userId}/${Date.now()}_external.jpg`;
+
+    console.log(`Uploading external image: ${filename}`);
+
+    const { error: uploadError } = await supabase.storage
+        .from('recipe-images')
+        .upload(filename, processedBlob, {
+            contentType: 'image/jpeg',
+            upsert: false
+        });
+
+    if (uploadError) throw new Error(`External image upload failed: ${uploadError.message}`);
+
+    // Get Public URL
+    const { data: { publicUrl } } = supabase.storage
+        .from('recipe-images')
+        .getPublicUrl(filename);
+
+    console.log(`External image stored: ${publicUrl}`);
+
+    return {
+        path: filename,
+        publicUrl
+    };
+}
+
+/**
  * Delete an image from storage using its public URL.
  * Automatically extracts the storage path from the URL.
  * 

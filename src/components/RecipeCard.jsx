@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
 import { reviewRecipeWithAI, reAnalyzeRecipeFromStoredImage, enrichRecipe } from '../lib/xai';
 import { extractImagesFromHtml } from '../lib/htmlParser';
+import { uploadExternalImage } from '../lib/supabase';
 
 import { RecipeReviewModal } from './RecipeReviewModal';
 
@@ -217,9 +218,18 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
             id: recipe.id        // Critical: keep ID
         };
 
-        // If user selected an image, save it as image_url
+        // If user selected an image, upload to Supabase and save URL
         if (selectedImage) {
-            updates.image_url = selectedImage;
+            try {
+                const userId = recipe.user_id;
+                const { publicUrl } = await uploadExternalImage(selectedImage, userId);
+                updates.image_url = publicUrl;
+                console.log('✅ Image uploaded and saved:', publicUrl);
+            } catch (err) {
+                console.error('Failed to upload selected image:', err);
+                // Fall back to external URL if upload fails
+                updates.image_url = selectedImage;
+            }
         }
 
         await onUpdate(updates);
