@@ -1,6 +1,7 @@
 // Supabase Edge Function: extract-recipe
-// Using Google Gemini Flash 3 for OCR and structured extraction
+// Using Google Gemini Flash for OCR and structured extraction
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts"
 
 const IMPROVED_SYSTEM_PROMPT = `Je bent een uiterst precieze recept-extractie expert met visuele analysevaardigheden.
 Je taak is om een recept uit een afbeelding of tekst zo ACCURAAT en GETROUW mogelijk te extraheren.
@@ -73,6 +74,7 @@ serve(async (req) => {
 
     try {
         const { signedUrl, type, textContent, recipeData, sourceData } = await req.json()
+        console.log('Request received:', { type, hasSignedUrl: !!signedUrl, hasTextContent: !!textContent })
 
         const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")
         if (!GEMINI_API_KEY) {
@@ -83,11 +85,19 @@ serve(async (req) => {
         let parts: any[] = []
 
         if (type === 'image') {
+            console.log('Fetching image from:', signedUrl?.substring(0, 100) + '...')
             // Fetch the image and convert to base64
             const imageResponse = await fetch(signedUrl)
+            if (!imageResponse.ok) {
+                throw new Error(`Failed to fetch image: ${imageResponse.status}`)
+            }
             const imageBuffer = await imageResponse.arrayBuffer()
-            const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
+            console.log('Image size:', imageBuffer.byteLength, 'bytes')
+
+            // Use proper base64 encoding for large files
+            const base64Image = base64Encode(new Uint8Array(imageBuffer))
             const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+            console.log('Image MIME type:', mimeType)
 
             parts = [
                 { text: "Analyse de afbeelding grondig en extraheer het recept volgens de instructies. Geef ALLEEN de JSON output." },
@@ -118,8 +128,11 @@ Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
 
             if (type === 'vision_review') {
                 const imageResponse = await fetch(signedUrl)
+                if (!imageResponse.ok) {
+                    throw new Error(`Failed to fetch image: ${imageResponse.status}`)
+                }
                 const imageBuffer = await imageResponse.arrayBuffer()
-                const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
+                const base64Image = base64Encode(new Uint8Array(imageBuffer))
                 const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
 
                 parts = [
@@ -135,9 +148,10 @@ Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
                 parts = [{ text: "Valideer en verbeter de huidige receptdata op basis van de beschikbare informatie. Geef ALLEEN de JSON output." }]
             }
         } else {
-            throw new Error('Unsupported type')
+            throw new Error(`Unsupported type: ${type}`)
         }
 
+        console.log('Calling Gemini API...')
         // Call Gemini API
         const geminiResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -158,12 +172,18 @@ Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
 
         if (!geminiResponse.ok) {
             const errorText = await geminiResponse.text()
-            console.error('Gemini API error:', errorText)
-            throw new Error(`Gemini API error: ${geminiResponse.status}`)
+            console.error('Gemini API error response:', errorText)
+            throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText}`)
         }
 
         const geminiData = await geminiResponse.json()
+        console.log('Gemini response received')
+
         const content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+        if (!content) {
+            console.error('Empty response from Gemini:', JSON.stringify(geminiData))
+            throw new Error('Empty response from Gemini API')
+        }
 
         // Parse JSON from response
         let jsonStr = content.trim()
