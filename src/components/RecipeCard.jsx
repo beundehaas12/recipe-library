@@ -18,10 +18,6 @@ const languageNames = {
 };
 
 export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }) {
-    // DEBUG: Log what data we receive
-    console.log('📋 RecipeCard received recipe:', recipe?.title);
-    console.log('📦 ingredientsByGroup:', recipe?.ingredientsByGroup);
-    console.log('📝 ingredients count:', recipe?.ingredients?.length);
     const [currentServings, setCurrentServings] = useState(recipe?.servings || 4);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({});
@@ -30,8 +26,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         about: true,
         ingredients: true,
         ai: true,
-        history: false,
-        debug: false
+        history: false
     });
     const [isAIProcessing, setIsAIProcessing] = useState(false);
     const [showSourceModal, setShowSourceModal] = useState(false);
@@ -68,17 +63,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         }
     }, [recipe]);
 
-    // DEBUG: Log recipe data to check for introduction
-    useEffect(() => {
-        if (recipe) {
-            console.log('📖 RecipeCard rendering:', {
-                id: recipe.id,
-                title: recipe.title,
-                hasIntro: !!recipe.introduction,
-                introPreview: recipe.introduction?.substring(0, 50)
-            });
-        }
-    }, [recipe]);
 
     useEffect(() => {
         if (isEditing && recipe) {
@@ -756,16 +740,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                     </div>
                                                 )}
 
-                                                {/* Raw AI Response (Debug) */}
-                                                {recipe.extraction_history.raw_response && (
-                                                    <div className="pt-3 mt-3 border-t border-orange-500/20">
-                                                        <div className="text-[10px] text-orange-400/70 uppercase font-bold tracking-wider mb-2">🔧 Raw AI Output (Debug)</div>
-                                                        <pre className="bg-black/40 rounded-lg p-3 text-[10px] text-orange-200/80 overflow-x-auto max-h-[300px] overflow-y-auto whitespace-pre-wrap break-all font-mono">
-                                                            {recipe.extraction_history.raw_response}
-                                                        </pre>
-                                                    </div>
-                                                )}
-
 
                                             </div>
                                         </motion.div>
@@ -875,133 +849,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                 </div>
             </div>
 
-            {/* Full-Width Data Debug Section */}
-            {!isEditing && (
-                <div className="mt-12 bg-zinc-900/80 backdrop-blur-md rounded-[var(--radius)] p-6 shadow-xl transition-all border border-orange-500/20">
-                    <div
-                        className="flex items-center justify-between cursor-pointer group/stat"
-                        onClick={() => toggleSection('debug')}
-                    >
-                        <h3 className="text-xl font-bold text-orange-400 flex items-center gap-3">
-                            🔍 Data Debug
-                        </h3>
-                        <motion.div animate={{ rotate: expandedSections.debug ? 0 : -90 }} className="text-muted-foreground group-hover/stat:text-white transition-colors">
-                            <ChevronDown size={20} />
-                        </motion.div>
-                    </div>
-
-                    <AnimatePresence>
-                        {expandedSections.debug && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.3, ease: "easeInOut" }}
-                                className="overflow-hidden"
-                            >
-                                <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-xs font-mono">
-                                    {/* Main Recipe Table */}
-                                    <div className="bg-black/30 rounded-lg p-4">
-                                        <h4 className="text-orange-400 font-bold mb-3 uppercase tracking-wider">📄 recipes (main table)</h4>
-                                        <table className="w-full border-collapse">
-                                            <tbody className="text-white/70">
-                                                <tr className="border-b border-white/5"><td className="py-1 text-cyan-400">id</td><td className="py-1">{recipe.id}</td></tr>
-                                                <tr className="border-b border-white/5"><td className="py-1 text-cyan-400">title</td><td className="py-1">{recipe.title}</td></tr>
-                                                <tr className="border-b border-white/5"><td className="py-1 text-cyan-400">servings</td><td className="py-1">{recipe.servings ?? 'null'}</td></tr>
-                                                <tr className="border-b border-white/5"><td className="py-1 text-cyan-400">prep_time</td><td className="py-1">{recipe.prep_time ?? 'null'}</td></tr>
-                                                <tr className="border-b border-white/5"><td className="py-1 text-cyan-400">cook_time</td><td className="py-1">{recipe.cook_time ?? 'null'}</td></tr>
-                                                <tr className="border-b border-white/5"><td className="py-1 text-cyan-400">difficulty</td><td className="py-1">{recipe.difficulty ?? 'null'}</td></tr>
-                                                <tr className="border-b border-white/5"><td className="py-1 text-cyan-400">cuisine</td><td className="py-1">{recipe.cuisine ?? 'null'}</td></tr>
-                                                <tr className="border-b border-white/5"><td className="py-1 text-cyan-400">ai_tags</td><td className="py-1 truncate max-w-[200px]">{JSON.stringify(recipe.ai_tags)}</td></tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    {/* Ingredients Table */}
-                                    <div className="bg-black/30 rounded-lg p-4 lg:col-span-2">
-                                        <h4 className="text-green-400 font-bold mb-3 uppercase tracking-wider">🥕 recipe_ingredients ({recipe.ingredients?.length || 0} rows)</h4>
-                                        <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                                            <table className="w-full border-collapse">
-                                                <thead className="sticky top-0 bg-black/80">
-                                                    <tr className="border-b border-white/10">
-                                                        <th className="text-left py-1 px-2 text-white/40">#</th>
-                                                        <th className="text-left py-1 px-2 text-white/40">name</th>
-                                                        <th className="text-left py-1 px-2 text-white/40">amount</th>
-                                                        <th className="text-left py-1 px-2 text-white/40">unit</th>
-                                                        <th className="text-left py-1 px-2 text-yellow-400 font-bold">group_name ⚠️</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="text-white/70">
-                                                    {recipe.ingredients?.map((ing, idx) => (
-                                                        <tr key={idx} className="border-b border-white/5">
-                                                            <td className="py-1 px-2 text-white/30">{idx + 1}</td>
-                                                            <td className="py-1 px-2">{ing.name}</td>
-                                                            <td className="py-1 px-2">{ing.amount ?? 'null'}</td>
-                                                            <td className="py-1 px-2">{ing.unit ?? 'null'}</td>
-                                                            <td className={`py-1 px-2 font-bold ${ing.group_name ? 'text-yellow-400' : 'text-red-400'}`}>
-                                                                {ing.group_name ?? '❌ NULL'}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    {/* Grouped Ingredients Debug */}
-                                    <div className="bg-black/30 rounded-lg p-4">
-                                        <h4 className="text-yellow-400 font-bold mb-3 uppercase tracking-wider">📦 ingredientsByGroup</h4>
-                                        {recipe.ingredientsByGroup ? (
-                                            <pre className="text-[10px] text-yellow-200/80 overflow-x-auto max-h-[200px] overflow-y-auto whitespace-pre-wrap">
-                                                {JSON.stringify(recipe.ingredientsByGroup, null, 2)}
-                                            </pre>
-                                        ) : (
-                                            <div className="text-red-400 font-bold">❌ UNDEFINED</div>
-                                        )}
-                                    </div>
-
-                                    {/* Steps Table */}
-                                    <div className="bg-black/30 rounded-lg p-4 lg:col-span-2">
-                                        <h4 className="text-purple-400 font-bold mb-3 uppercase tracking-wider">📝 recipe_steps ({recipe.instructions?.length || 0} rows)</h4>
-                                        <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                                            <table className="w-full border-collapse">
-                                                <thead className="sticky top-0 bg-black/80">
-                                                    <tr className="border-b border-white/10">
-                                                        <th className="text-left py-1 px-2 text-white/40">#</th>
-                                                        <th className="text-left py-1 px-2 text-white/40">description</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="text-white/70">
-                                                    {recipe.instructions?.map((step, idx) => (
-                                                        <tr key={idx} className="border-b border-white/5">
-                                                            <td className="py-1 px-2">{step.step_number ?? idx + 1}</td>
-                                                            <td className="py-1 px-2">{typeof step === 'object' ? step.description : step}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    {/* Tools Table */}
-                                    <div className="bg-black/30 rounded-lg p-4">
-                                        <h4 className="text-pink-400 font-bold mb-3 uppercase tracking-wider">🔧 recipe_tools ({recipe.tools?.length || 0})</h4>
-                                        {recipe.tools?.length > 0 ? (
-                                            <ul className="text-white/70 space-y-1">
-                                                {recipe.tools?.map((tool, idx) => (
-                                                    <li key={idx}>• {tool.name}</li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <div className="text-white/30">No tools</div>
-                                        )}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            )}
             {/* Source Photo Modal */}
             <AnimatePresence>
                 {showSourceModal && (
