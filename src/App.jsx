@@ -8,7 +8,7 @@ import { useAuth } from './context/AuthContext';
 import LoginScreen from './components/LoginScreen';
 import RecipeList from './components/RecipeList';
 import RecipeCard from './components/RecipeCard';
-import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight, CheckCircle2, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
+import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight, CheckCircle2, AlertCircle, Loader2, ExternalLink, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 
 function Home({ activeTasks, setActiveTasks }) {
@@ -148,6 +148,30 @@ function Home({ activeTasks, setActiveTasks }) {
     ));
   };
 
+  // Helper to add a step to a task
+  const addTaskStep = (id, stepMessage) => {
+    setActiveTasks(prev => prev.map(task => {
+      if (task.id !== id) return task;
+      const steps = [...(task.steps || [])];
+      // Mark previous step as done
+      if (steps.length > 0) {
+        steps[steps.length - 1] = { ...steps[steps.length - 1], done: true };
+      }
+      // Add new step
+      steps.push({ message: stepMessage, done: false });
+      return { ...task, steps };
+    }));
+  };
+
+  // Helper to mark all steps as done
+  const completeTaskSteps = (id) => {
+    setActiveTasks(prev => prev.map(task => {
+      if (task.id !== id) return task;
+      const steps = (task.steps || []).map(s => ({ ...s, done: true }));
+      return { ...task, steps };
+    }));
+  };
+
   const saveRecipeToDb = async (recipeData, sourceInfo = {}, extractionHistory = null, taskId = null) => {
     try {
       // Import dynamically to avoid circular dependencies
@@ -185,12 +209,13 @@ function Home({ activeTasks, setActiveTasks }) {
     const taskId = Date.now().toString();
     const taskName = file.name.substring(0, 20) + (file.name.length > 20 ? '...' : '');
 
-    // Add to background tasks
+    // Add to background tasks with initial step
     setActiveTasks(prev => [{
       id: taskId,
       type: 'image',
       name: taskName,
-      status: 'processing'
+      status: 'processing',
+      steps: [{ message: 'Preparing image...', done: false }]
     }, ...prev]);
 
     let imagePath = null;
@@ -210,16 +235,17 @@ function Home({ activeTasks, setActiveTasks }) {
     };
 
     try {
-      console.log('Uploading source image to Supabase Storage...');
+      addTaskStep(taskId, 'Uploading to cloud...');
       const { path, publicUrl, signedUrl } = await uploadSourceImage(file, user.id);
       imagePath = path;
       extractionHistory.notes.push(`Image uploaded to Supabase Storage (permanent): ${path}`);
       extractionHistory.source_url = publicUrl;
 
-      console.log('Calling xAI via Edge Function...');
+      addTaskStep(taskId, 'AI is analyzing image...');
       const { recipe, usage, raw_response, raw_ocr, reasoning } = await extractRecipeFromImage(signedUrl);
       setTokenUsage(usage);
 
+      addTaskStep(taskId, 'Extracting recipe details...');
       extractionHistory.tokens = { prompt: usage.prompt_tokens, completion: usage.completion_tokens, total: usage.total_tokens };
       extractionHistory.estimated_cost_eur = (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
       extractionHistory.raw_response = raw_response;
@@ -230,7 +256,9 @@ function Home({ activeTasks, setActiveTasks }) {
       extractionHistory.processing_time_ms = Date.now() - startTime;
       recipe.ai_tags = ['🤖 grok', ...(recipe.ai_tags || [])];
 
+      addTaskStep(taskId, 'Saving recipe...');
       await saveRecipeToDb(recipe, { type: 'image', original_image_url: publicUrl }, extractionHistory, taskId);
+      completeTaskSteps(taskId);
 
     } catch (error) {
       console.error('Error processing recipe:', error);
@@ -270,7 +298,8 @@ function Home({ activeTasks, setActiveTasks }) {
       id: taskId,
       type: 'url',
       name: taskName,
-      status: 'processing'
+      status: 'processing',
+      steps: [{ message: 'Fetching page...', done: false }]
     }, ...prev]);
 
     const startTime = Date.now();
@@ -319,17 +348,20 @@ function Home({ activeTasks, setActiveTasks }) {
 
       if (!htmlContent) throw new Error("Could not retrieve content from URL");
 
+      addTaskStep(taskId, 'Parsing content...');
       const processed = processHtmlForRecipe(htmlContent);
       let recipe;
       let usage = null;
 
       if (processed.type === 'schema') {
+        addTaskStep(taskId, 'Recipe data found!');
         recipe = processed.data;
         extractionHistory.extraction_method = 'schema';
         extractionHistory.schema_used = true;
         extractionHistory.notes.push('Schema.org JSON-LD data found');
         recipe.ai_tags = ['📊 schema', ...(recipe.ai_tags || [])];
       } else {
+        addTaskStep(taskId, 'AI is analyzing...');
         const result = await extractRecipeFromText(processed.data);
         recipe = result.recipe;
         usage = result.usage;
@@ -348,7 +380,9 @@ function Home({ activeTasks, setActiveTasks }) {
       extractionHistory.processing_time_ms = Date.now() - startTime;
       if (!recipe || !recipe.title) throw new Error('Kon geen recepttitel vinden op deze pagina');
 
+      addTaskStep(taskId, 'Saving recipe...');
       await saveRecipeToDb(recipe, { type: 'url', url }, extractionHistory, taskId);
+      completeTaskSteps(taskId);
 
     } catch (error) {
       console.error("URL processing failed:", error);
@@ -978,83 +1012,140 @@ function RecipePage({ activeTasks, setActiveTasks }) {
 function AuthenticatedApp() {
   const [activeTasks, setActiveTasks] = useState([]);
 
-  // --- Background Tasks UI Component ---
+  // --- Background Tasks UI Component (Thinking Box) ---
   const BackgroundTaskBar = () => {
     const navigate = useNavigate();
+    const [expandedTasks, setExpandedTasks] = useState({});
     if (activeTasks.length === 0) return null;
+
+    const toggleExpand = (taskId) => {
+      setExpandedTasks(prev => ({ ...prev, [taskId]: !prev[taskId] }));
+    };
 
     return (
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3 pointer-events-none w-full max-w-md px-4">
         <AnimatePresence>
-          {activeTasks.map((task) => (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`pointer-events-auto flex items-center gap-4 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-full p-2 pl-4 pr-3 shadow-2xl w-full ${task.status === 'error' ? 'border-red-500/30' :
-                task.status === 'done' ? 'border-primary/30' : ''
-                }`}
-            >
-              <div className="relative flex-shrink-0">
-                {task.status === 'processing' && (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="text-primary"
-                  >
-                    <Loader2 size={22} />
-                  </motion.div>
-                )}
-                {task.status === 'done' && (
-                  <div className="text-primary bg-primary/10 p-2 rounded-full">
-                    <CheckCircle2 size={16} />
+          {activeTasks.map((task) => {
+            const isExpanded = expandedTasks[task.id];
+            const hasSteps = task.steps && task.steps.length > 0;
+
+            return (
+              <motion.div
+                key={task.id}
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                layout
+                className={`pointer-events-auto bg-black/90 backdrop-blur-2xl border border-white/10 shadow-2xl w-full overflow-hidden ${isExpanded ? 'rounded-2xl' : 'rounded-full'
+                  } ${task.status === 'error' ? 'border-red-500/30' : task.status === 'done' ? 'border-primary/30' : ''}`}
+              >
+                {/* Main row */}
+                <div className="flex items-center gap-4 p-2 pl-4 pr-3">
+                  <div className="relative flex-shrink-0">
+                    {task.status === 'processing' && (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="text-primary"
+                      >
+                        <Loader2 size={22} />
+                      </motion.div>
+                    )}
+                    {task.status === 'done' && (
+                      <div className="text-primary bg-primary/10 p-2 rounded-full">
+                        <CheckCircle2 size={16} />
+                      </div>
+                    )}
+                    {task.status === 'error' && (
+                      <div className="text-red-500 bg-red-500/10 p-2 rounded-full">
+                        <AlertCircle size={16} />
+                      </div>
+                    )}
                   </div>
-                )}
-                {task.status === 'error' && (
-                  <div className="text-red-500 bg-red-500/10 p-2 rounded-full">
-                    <AlertCircle size={16} />
+
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-white font-bold truncate text-sm">
+                      {task.status === 'processing'
+                        ? (task.type === 'image' ? 'AI denkt na...' : 'URL wordt onderzocht...')
+                        : task.status === 'done' ? 'Recept is klaar!' : 'Er ging iets mis'}
+                    </p>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest font-black truncate">
+                      {task.name}
+                    </p>
+                    {task.status === 'error' && (
+                      <p className="text-[10px] text-red-400 mt-0.5 line-clamp-1">{task.error}</p>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div className="flex-1 min-w-0 pr-2">
-                <p className="text-white font-bold truncate text-sm">
-                  {task.status === 'processing'
-                    ? (task.type === 'image' ? 'Recept wordt geanalyseerd...' : 'URL wordt onderzocht...')
-                    : task.status === 'done' ? 'Recept is klaar!' : 'Er ging iets mis'}
-                </p>
-                <p className="text-[10px] text-white/40 uppercase tracking-widest font-black truncate">
-                  {task.name}
-                </p>
-                {task.status === 'error' && (
-                  <p className="text-[10px] text-red-400 mt-0.5 line-clamp-1">{task.error}</p>
-                )}
-              </div>
+                  {/* Show details button */}
+                  {hasSteps && task.status === 'processing' && (
+                    <button
+                      onClick={() => toggleExpand(task.id)}
+                      className="text-white/40 hover:text-white/80 p-2 hover:bg-white/5 rounded-full transition-colors"
+                    >
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  )}
 
-              {task.status === 'done' && task.resultId && (
-                <button
-                  onClick={() => {
-                    navigate(`/recipe/${task.resultId}`);
-                    setActiveTasks(prev => prev.filter(t => t.id !== task.id));
-                  }}
-                  className="bg-primary hover:bg-primary/90 text-black p-2 rounded-full transition-all active:scale-90 flex items-center gap-2 px-4 shadow-lg shadow-primary/20"
-                >
-                  <span className="text-[10px] font-black uppercase tracking-wider">Bekijk</span>
-                  <ArrowRight size={14} />
-                </button>
-              )}
+                  {task.status === 'done' && task.resultId && (
+                    <button
+                      onClick={() => {
+                        navigate(`/recipe/${task.resultId}`);
+                        setActiveTasks(prev => prev.filter(t => t.id !== task.id));
+                      }}
+                      className="bg-primary hover:bg-primary/90 text-black p-2 rounded-full transition-all active:scale-90 flex items-center gap-2 px-4 shadow-lg shadow-primary/20"
+                    >
+                      <span className="text-[10px] font-black uppercase tracking-wider">Bekijk</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  )}
 
-              {task.status !== 'processing' && (
-                <button
-                  onClick={() => setActiveTasks(prev => prev.filter(t => t.id !== task.id))}
-                  className="text-white/20 hover:text-white/60 p-2 hover:bg-white/5 rounded-full transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </motion.div>
-          ))}
+                  {task.status !== 'processing' && (
+                    <button
+                      onClick={() => setActiveTasks(prev => prev.filter(t => t.id !== task.id))}
+                      className="text-white/20 hover:text-white/60 p-2 hover:bg-white/5 rounded-full transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Expandable steps section */}
+                <AnimatePresence>
+                  {isExpanded && hasSteps && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-white/5 px-4 py-3 space-y-2">
+                        {task.steps.map((step, idx) => (
+                          <div key={idx} className="flex items-center gap-3 text-xs">
+                            {step.done ? (
+                              <Check size={12} className="text-primary flex-shrink-0" />
+                            ) : (
+                              <motion.div
+                                animate={{ opacity: [0.3, 1, 0.3] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                                className="w-3 h-3 flex items-center justify-center"
+                              >
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                              </motion.div>
+                            )}
+                            <span className={step.done ? 'text-white/50' : 'text-white font-medium'}>
+                              {step.message}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
     );
