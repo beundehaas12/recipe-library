@@ -197,6 +197,15 @@ Geef ALLEEN de verbeterde JSON.`
             }
         }
 
+        // AGGRESSIVE CLEANUP: Remove comments and trailing commas which break JSON.parse
+        jsonStr = jsonStr
+            .replace(/\/\/.*$/gm, '') // Remove single-line comments
+            .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
+            .replace(/,(\s*[\}\]])/g, '$1') // Remove trailing commas
+            .trim();
+
+        console.log('Cleaned JSON string:', jsonStr.substring(0, 100));
+
         let recipe = {}
         try {
             recipe = JSON.parse(jsonStr)
