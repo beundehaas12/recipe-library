@@ -95,17 +95,23 @@ serve(async (req: Request) => {
             console.log('Image size:', imageBuffer.byteLength, 'bytes')
 
             parts = [
-                { text: systemPrompt + "\n\nAnalyse de afbeelding grondig en extraheer het recept. Geef ALLEEN de JSON output." },
+                { text: systemPrompt + "\n\nAnalyse de afbeelding grondig. Zoek specifiek naar TIJDEN (bereidingstijd, wachttijd, oventijd, bijv. '7 uur', '30 min'). Extraheer het recept. Geef ALLEEN de JSON output." },
                 { inline_data: { mime_type: mimeType, data: base64 } }
             ]
         } else if (type === 'text') {
-            parts = [{ text: systemPrompt + `\n\nExtraheer het recept uit de volgende tekst:\n\n${textContent}\n\nGeef ALLEEN de JSON output.` }]
+            parts = [{ text: systemPrompt + `\n\nExtraheer het recept uit de volgende tekst. Let goed op bereidingstijden.\n\n${textContent}\n\nGeef ALLEEN de JSON output.` }]
         } else if (type === 'review' || type === 'vision_review') {
             systemPrompt = `Je bent een recept-validatie expert.
 HUIDIGE DATA:
 ${JSON.stringify(recipeData, null, 2)}
 
-Valideer, corrigeer fouten, en vul ontbrekende info aan. Hallucineer niets.
+OPDRACHT:
+1. Vergelijk de data met de bron (afbeelding/tekst).
+2. Vul ONTBREKENDE velden aan. Zoek specifiek naar TIJDEN (prep_time, cook_time) zoals '7 uur', '45 min', '2u30'.
+3. Corrigeer foutieve waarden.
+4. Behoud correcte data.
+5. Hallucineer niets.
+
 Geef ALLEEN de verbeterde JSON.`
 
             if (type === 'vision_review') {
@@ -120,7 +126,7 @@ Geef ALLEEN de verbeterde JSON.`
                 base64 = btoa(base64)
                 const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
                 parts = [
-                    { text: systemPrompt + "\n\nVerbeter de receptdata op basis van de afbeelding." },
+                    { text: systemPrompt + "\n\nVerbeter de receptdata op basis van de afbeelding. Zoek goed naar tijden!" },
                     { inline_data: { mime_type: mimeType, data: base64 } }
                 ]
             } else {
