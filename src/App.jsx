@@ -279,7 +279,7 @@ function Home({ activeTasks, setActiveTasks }) {
   const llmModels = [
     { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google', description: 'Snel en efficiënt' },
     { id: 'grok-4', name: 'Grok 4', provider: 'xAI', description: 'Geavanceerd redeneren' },
-    { id: 'grok-4.1-fast-reasoning', name: 'Grok 4.1 Fast Reasoning', provider: 'xAI', description: 'Nieuwste, snel & tool-calling' },
+    { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast Reasoning', provider: 'xAI', description: 'Nieuwste, snel & tool-calling' },
   ];
 
   const handleModelChange = (modelId) => {

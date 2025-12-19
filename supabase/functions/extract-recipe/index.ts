@@ -248,8 +248,8 @@ async function callGemini(parts: any[], apiKey: string, expectJson = true): Prom
 // HELPER: Call Grok API (xAI)
 // =============================================================================
 async function callGrok(prompt: string, model: string, apiKey: string, imageUrl?: string): Promise<{ text: string; usage: any }> {
-    // Use the selected model directly (grok-4 or grok-4.1-fast-reasoning)
-    const modelId = model.startsWith('grok-') ? model : 'grok-4.1-fast-reasoning'
+    // Use the selected model directly (grok-4 or grok-4-1-fast-reasoning)
+    const modelId = model.startsWith('grok-') ? model : 'grok-4-1-fast-reasoning'
 
     const messages: any[] = [{
         role: 'user',
