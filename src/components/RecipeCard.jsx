@@ -3,7 +3,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2, FileText, Image, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
-import { reviewRecipeWithAI, reAnalyzeRecipeFromStoredImage } from '../lib/xai';
+import { reviewRecipeWithAI, reAnalyzeRecipeFromStoredImage, enrichRecipe } from '../lib/xai';
 
 import { RecipeReviewModal } from './RecipeReviewModal';
 
@@ -187,6 +187,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                         timestamp: new Date().toISOString(),
                         tokens_used: usage.total_tokens,
                         type: isPhoto ? 'vision_reanalysis' : 'text_review',
+                        ai_model: 'gemini-3-flash-preview',
                         changes: ['Review pending...']
                     }]
                 };
@@ -197,7 +198,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
         } catch (error) {
             console.error("AI improvement failed:", error);
-            // alert only on actual error, but user wants silent success
             alert("Er ging iets mis: " + error.message);
         } finally {
             setIsAIProcessing(false);

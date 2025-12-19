@@ -1,8 +1,12 @@
 /**
- * xAI Recipe Extraction Client - Simplified
- * CLEAN SLATE REFACTOR
+ * Recipe AI Client - Gemini 3 Flash Integration
+ * Handles all AI-powered recipe extraction and enrichment
  */
 import { supabase } from './supabase';
+
+// =============================================================================
+// EDGE FUNCTION INVOKER
+// =============================================================================
 
 async function invokeEdgeFunction(functionName, body) {
     const { data, error } = await supabase.functions.invoke(functionName, { body });
@@ -19,32 +23,31 @@ async function invokeEdgeFunction(functionName, body) {
     return data;
 }
 
+// =============================================================================
+// IMAGE ANALYSIS
+// =============================================================================
+
 /**
- * Extracts recipe data from text/HTML content.
+ * Analyze a recipe image and extract complete recipe data.
+ * Returns both structured recipe and raw extracted text for auditability.
+ * 
+ * @param {string} signedUrl - Signed URL to the image in Supabase Storage
+ * @returns {Promise<{recipe: Object, raw_extracted_data: Object, usage: Object}>}
  */
-export async function extractRecipeFromText(textContent) {
+export async function analyzeRecipeImage(signedUrl) {
     return invokeEdgeFunction('extract-recipe', {
-        type: 'text',
-        textContent
+        type: 'image',
+        signedUrl
     });
 }
 
 /**
- * Reviews and corrects existing recipe data using AI.
- */
-export async function reviewRecipeWithAI(recipeData, sourceData) {
-    // Sanitize heavy metadata
-    const { search_vector, user_id, created_at, updated_at, ...cleanRecipe } = recipeData;
-
-    return invokeEdgeFunction('extract-recipe', {
-        type: 'review',
-        recipeData: cleanRecipe,
-        sourceData: sourceData || 'Geen brongegevens.'
-    });
-}
-
-/**
- * Re-analyzes a recipe using its original stored image.
+ * Re-analyze a recipe from its stored image.
+ * Used for the "Analyze" button on photo-based recipes.
+ * 
+ * @param {string} imagePath - Image path or URL in Supabase Storage
+ * @param {Object} recipeData - Existing recipe data for context
+ * @returns {Promise<{recipe: Object, usage: Object}>}
  */
 export async function reAnalyzeRecipeFromStoredImage(imagePath, recipeData = {}) {
     let path = imagePath;
@@ -62,12 +65,78 @@ export async function reAnalyzeRecipeFromStoredImage(imagePath, recipeData = {})
 
     if (error) throw new Error(`Signed URL fail: ${error.message}`);
 
-    // Sanitize
+    // Sanitize recipe data
     const { search_vector, user_id, created_at, updated_at, extract_history, ...cleanRecipe } = recipeData;
 
     return invokeEdgeFunction('extract-recipe', {
         type: 'vision_review',
         signedUrl: signedData.signedUrl,
         recipeData: cleanRecipe
+    });
+}
+
+// =============================================================================
+// TEXT ANALYSIS
+// =============================================================================
+
+/**
+ * Extracts recipe data from text/HTML content.
+ * 
+ * @param {string} textContent - Raw text or HTML content
+ * @returns {Promise<{recipe: Object, raw_extracted_data: Object, usage: Object}>}
+ */
+export async function extractRecipeFromText(textContent) {
+    return invokeEdgeFunction('extract-recipe', {
+        type: 'text',
+        textContent
+    });
+}
+
+/**
+ * Reviews and improves existing recipe data using AI.
+ * Used for URL recipes to re-analyze from source text.
+ * 
+ * @param {Object} recipeData - Current recipe data
+ * @param {string} sourceData - Original source text/HTML
+ * @returns {Promise<{recipe: Object, usage: Object}>}
+ */
+export async function reviewRecipeWithAI(recipeData, sourceData) {
+    // Sanitize heavy metadata
+    const { search_vector, user_id, created_at, updated_at, ...cleanRecipe } = recipeData;
+
+    return invokeEdgeFunction('extract-recipe', {
+        type: 'review',
+        recipeData: cleanRecipe,
+        rawData: sourceData || 'Geen brongegevens.'
+    });
+}
+
+// =============================================================================
+// ENRICHMENT
+// =============================================================================
+
+/**
+ * Generate AI enrichments for a recipe (nutrition, tips, variations, etc.)
+ * 
+ * @param {Object} recipeData - The structured recipe data
+ * @param {string|Object} rawData - Raw extracted data or text for context
+ * @returns {Promise<{enrichments: Object, usage: Object}>}
+ */
+export async function enrichRecipe(recipeData, rawData) {
+    // Sanitize recipe data
+    const { search_vector, user_id, created_at, updated_at, extraction_history, ...cleanRecipe } = recipeData;
+
+    // Handle rawData as object or string
+    let rawText = '';
+    if (typeof rawData === 'object' && rawData !== null) {
+        rawText = rawData.raw_text || rawData.gemini_response || JSON.stringify(rawData);
+    } else {
+        rawText = rawData || '';
+    }
+
+    return invokeEdgeFunction('extract-recipe', {
+        type: 'enrich',
+        recipeData: cleanRecipe,
+        rawData: rawText
     });
 }

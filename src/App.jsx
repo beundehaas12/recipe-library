@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { supabase, uploadTempImage, uploadSourceImage, deleteImageByUrl } from './lib/supabase';
-import { extractRecipeFromImage, extractRecipeFromText } from './lib/xai';
+import { analyzeRecipeImage, extractRecipeFromText } from './lib/xai';
 import { processHtmlForRecipe } from './lib/htmlParser';
 import { translations as t } from './lib/translations';
 import { useAuth } from './context/AuthContext';
@@ -197,11 +197,12 @@ function Home({ activeTasks, setActiveTasks }) {
   };
 
   // =============================================================================
-  // RECIPE CAPTURE FLOW (Clean Slate - Manual AI)
+  // RECIPE CAPTURE FLOW (Immediate AI Analysis)
   // =============================================================================
   // 1. Upload image to Supabase Storage (permanent)
-  // 2. Save "Raw" recipe to DB (Title: "Concept Recept", No AI yet)
-  // 3. User manually triggers analysis in RecipeCard
+  // 2. Generate signed URL for AI analysis
+  // 3. Call AI for full extraction → Complete recipe immediately
+  // 4. Save complete recipe with raw_extracted_data
   // =============================================================================
   const handleCapture = async (file) => {
     const taskId = Date.now().toString();
@@ -213,25 +214,47 @@ function Home({ activeTasks, setActiveTasks }) {
       name: taskName,
       status: 'processing',
       steps: [{ message: 'Foto uploaden...', done: false }]
-    }]);
+    }, ...prev]);
 
     try {
-      // 1. Upload Image
+      // 1. Upload Image to permanent storage
       addTaskStep(taskId, 'Opslaan in cloud...');
-      const { path, publicUrl } = await uploadSourceImage(file, user.id);
+      const { path, publicUrl, signedUrl } = await uploadSourceImage(file, user.id);
 
-      // 2. Save Placeholder Recipe (No AI)
-      addTaskStep(taskId, 'Concept aanmaken...');
+      // 2. Analyze with AI (full extraction)
+      addTaskStep(taskId, 'AI analyseert foto...');
+      const result = await analyzeRecipeImage(signedUrl);
 
-      const newRecipeData = {
-        title: "Nieuw Recept (" + new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) + ")",
-        description: "Nog niet geanalyseerd. Klik op 'Analyseren' om te starten.",
-        ingredients: [],
-        instructions: [],
-        ai_tags: ['📷 concept']
+      if (!result.recipe || !result.recipe.title) {
+        throw new Error('AI kon geen recept herkennen in de foto');
+      }
+
+      // 3. Prepare recipe data
+      const recipeData = {
+        ...result.recipe,
+        ai_tags: ['📷 foto', ...(result.recipe.ai_tags || [])]
       };
 
-      await saveRecipeToDb(newRecipeData, { type: 'image', original_image_url: publicUrl }, null, taskId);
+      // 4. Save complete recipe with raw data
+      addTaskStep(taskId, 'Recept opslaan...');
+
+      const extractionHistory = {
+        timestamp: new Date().toISOString(),
+        source_type: 'image',
+        ai_model: 'gemini-3-flash-preview',
+        tokens: result.usage
+      };
+
+      await saveRecipeToDb(
+        recipeData,
+        {
+          type: 'image',
+          original_image_url: publicUrl,
+          raw_extracted_data: result.raw_extracted_data
+        },
+        extractionHistory,
+        taskId
+      );
 
       completeTaskSteps(taskId);
 
@@ -341,15 +364,13 @@ function Home({ activeTasks, setActiveTasks }) {
         recipe = result.recipe;
         usage = result.usage;
         setTokenUsage(usage);
-        extractionHistory.extraction_method = processed.schemaRecipe ? 'schema+grok' : 'grok';
+        extractionHistory.extraction_method = processed.schemaRecipe ? 'schema+gemini' : 'gemini';
         extractionHistory.schema_used = !!processed.schemaRecipe;
         extractionHistory.ai_used = true;
-        extractionHistory.ai_model = 'grok-4-1-fast-reasoning';
+        extractionHistory.ai_model = 'gemini-3-flash-preview';
         extractionHistory.tokens = { prompt: usage.prompt_tokens, completion: usage.completion_tokens, total: usage.total_tokens };
-        extractionHistory.estimated_cost_eur = (usage.prompt_tokens * 0.0003 + usage.completion_tokens * 0.0015) / 1000;
-        extractionHistory.reasoning = result.reasoning;
-        extractionHistory.notes.push('AI extracted recipe from cleaned HTML (Reasoning active)');
-        recipe.ai_tags = ['🤖 grok', ...(recipe.ai_tags || [])];
+        extractionHistory.notes.push('AI extracted recipe from cleaned HTML');
+        recipe.ai_tags = ['🤖 gemini', ...(recipe.ai_tags || [])];
       }
 
       extractionHistory.processing_time_ms = Date.now() - startTime;

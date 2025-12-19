@@ -158,6 +158,7 @@ export async function saveRecipe(userId, recipeData, sourceInfo = {}, extraction
             source_language: normalized.source_language,
             ai_tags: normalized.ai_tags,
             extraction_history: extractionHistory,
+            raw_extracted_data: sourceInfo.raw_extracted_data || null,
             image_url: null,
             original_image_url: sourceInfo.original_image_url || null,
             extra_data: normalized.extra_data,
@@ -423,4 +424,97 @@ export async function deleteRecipe(recipeId) {
         .eq('id', recipeId);
 
     if (error) throw new Error(`Delete failed: ${error.message}`);
+}
+
+// =============================================================================
+// RAW DATA & ENRICHMENTS
+// =============================================================================
+
+/**
+ * Update raw_extracted_data for a recipe.
+ * 
+ * @param {string} recipeId - Recipe UUID
+ * @param {Object} rawData - Raw extracted data from AI
+ * @returns {Promise<void>}
+ */
+export async function updateRawExtractedData(recipeId, rawData) {
+    const { error } = await supabase
+        .from('recipes')
+        .update({ raw_extracted_data: rawData })
+        .eq('id', recipeId);
+
+    if (error) throw new Error(`Update raw data failed: ${error.message}`);
+}
+
+/**
+ * Save an AI enrichment for a recipe.
+ * 
+ * @param {string} recipeId - Recipe UUID
+ * @param {string} enrichmentType - Type: 'nutrition', 'variations', 'tips', etc.
+ * @param {Object} data - Enrichment data
+ * @returns {Promise<Object>} The created enrichment
+ */
+export async function saveEnrichment(recipeId, enrichmentType, data) {
+    const { data: enrichment, error } = await supabase
+        .from('recipe_enrichments')
+        .insert({
+            recipe_id: recipeId,
+            enrichment_type: enrichmentType,
+            data,
+            ai_model: 'gemini-3-flash-preview'
+        })
+        .select()
+        .single();
+
+    if (error) throw new Error(`Save enrichment failed: ${error.message}`);
+    return enrichment;
+}
+
+/**
+ * Save multiple enrichments at once.
+ * 
+ * @param {string} recipeId - Recipe UUID
+ * @param {Object} enrichments - Object with enrichment types as keys
+ * @returns {Promise<Object[]>} Created enrichments
+ */
+export async function saveAllEnrichments(recipeId, enrichments) {
+    const rows = Object.entries(enrichments).map(([type, data]) => ({
+        recipe_id: recipeId,
+        enrichment_type: type,
+        data,
+        ai_model: 'gemini-3-flash-preview'
+    }));
+
+    const { data, error } = await supabase
+        .from('recipe_enrichments')
+        .insert(rows)
+        .select();
+
+    if (error) throw new Error(`Save enrichments failed: ${error.message}`);
+    return data;
+}
+
+/**
+ * Fetch all enrichments for a recipe.
+ * 
+ * @param {string} recipeId - Recipe UUID
+ * @returns {Promise<Object>} Enrichments grouped by type
+ */
+export async function fetchEnrichments(recipeId) {
+    const { data, error } = await supabase
+        .from('recipe_enrichments')
+        .select('*')
+        .eq('recipe_id', recipeId)
+        .order('created_at', { ascending: false });
+
+    if (error) throw new Error(`Fetch enrichments failed: ${error.message}`);
+
+    // Group by type (return latest of each type)
+    const grouped = {};
+    for (const enrichment of data || []) {
+        if (!grouped[enrichment.enrichment_type]) {
+            grouped[enrichment.enrichment_type] = enrichment.data;
+        }
+    }
+    return grouped;
 }
