@@ -21,13 +21,25 @@ REGELS VOOR STAP 1:
 - Meerdere kolommen? Transcribeer van links naar rechts, daarna volgende rij
 - Dit is een FORENSISCHE transcriptie - behandel het als juridisch bewijs
 
-STAP 2: LOGISCHE REDENERING
-Analyseer NU (niet eerder!) de transcriptie. Identificeer:
-- Ingrediënten, eventueel GEGROEPEERD (bijv. "Voor de saus", "Voor het deeg")
-- Instructies/stappen in de correcte volgorde
-- Benodigde gereedschappen/apparatuur
-- Metadata: bereidingstijd, kooktijd, porties, moeilijkheid
-- Extra info: voedingswaarden, wijnadvies, tips, variaties
+STAP 2: STRUCTUREREN (ALLEEN INDELEN - NIETS WIJZIGEN!)
+⚠️ In deze stap mag je NIETS aan de tekst veranderen. Je mag alleen:
+- GROEPEREN: zet ingrediënten bij ingrediënten, stappen bij stappen
+- ORDENEN: zet items in de juiste volgorde
+- LABELEN: identificeer welk type informatie het is
+
+VERBODEN:
+- Tekst aanpassen, herformuleren of "verbeteren"
+- Hoeveelheden omrekenen of afronden
+- Tijden veranderen of interpreteren
+- Spelfouten corrigeren
+- Ingrediënten splitsen of samenvoegen
+- Stappen herformuleren of samenvatten
+
+Wat je WEL doet:
+- Ingrediënten groeperen onder hun kopjes (als aanwezig in bron)
+- Instructies nummeren in de volgorde uit de bron
+- Metadata identificeren (tijd, porties) EXACT zoals geschreven
+- Tools/gereedschap apart zetten
 
 STAP 3: GESTRUCTUREERDE JSON
 Zet de informatie om in dit JSON formaat:
