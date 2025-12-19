@@ -86,9 +86,22 @@ export async function extractRecipeFromText(textContent) {
  * @returns {Promise<ExtractionResult>}
  */
 export async function reviewRecipeWithAI(recipeData, sourceData) {
+    // Sanitize recipe data to remove heavy metadata that confuses the AI
+    const {
+        search_vector,
+        user_id,
+        created_at,
+        updated_at,
+        original_image_url,
+        image_url,
+        id,
+        translations,
+        ...cleanRecipe
+    } = recipeData;
+
     return invokeEdgeFunction('extract-recipe', {
         type: 'review',
-        recipeData,
+        recipeData: cleanRecipe,
         sourceData: sourceData || 'Geen brongegevens beschikbaar.'
     });
 }
@@ -123,9 +136,22 @@ export async function reAnalyzeRecipeFromStoredImage(imagePath, recipeData = {})
     }
 
     // 2. Call vision_review with photo + existing recipe data for smart enrichment
+    // Sanitize recipe data to remove heavy metadata
+    const {
+        search_vector,
+        user_id,
+        created_at,
+        updated_at,
+        original_image_url,
+        image_url,
+        extract_history,
+        translations,
+        ...cleanRecipe
+    } = recipeData;
+
     return invokeEdgeFunction('extract-recipe', {
         type: 'vision_review',
         signedUrl: signedData.signedUrl,
-        recipeData
+        recipeData: cleanRecipe
     });
 }
