@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, ArrowRight, AlertTriangle, Image } from 'lucide-react';
+import { Check, X, ArrowRight, AlertTriangle } from 'lucide-react';
 import { diffRecipes } from '../lib/diff';
 
-export function RecipeReviewModal({ original, enriched, onConfirm, onCancel, extractedImages = [] }) {
+export function RecipeReviewModal({ original, enriched, onConfirm, onCancel }) {
     const changes = diffRecipes(original, enriched);
     const hasModifications = Object.keys(changes.modified).length > 0;
-    const [selectedImage, setSelectedImage] = useState(null);
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -35,44 +34,6 @@ export function RecipeReviewModal({ original, enriched, onConfirm, onCancel, ext
 
                 {/* Body - Scrollable */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-
-                    {/* Image Selection (if images available) */}
-                    {extractedImages.length > 0 && (
-                        <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-4">
-                            <div className="text-[10px] uppercase font-bold text-purple-400 mb-3 flex items-center gap-2">
-                                <Image size={12} /> Kies een header afbeelding ({extractedImages.length})
-                            </div>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                {extractedImages.map((imgUrl, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => setSelectedImage(selectedImage === imgUrl ? null : imgUrl)}
-                                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedImage === imgUrl
-                                                ? 'border-primary ring-2 ring-primary/50'
-                                                : 'border-white/10 hover:border-white/30'
-                                            }`}
-                                    >
-                                        <img
-                                            src={imgUrl}
-                                            alt={`Afbeelding ${idx + 1}`}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => { e.target.style.display = 'none'; }}
-                                        />
-                                        {selectedImage === imgUrl && (
-                                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                                <Check className="text-primary" size={24} />
-                                            </div>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                            {selectedImage && (
-                                <p className="text-xs text-purple-300 mt-2">
-                                    ✓ Afbeelding geselecteerd als header
-                                </p>
-                            )}
-                        </div>
-                    )}
 
                     {/* 1. Added Metadata */}
                     {Object.entries(changes.added).map(([key, { new: val }]) => (
@@ -117,7 +78,7 @@ export function RecipeReviewModal({ original, enriched, onConfirm, onCancel, ext
                         </div>
                     )}
 
-                    {Object.keys(changes.added).length === 0 && Object.keys(changes.modified).length === 0 && !changes.structured.ingredients && extractedImages.length === 0 && (
+                    {Object.keys(changes.added).length === 0 && Object.keys(changes.modified).length === 0 && !changes.structured.ingredients && (
                         <div className="text-center py-8 text-white/40 italic">
                             Geen significante wijzigingen gevonden.
                         </div>
@@ -133,7 +94,7 @@ export function RecipeReviewModal({ original, enriched, onConfirm, onCancel, ext
                         Annuleren
                     </button>
                     <button
-                        onClick={() => onConfirm(enriched, selectedImage)}
+                        onClick={() => onConfirm(enriched)}
                         className="px-6 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2"
                     >
                         <Check size={16} />

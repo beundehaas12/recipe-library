@@ -45,8 +45,8 @@ function ImageSelectModal({ images, onSelect, onCancel }) {
                                 key={idx}
                                 onClick={() => setSelected(selected === img ? null : img)}
                                 className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selected === img
-                                        ? 'border-primary ring-2 ring-primary/50'
-                                        : 'border-white/10 hover:border-white/30'
+                                    ? 'border-primary ring-2 ring-primary/50'
+                                    : 'border-white/10 hover:border-white/30'
                                     }`}
                             >
                                 <img
@@ -223,23 +223,8 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                 freshRecipe = result.recipe;
                 usage = result.usage;
             } else {
-                // Path 2: Text-based Review - also fetch images from URL
+                // Path 2: Text-based Review
                 const sourceData = recipe.extraction_history?.raw_response || '';
-
-                // If we have a source_url, fetch it to extract images
-                if (recipe.source_url && !recipe.source_url.includes('/storage/v1/')) {
-                    try {
-                        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(recipe.source_url)}`;
-                        const response = await fetch(proxyUrl);
-                        if (response.ok) {
-                            const html = await response.text();
-                            images = extractImagesFromHtml(html, recipe.source_url);
-                        }
-                    } catch (e) {
-                        console.warn('Failed to fetch URL for images:', e);
-                    }
-                }
-
                 const result = await reviewRecipeWithAI(recipe, sourceData);
                 freshRecipe = result.recipe;
                 usage = result.usage;
@@ -276,7 +261,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         }
     };
 
-    const handleConfirmReview = async (improvedRecipe, selectedImage) => {
+    const handleConfirmReview = async (improvedRecipe) => {
         // Merge the improved recipe with the original ID just to be safe
         console.log('✅ Applying AI improvements:', improvedRecipe);
         const updates = {
@@ -285,24 +270,9 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
             id: recipe.id        // Critical: keep ID
         };
 
-        // If user selected an image, upload to Supabase and save URL
-        if (selectedImage) {
-            try {
-                const userId = recipe.user_id;
-                const { publicUrl } = await uploadExternalImage(selectedImage, userId);
-                updates.image_url = publicUrl;
-                console.log('✅ Image uploaded and saved:', publicUrl);
-            } catch (err) {
-                console.error('Failed to upload selected image:', err);
-                // Fall back to external URL if upload fails
-                updates.image_url = selectedImage;
-            }
-        }
-
         await onUpdate(updates);
         setShowReviewModal(false);
         setPendingRecipe(null);
-        setExtractedImages([]);
     };
 
     const handleCancelReview = () => {
@@ -1126,7 +1096,6 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                         enriched={pendingRecipe}
                         onConfirm={handleConfirmReview}
                         onCancel={handleCancelReview}
-                        extractedImages={extractedImages}
                     />
                 )}
             </AnimatePresence>
