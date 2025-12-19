@@ -1,84 +1,52 @@
 // Supabase Edge Function: extract-recipe
-// Clean implementation using Grok 4 for OCR and structured extraction.
-
+// Improved version – minimal hallucinations, direct structured extraction using Grok
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import OpenAI from "https://esm.sh/openai@4"
 
-const FIXED_SYSTEM_PROMPT = `Je bent een recept-extractie expert. Analyseer de afbeelding of tekst en voer deze drie stappen STRIKT GESCHEIDEN uit:
+const IMPROVED_SYSTEM_PROMPT = `Je bent een uiterst precieze recept-extractie expert met visuele analysevaardigheden.
+Je taak is om een recept uit een afbeelding of tekst zo ACCURAAT en GETROUW mogelijk te extraheren.
 
-STAP 1: EXACTE OCR TRANSCRIPTIE (KRITISCH BELANGRIJK!)
-⚠️ Dit is de BELANGRIJKSTE stap. Transcribeer ELKE LETTER, CIJFER en SYMBOOL van de afbeelding.
-
-REGELS VOOR STAP 1:
-- Scan de VOLLEDIGE afbeelding van links naar rechts, boven naar beneden
-- Neem LETTERLIJK alles over: elk woord, elke spatie, elk leesteken
-- GEEN correcties, interpretaties of aanpassingen
-- Bewaar EXACTE hoeveelheden: "250g" blijft "250g", "½" blijft "½"
-- Bewaar EXACTE tijden: "15-20 min" blijft "15-20 min"
-- Bewaar EXACTE temperaturen: "180°C" blijft "180°C"
-- Typfouten in de bron? BEWAAR ZE - corrigeer NIETS
-- Handgeschreven tekst? Transcribeer exact zoals geschreven
-- Meerdere kolommen? Transcribeer van links naar rechts, daarna volgende rij
-- Dit is een FORENSISCHE transcriptie - behandel het als juridisch bewijs
-
-STAP 2: STRUCTUREREN (ALLEEN INDELEN - NIETS WIJZIGEN!)
-⚠️ In deze stap mag je NIETS aan de tekst veranderen. Je mag alleen:
-- GROEPEREN: zet ingrediënten bij ingrediënten, stappen bij stappen
-- ORDENEN: zet items in de juiste volgorde
-- LABELEN: identificeer welk type informatie het is
-
-VERBODEN:
-- Tekst aanpassen, herformuleren of "verbeteren"
-- Hoeveelheden omrekenen of afronden
-- Tijden veranderen of interpreteren
-- Spelfouten corrigeren
-- Ingrediënten splitsen of samenvoegen
-- Stappen herformuleren of samenvatten
-
-Wat je WEL doet:
-- Ingrediënten groeperen onder hun kopjes (als aanwezig in bron)
-- Instructies nummeren in de volgorde uit de bron
-- Metadata identificeren (tijd, porties) EXACT zoals geschreven
-- Tools/gereedschap apart zetten
-
-STAP 3: GESTRUCTUREERDE JSON
-Zet de informatie om in dit JSON formaat:
-{
-  "title": "...",
-  "description": "...",
-  "ingredients": [
-    {"amount": number|null, "unit": "...", "name": "...", "group_name": "...|null", "notes": "...|null"}
-  ],
-  "instructions": [
-    {"step_number": 1, "description": "...", "extra": {"tips": "...", "time": "..."} | null}
-  ],
-  "tools": [{"name": "...", "notes": "...|null"}],
-  "servings": number,
-  "prep_time": "...",
-  "cook_time": "...",
-  "difficulty": "Easy|Medium|Hard",
-  "cuisine": "...",
-  "ai_tags": ["Nederlandse zoektags"],
-  "extra_data": {"nutrition": {...}, "pairings": [...], "tips": [...]}
-}
-
-BELANGRIJK:
-- "group_name" is voor ingrediënt groepen zoals "Voor de saus", "Hoofdgerecht", "Afwerking"
-- "tools" lijst bevat benodigde apparatuur (oven, blender, etc.)
-- "extra_data" bevat flexibele info die niet in standaardvelden past
+KRITIEKE REGELS:
+- Baseer ALLES uitsluitend op wat zichtbaar/zichtbaar is in de bron. Hallucineer NIETS.
+- Transcribeer hoeveelheden, eenheden, tijden en temperaturen EXACT zoals ze staan (bijv. "250g", "½ tl", "15-20 min", "180°C").
+- Bewaar originele formuleringen, spaties en opmaak zo goed mogelijk.
+- Als iets onduidelijk is, gebruik null of voeg een korte note toe – verzin nooit details.
+- Groepeer ingrediënten logisch op basis van kopjes of visuele secties (bijv. "Voor de saus").
+- Identificeer benodigde gereedschappen (oven, blender, pan, etc.) uit de instructies.
+- Vul metadata (porties, tijden, moeilijkheidsgraad, keuken) alleen in als ze expliciet vermeld staan.
 
 OUTPUT:
-Geef je antwoord in dit exacte formaat:
-[RAW_OCR_START]
-(hier de 100% EXACTE transcriptie - ELKE letter zoals in de foto)
-[RAW_OCR_END]
-
-[REASONING_START]
-(hier je logische redenering en analyse)
-[REASONING_END]
+Geef ALLEEN de JSON in exact dit formaat, zonder extra tekst, uitleg of secties zoals RAW_OCR of REASONING.
 
 [JSON_START]
-(hier de JSON output)
+{
+  "title": string,
+  "description": string,
+  "ingredients": [
+    {
+      "amount": number | null,
+      "unit": string | null,
+      "name": string,
+      "group_name": string | null,
+      "notes": string | null
+    }
+  ],
+  "instructions": [
+    {
+      "step_number": number,
+      "description": string,
+      "extra": { "tips": string | null, "time": string | null } | null
+    }
+  ],
+  "tools": [{ "name": string, "notes": string | null }],
+  "servings": number | null,
+  "prep_time": string | null,
+  "cook_time": string | null,
+  "difficulty": "Easy" | "Medium" | "Hard" | null,
+  "cuisine": string | null,
+  "ai_tags": [string],
+  "extra_data": {}
+}
 [JSON_END]`
 
 const corsHeaders = {
@@ -99,137 +67,87 @@ serve(async (req) => {
             apiKey: Deno.env.get("XAI_API_KEY")
         })
 
-        let userContent: string | any[];
-        let systemPrompt = FIXED_SYSTEM_PROMPT;
+        let systemPrompt = IMPROVED_SYSTEM_PROMPT
+        let userContent: any = "Extraheer het recept zo precies mogelijk en geef alleen de JSON."
 
         if (type === 'image') {
             userContent = [
-                { type: "text", text: "Voer OCR uit, redeneer over de data en extraheer het recept als JSON." },
+                { type: "text", text: "Analyse de afbeelding grondig en extraheer het recept volgens de instructies." },
                 { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
-            ];
-        } else if (type === 'review') {
-            // Special review prompt - validate and enrich existing data
-            systemPrompt = `Je bent een recept-validatie expert. Je taak is om bestaande receptdata te valideren, corrigeren en verrijken op basis van de originele bron.
+            ]
+        } else if (type === 'text') {
+            userContent = `Extraheer het recept uit de volgende tekst:\n\n${textContent}`
+        } else if (type === 'review' || type === 'vision_review') {
+            // Unified review prompt – works with or without image
+            systemPrompt = `Je bent een recept-validatie expert.
+Je hebt de huidige geëxtraheerde receptdata en (mogelijk) de originele afbeelding/tekst.
+Je taak is om de data te controleren, fouten te corrigeren en ontbrekende informatie aan te vullen – ALLEEN op basis van wat zichtbaar is.
 
-BELANGRIJK: Behoud ALLE bestaande correcte data. Corrigeer alleen wat fout is. Vul ontbrekende velden aan.
-
-BESTAANDE RECEPT DATA:
+HUIDIGE DATA:
 ${JSON.stringify(recipeData, null, 2)}
-
-ORIGINELE BRON DATA:
-${sourceData || 'Geen brondata beschikbaar'}
-
-OPDRACHT:
-1. Vergelijk de bestaande data met de bron
-2. Corrigeer fouten (bijv. verkeerde ingrediënt hoeveelheden)
-3. Vul ontbrekende metadata aan (prep_time, cook_time, servings, difficulty)
-4. Identificeer ingrediënt GROEPEN ("Voor de saus", "Hoofdgerecht", etc.)
-5. Identificeer benodigde GEREEDSCHAPPEN
-6. BEHOUD alle correcte informatie
-
-OUTPUT: Geef ALLEEN de gecorrigeerde/verrijkte JSON:
-[JSON_START]
-{
-  "title": "...",
-  "description": "...",
-  "ingredients": [{"amount": number|null, "unit": "...", "name": "...", "group_name": "...|null", "notes": "...|null"}],
-  "instructions": [{"step_number": 1, "description": "...", "extra": {...}|null}],
-  "tools": [{"name": "...", "notes": "...|null"}],
-  "servings": number,
-  "prep_time": "...",
-  "cook_time": "...",
-  "difficulty": "Easy|Medium|Hard",
-  "cuisine": "...",
-  "ai_tags": [...],
-  "extra_data": {...}
-}
-[JSON_END]`;
-            userContent = "Valideer en verrijk het recept. Geef de gecorrigeerde JSON.";
-        } else if (type === 'vision_review') {
-            // Vision-based review - re-examine photo with existing data context
-            systemPrompt = `Je bent een recept-validatie expert met visuele analyse. Je hebt toegang tot de ORIGINELE FOTO en de HUIDIGE geëxtraheerde data.
-
-HUIDIGE GEËXTRAHEERDE DATA:
-${JSON.stringify(recipeData, null, 2)}
-
-OPDRACHT:
-Bekijk de foto ZEER GRONDIG en vergelijk met de huidige data. Verbeter en verrijk waar nodig.
-
-FOCUS OP ALLE RECEPT-ONDERDELEN:
-1. **TITEL**: Is deze correct en volledig?
-2. **BESCHRIJVING**: Voeg context toe als deze ontbreekt
-3. **INGREDIËNTEN**: Controleer ELKE ingrediënt - hoeveelheid, eenheid, naam. Mis je iets? Let op GROEPEN ("Voor de saus", etc.)
-4. **INSTRUCTIES**: Zijn alle stappen aanwezig en in de juiste volgorde?
-5. **GEREEDSCHAPPEN**: Welke tools/apparaten zijn nodig?
-6. **BEREIDINGSTIJD** (prep_time): Tijd voor voorbereiden
-7. **KOOKTIJD** (cook_time): Tijd voor daadwerkelijk koken/bakken
-8. **PORTIES** (servings): Aantal personen/porties
-9. **MOEILIJKHEID** (difficulty): Easy/Medium/Hard
-10. **KEUKEN** (cuisine): Italiaans, Nederlands, etc.
-11. **AI TAGS**: Zoektags in het Nederlands
 
 BELANGRIJK:
-- Behoud wat CORRECT is
-- Corrigeer wat FOUT is
-- Vul aan wat ONTBREEKT
+- Behoud alles wat correct is.
+- Corrigeer alleen duidelijke fouten.
+- Vul alleen aan wat expliciet in de bron staat.
+- Hallucineer niets.
 
-OUTPUT: Geef de verbeterde JSON:
-[JSON_START]
-{
-  "title": "...",
-  "description": "...",
-  "ingredients": [{"amount": number|null, "unit": "...", "name": "...", "group_name": "...|null", "notes": "...|null"}],
-  "instructions": [{"step_number": 1, "description": "...", "extra": {...}|null}],
-  "tools": [{"name": "...", "notes": "...|null"}],
-  "servings": number,
-  "prep_time": "...",
-  "cook_time": "...",
-  "difficulty": "Easy|Medium|Hard",
-  "cuisine": "...",
-  "ai_tags": [...],
-  "extra_data": {...}
-}
-[JSON_END]`;
-            userContent = [
-                { type: "text", text: "Analyseer deze foto GRONDIG. Vergelijk met de huidige data en verbeter waar nodig. Geef de complete, verbeterde JSON." },
-                { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
-            ];
+Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
+
+            if (type === 'vision_review') {
+                userContent = [
+                    { type: "text", text: "Bekijk de afbeelding opnieuw en verbeter de huidige receptdata waar nodig." },
+                    { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
+                ]
+            } else {
+                userContent = "Valideer en verbeter de huidige receptdata op basis van de beschikbare informatie."
+            }
         } else {
-            userContent = `Voer OCR uit, redeneer over de data en extraheer het recept als JSON uit:\n\n${textContent}`;
+            throw new Error('Unsupported type')
         }
 
         const response = await xai.chat.completions.create({
-            model: "grok-4-1-fast",
+            model: "grok-4-1-fast", // or "grok-4" if available and budget allows
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userContent }
             ],
             max_tokens: 4000,
-            temperature: 0.1
+            temperature: 0.0, // Even lower for maximum consistency
         })
 
-        const content = response.choices[0].message.content
-        const rawOcrMatch = content.match(/\[RAW_OCR_START\]([\s\S]*?)\[RAW_OCR_END\]/)
-        const reasoningMatch = content.match(/\[REASONING_START\]([\s\S]*?)\[REASONING_END\]/)
-        const jsonMatch = content.match(/\[JSON_START\]([\s\S]*?)\[JSON_END\]/)
+        const content = response.choices[0].message.content || ''
 
-        const raw_ocr = rawOcrMatch ? rawOcrMatch[1].trim() : ''
-        const reasoning = reasoningMatch ? reasoningMatch[1].trim() : ''
-        const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.replace(/```json/g, '').replace(/```/g, '').trim()
+        // Robust JSON extraction
+        const jsonMatch = content.match(/\[JSON_START\]([\s\S]*?)\[JSON_END\]/)
+        let jsonStr = jsonMatch ? jsonMatch[1].trim() : ''
+
+        // Fallback: look for code block
+        if (!jsonStr) {
+            const codeBlockMatch = content.match(/```json?\n?([\s\S]*?)\n?```/)
+            if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim()
+        }
+
+        // Final fallback: assume whole content is JSON (after trimming markers)
+        if (!jsonStr) {
+            jsonStr = content
+                .replace(/\[JSON_START\]/g, '')
+                .replace(/\[JSON_END\]/g, '')
+                .trim()
+        }
 
         let recipe = {}
         try {
             recipe = JSON.parse(jsonStr)
         } catch (e) {
-            console.error('Failed to parse recipe JSON:', e)
-            throw new Error('AI response structure was invalid')
+            console.error('Failed to parse JSON:', e)
+            console.error('Raw AI output:', content)
+            throw new Error('Invalid JSON structure from AI')
         }
 
         return new Response(
             JSON.stringify({
                 recipe,
-                raw_ocr,
-                reasoning,
                 raw_response: content,
                 usage: {
                     prompt_tokens: response.usage?.prompt_tokens || 0,
@@ -242,7 +160,6 @@ OUTPUT: Geef de verbeterde JSON:
                 status: 200
             }
         )
-
     } catch (error) {
         console.error('Edge function error:', error)
         return new Response(
