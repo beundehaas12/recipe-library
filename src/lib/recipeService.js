@@ -64,7 +64,7 @@ export function normalizeRecipeData(rawRecipe) {
         if (typeof ing === 'string') {
             return { amount: null, unit: null, name: ing, group_name: null, notes: null, order_index: idx };
         }
-        return {
+        const normalized = {
             amount: ing.amount ?? ing.quantity ?? null,
             unit: ing.unit || null,
             name: ing.name || ing.item || '',
@@ -72,6 +72,11 @@ export function normalizeRecipeData(rawRecipe) {
             notes: ing.notes || null,
             order_index: ing.order_index ?? idx
         };
+        // DEBUG: Log group_name extraction
+        if (normalized.group_name) {
+            console.log('🏷️ Ingredient group found:', normalized.name, '→', normalized.group_name);
+        }
+        return normalized;
     });
 
     // Normalize instructions: handle both string[] and object[] formats

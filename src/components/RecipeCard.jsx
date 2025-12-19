@@ -16,6 +16,10 @@ const languageNames = {
 };
 
 export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }) {
+    // DEBUG: Log what data we receive
+    console.log('📋 RecipeCard received recipe:', recipe?.title);
+    console.log('📦 ingredientsByGroup:', recipe?.ingredientsByGroup);
+    console.log('📝 ingredients count:', recipe?.ingredients?.length);
     const [currentServings, setCurrentServings] = useState(recipe?.servings || 4);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({});
