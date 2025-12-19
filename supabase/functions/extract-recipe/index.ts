@@ -1,5 +1,6 @@
 // Supabase Edge Function: extract-recipe
-// Gemini 3 Flash integration for recipe extraction and enrichment
+// Multi-model LLM integration: Gemini 3 Flash, Grok 4, Grok 4.1 Fast
+// Updated: 2025-12-19
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
