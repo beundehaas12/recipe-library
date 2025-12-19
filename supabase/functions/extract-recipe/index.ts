@@ -208,8 +208,8 @@ async function callGemini(parts: any[], apiKey: string, expectJson = true): Prom
             body: JSON.stringify({
                 contents: [{ parts }],
                 generationConfig: {
-                    temperature: expectJson ? 0.1 : 0.3,
-                    maxOutputTokens: 8192,
+                    temperature: 0.1,
+                    maxOutputTokens: 16384, // Increased to handle long recipes
                     responseMimeType: expectJson ? "application/json" : "text/plain"
                 }
             })
@@ -222,6 +222,16 @@ async function callGemini(parts: any[], apiKey: string, expectJson = true): Prom
     }
 
     const data = await response.json()
+
+    // Check for truncation
+    const finishReason = data.candidates?.[0]?.finishReason
+    if (finishReason === 'MAX_TOKENS') {
+        throw new Error('AI response was truncated. Recipe may be too complex - try a clearer photo.')
+    }
+    if (finishReason === 'SAFETY') {
+        throw new Error('AI blocked content for safety reasons.')
+    }
+
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}"
 
     const usage = {
