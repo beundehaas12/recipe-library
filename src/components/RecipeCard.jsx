@@ -62,10 +62,24 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         }
     }, [recipe]);
 
+    // DEBUG: Log recipe data to check for introduction
+    useEffect(() => {
+        if (recipe) {
+            console.log('📖 RecipeCard rendering:', {
+                id: recipe.id,
+                title: recipe.title,
+                hasIntro: !!recipe.introduction,
+                introPreview: recipe.introduction?.substring(0, 50)
+            });
+        }
+    }, [recipe]);
+
     useEffect(() => {
         if (isEditing && recipe) {
             setEditForm({
                 title: recipe.title || '',
+                subtitle: recipe.subtitle || '',
+                introduction: recipe.introduction || '',
                 description: recipe.description || '',
                 prep_time: recipe.prep_time || '',
                 cook_time: recipe.cook_time || '',

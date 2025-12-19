@@ -38,6 +38,8 @@ import { supabase } from './supabase';
 /**
  * @typedef {Object} RecipeData
  * @property {string} title
+ * @property {string|null} subtitle
+ * @property {string|null} introduction
  * @property {string} description
  * @property {Ingredient[]} ingredients
  * @property {Step[]} instructions
@@ -101,6 +103,8 @@ export function normalizeRecipeData(rawRecipe) {
 
     return {
         title: rawRecipe.title || 'Untitled Recipe',
+        subtitle: rawRecipe.subtitle || null,
+        introduction: rawRecipe.introduction || null,
         description: rawRecipe.description || '',
         ingredients,
         instructions,
@@ -138,6 +142,8 @@ export async function saveRecipe(userId, recipeData, sourceInfo = {}, extraction
         .insert({
             user_id: userId,
             title: normalized.title,
+            subtitle: normalized.subtitle,
+            introduction: normalized.introduction,
             description: normalized.description,
             servings: normalized.servings,
             prep_time: normalized.prep_time,
@@ -229,7 +235,9 @@ export async function saveRecipe(userId, recipeData, sourceInfo = {}, extraction
         }
     }
 
-    return recipe;
+    // Return the full recipe object using the fetch logic to ensure consistent structure
+    // We could construct it manually but fetching ensures we return exactly what fetchRecipeWithDetails returns
+    return await fetchRecipeWithDetails(recipeId);
 }
 
 /**
@@ -329,6 +337,8 @@ export async function updateRecipe(recipeId, updates) {
         .from('recipes')
         .update({
             title: normalized.title,
+            subtitle: normalized.subtitle,
+            introduction: normalized.introduction,
             description: normalized.description,
             servings: normalized.servings,
             prep_time: normalized.prep_time,
