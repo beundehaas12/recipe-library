@@ -127,13 +127,27 @@ export function normalizeRecipeData(rawRecipe) {
 export async function saveRecipe(userId, recipeData, sourceInfo = {}, extractionHistory = null) {
     const normalized = normalizeRecipeData(recipeData);
 
-    // 1. Insert main recipe record
+    // Convert ingredients to legacy format for backward compatibility
+    const legacyIngredients = normalized.ingredients.map(ing => ({
+        amount: ing.amount,
+        unit: ing.unit,
+        item: ing.name  // Use 'item' for legacy format
+    }));
+
+    // Convert instructions to legacy string array format
+    const legacyInstructions = normalized.instructions.map(step => step.description);
+
+    // 1. Insert main recipe record (includes legacy fields for backward compat)
     const { data: recipe, error: recipeError } = await supabase
         .from('recipes')
         .insert({
             user_id: userId,
             title: normalized.title,
             description: normalized.description,
+            // Legacy fields for backward compatibility (NOT NULL constraints)
+            ingredients: legacyIngredients,
+            instructions: legacyInstructions,
+            // Standard fields
             servings: normalized.servings,
             prep_time: normalized.prep_time,
             cook_time: normalized.cook_time,
@@ -319,12 +333,24 @@ export async function fetchRecipesList(userId) {
 export async function updateRecipe(recipeId, updates) {
     const normalized = normalizeRecipeData(updates);
 
+    // Convert to legacy format for backward compatibility
+    const legacyIngredients = normalized.ingredients.map(ing => ({
+        amount: ing.amount,
+        unit: ing.unit,
+        item: ing.name
+    }));
+    const legacyInstructions = normalized.instructions.map(step => step.description);
+
     // 1. Update main recipe table
     const { data: recipe, error: recipeError } = await supabase
         .from('recipes')
         .update({
             title: normalized.title,
             description: normalized.description,
+            // Legacy fields for backward compatibility
+            ingredients: legacyIngredients,
+            instructions: legacyInstructions,
+            // Standard fields
             servings: normalized.servings,
             prep_time: normalized.prep_time,
             cook_time: normalized.cook_time,
