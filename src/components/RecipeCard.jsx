@@ -19,6 +19,71 @@ const languageNames = {
     it: t.languageIT,
 };
 
+// Standalone image selection modal
+function ImageSelectModal({ images, onSelect, onCancel }) {
+    const [selected, setSelected] = useState(null);
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl"
+            >
+                <div className="p-6 border-b border-white/10">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Image size={20} className="text-primary" /> Kies een afbeelding
+                    </h2>
+                    <p className="text-white/60 text-sm mt-1">{images.length} afbeeldingen gevonden</p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6">
+                    <div className="grid grid-cols-3 gap-3">
+                        {images.map((img, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setSelected(selected === img ? null : img)}
+                                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selected === img
+                                        ? 'border-primary ring-2 ring-primary/50'
+                                        : 'border-white/10 hover:border-white/30'
+                                    }`}
+                            >
+                                <img
+                                    src={img}
+                                    alt={`Optie ${idx + 1}`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                                />
+                                {selected === img && (
+                                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                        <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                            <X size={14} className="text-black" style={{ transform: 'rotate(45deg)' }} />
+                                        </div>
+                                    </div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="p-6 border-t border-white/10 flex gap-3 justify-end">
+                    <button onClick={onCancel} className="px-4 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors font-medium text-sm">
+                        Annuleren
+                    </button>
+                    <button
+                        onClick={() => onSelect(selected)}
+                        disabled={!selected}
+                        className="px-6 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Selecteren
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    );
+}
+
 export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }) {
     const [currentServings, setCurrentServings] = useState(recipe?.servings || 4);
     const [isEditing, setIsEditing] = useState(false);
@@ -38,6 +103,8 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [pendingRecipe, setPendingRecipe] = useState(null);
     const [extractedImages, setExtractedImages] = useState([]);
+    const [showImageModal, setShowImageModal] = useState(false);
+    const [isImageLoading, setIsImageLoading] = useState(false);
 
     const toggleSection = (section) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -245,6 +312,54 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         setExtractedImages([]);
     };
 
+    // Handle image edit - fetch images from URL and show selector
+    const handleImageEdit = async () => {
+        const isUrlRecipe = recipe.source_url && !recipe.source_url.includes('/storage/v1/');
+
+        if (isUrlRecipe) {
+            setIsImageLoading(true);
+            try {
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(recipe.source_url)}`;
+                const response = await fetch(proxyUrl);
+                if (response.ok) {
+                    const html = await response.text();
+                    const images = extractImagesFromHtml(html, recipe.source_url);
+                    setExtractedImages(images);
+                    setShowImageModal(true);
+                } else {
+                    alert('Kon afbeeldingen niet ophalen van URL');
+                }
+            } catch (e) {
+                console.error('Failed to fetch images:', e);
+                alert('Fout bij ophalen afbeeldingen');
+            } finally {
+                setIsImageLoading(false);
+            }
+        }
+    };
+
+    // Handle image selection from modal
+    const handleImageSelect = async (selectedImage) => {
+        if (!selectedImage) {
+            setShowImageModal(false);
+            setExtractedImages([]);
+            return;
+        }
+
+        try {
+            const userId = recipe.user_id;
+            const { publicUrl } = await uploadExternalImage(selectedImage, userId);
+            await onUpdate({ ...recipe, image_url: publicUrl });
+            console.log('✅ Image updated:', publicUrl);
+        } catch (err) {
+            console.error('Failed to upload image:', err);
+            await onUpdate({ ...recipe, image_url: selectedImage });
+        }
+
+        setShowImageModal(false);
+        setExtractedImages([]);
+    };
+
     return (
         <div className="bg-background min-h-screen pb-20 overflow-x-hidden scroll-smooth">
             {/* Immersive Header - Unified Scroll Container */}
@@ -282,10 +397,21 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                     <button onClick={() => setIsEditing(true)} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center">
                                         <Edit size={20} />
                                     </button>
-                                    <label className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center cursor-pointer">
-                                        <Camera size={20} />
-                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file && onImageUpdate) onImageUpdate(file); }} />
-                                    </label>
+                                    {/* Image edit: URL recipes get image selector, photo recipes get file upload */}
+                                    {recipe.source_url && !recipe.source_url.includes('/storage/v1/') ? (
+                                        <button
+                                            onClick={handleImageEdit}
+                                            disabled={isImageLoading}
+                                            className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center"
+                                        >
+                                            {isImageLoading ? <Loader2 size={20} className="animate-spin" /> : <Image size={20} />}
+                                        </button>
+                                    ) : (
+                                        <label className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center cursor-pointer">
+                                            <Camera size={20} />
+                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file && onImageUpdate) onImageUpdate(file); }} />
+                                        </label>
+                                    )}
                                     <button onClick={() => setShowDeleteModal(true)} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center !bg-red-500/10 !text-red-500 !border-red-500/20 hover:!bg-red-500/20 transition-all">
                                         <Trash2 size={20} />
                                     </button>
@@ -1001,6 +1127,17 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                         onConfirm={handleConfirmReview}
                         onCancel={handleCancelReview}
                         extractedImages={extractedImages}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Image Select Modal (standalone) */}
+            <AnimatePresence>
+                {showImageModal && extractedImages.length > 0 && (
+                    <ImageSelectModal
+                        images={extractedImages}
+                        onSelect={handleImageSelect}
+                        onCancel={() => { setShowImageModal(false); setExtractedImages([]); }}
                     />
                 )}
             </AnimatePresence>
