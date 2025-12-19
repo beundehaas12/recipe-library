@@ -513,47 +513,79 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         transition={{ duration: 0.3, ease: "easeInOut" }}
                                         className="overflow-hidden"
                                     >
-                                        <ul className="space-y-3 pt-6">
-                                            {Array.isArray(recipe.ingredients) && recipe.ingredients.map((ingredient, idx) => {
-                                                let content = { amount: '', unit: '', name: '' };
-                                                // Support both old format (item) and new format (name)
-                                                if (typeof ingredient === 'object' && ingredient !== null && ('item' in ingredient || 'name' in ingredient)) {
-                                                    let amount = ingredient.amount;
-                                                    if (typeof amount === 'number') amount = Math.round(amount * scaleFactor * 100) / 100;
-                                                    content = {
-                                                        amount: amount || '',
-                                                        unit: ingredient.unit || '',
-                                                        name: ingredient.name || ingredient.item || ''
-                                                    };
-                                                } else {
-                                                    const str = String(ingredient);
-                                                    const regex = /^(\d+(?:\.\d+)?|\d+\/\d+|\d+\s+\d+\/\d+)\s*([a-zA-Z]+)?\s+(.*)/;
-                                                    const match = str.match(regex);
-                                                    if (match) {
-                                                        let amountStr = match[1];
-                                                        let amount = 0;
-                                                        if (amountStr.includes(' ')) {
-                                                            const parts = amountStr.split(' ');
-                                                            amount = parseFloat(parts[0]) + (parts[1].includes('/') ? eval(parts[1]) : parseFloat(parts[1]));
-                                                        } else if (amountStr.includes('/')) {
-                                                            amount = eval(amountStr);
-                                                        } else amount = parseFloat(amountStr);
-                                                        content = { amount: Math.round(amount * scaleFactor * 100) / 100, unit: match[2] || '', name: match[3] || '' };
-                                                    } else {
-                                                        content = { name: str, amount: '', unit: '' };
-                                                    }
-                                                }
-                                                return (
-                                                    <li key={idx} className="grid grid-cols-[1fr_auto] gap-4 py-2 border-b border-white/5 last:border-0 hover:border-white/10 transition-colors items-baseline">
-                                                        <span className="text-gray-200 font-medium">{content.name}</span>
-                                                        <span className="text-right whitespace-nowrap">
-                                                            <span className="font-bold text-white">{content.amount}</span>
-                                                            {content.unit && <span className="text-white/40 ml-1 text-xs uppercase tracking-wider font-bold">{content.unit}</span>}
-                                                        </span>
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
+                                        <div className="space-y-6 pt-6">
+                                            {/* Check if we have grouped ingredients */}
+                                            {recipe.ingredientsByGroup && Object.keys(recipe.ingredientsByGroup).length > 0 ? (
+                                                // Render grouped ingredients
+                                                Object.entries(recipe.ingredientsByGroup).map(([groupName, groupIngredients]) => (
+                                                    <div key={groupName} className="space-y-3">
+                                                        {/* Group header - only show if not 'default' */}
+                                                        {groupName !== 'default' && (
+                                                            <h4 className="text-xs uppercase tracking-widest text-primary/80 font-black border-b border-primary/20 pb-2 mb-3">
+                                                                {groupName}
+                                                            </h4>
+                                                        )}
+                                                        <ul className="space-y-2">
+                                                            {groupIngredients.map((ingredient, idx) => {
+                                                                let amount = ingredient.amount;
+                                                                if (typeof amount === 'number') amount = Math.round(amount * scaleFactor * 100) / 100;
+                                                                return (
+                                                                    <li key={idx} className="grid grid-cols-[1fr_auto] gap-4 py-2 border-b border-white/5 last:border-0 hover:border-white/10 transition-colors items-baseline">
+                                                                        <span className="text-gray-200 font-medium">{ingredient.name}</span>
+                                                                        <span className="text-right whitespace-nowrap">
+                                                                            <span className="font-bold text-white">{amount || ''}</span>
+                                                                            {ingredient.unit && <span className="text-white/40 ml-1 text-xs uppercase tracking-wider font-bold">{ingredient.unit}</span>}
+                                                                        </span>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                // Fallback: render flat ingredient list
+                                                <ul className="space-y-3">
+                                                    {Array.isArray(recipe.ingredients) && recipe.ingredients.map((ingredient, idx) => {
+                                                        let content = { amount: '', unit: '', name: '' };
+                                                        if (typeof ingredient === 'object' && ingredient !== null && ('item' in ingredient || 'name' in ingredient)) {
+                                                            let amount = ingredient.amount;
+                                                            if (typeof amount === 'number') amount = Math.round(amount * scaleFactor * 100) / 100;
+                                                            content = {
+                                                                amount: amount || '',
+                                                                unit: ingredient.unit || '',
+                                                                name: ingredient.name || ingredient.item || ''
+                                                            };
+                                                        } else {
+                                                            const str = String(ingredient);
+                                                            const regex = /^(\d+(?:\.\d+)?|\d+\/\d+|\d+\s+\d+\/\d+)\s*([a-zA-Z]+)?\s+(.*)/;
+                                                            const match = str.match(regex);
+                                                            if (match) {
+                                                                let amountStr = match[1];
+                                                                let amount = 0;
+                                                                if (amountStr.includes(' ')) {
+                                                                    const parts = amountStr.split(' ');
+                                                                    amount = parseFloat(parts[0]) + (parts[1].includes('/') ? eval(parts[1]) : parseFloat(parts[1]));
+                                                                } else if (amountStr.includes('/')) {
+                                                                    amount = eval(amountStr);
+                                                                } else amount = parseFloat(amountStr);
+                                                                content = { amount: Math.round(amount * scaleFactor * 100) / 100, unit: match[2] || '', name: match[3] || '' };
+                                                            } else {
+                                                                content = { name: str, amount: '', unit: '' };
+                                                            }
+                                                        }
+                                                        return (
+                                                            <li key={idx} className="grid grid-cols-[1fr_auto] gap-4 py-2 border-b border-white/5 last:border-0 hover:border-white/10 transition-colors items-baseline">
+                                                                <span className="text-gray-200 font-medium">{content.name}</span>
+                                                                <span className="text-right whitespace-nowrap">
+                                                                    <span className="font-bold text-white">{content.amount}</span>
+                                                                    {content.unit && <span className="text-white/40 ml-1 text-xs uppercase tracking-wider font-bold">{content.unit}</span>}
+                                                                </span>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            )}
+                                        </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
