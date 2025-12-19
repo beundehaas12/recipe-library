@@ -196,7 +196,15 @@ Geef ALLEEN de verbeterde JSON.`
             recipe = JSON.parse(jsonStr)
         } catch (e) {
             console.error('JSON parse error. Attempted to parse:', jsonStr.substring(0, 1000))
-            throw new Error('Invalid JSON from AI')
+            // Return the raw content so we can see what's happening
+            return new Response(
+                JSON.stringify({
+                    error: 'Invalid JSON from AI',
+                    rawContent: content.substring(0, 2000),
+                    attemptedParse: jsonStr.substring(0, 1000)
+                }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+            )
         }
 
         const usage = geminiData.usageMetadata || {}
