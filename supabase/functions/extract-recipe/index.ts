@@ -138,18 +138,17 @@ Geef ALLEEN de verbeterde JSON.`
 
         console.log('Calling Gemini API...')
 
-        // Use stable Gemini 1.5 Flash model
+        // User's exact URL with v1 API format
         const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts }],
                     generationConfig: {
-                        temperature: 0.1, // Slight creativity for structure, but low for facts
-                        maxOutputTokens: 8192,
-                        responseMimeType: "application/json" // Force JSON mode
+                        temperature: 0,
+                        maxOutputTokens: 8192
                     }
                 })
             }
