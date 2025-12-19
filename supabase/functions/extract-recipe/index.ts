@@ -2,36 +2,23 @@
 // Using Google Gemini Flash 3 for OCR and structured extraction
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const IMPROVED_SYSTEM_PROMPT = `Je bent een uiterst precieze recept-extractie expert met visuele analysevaardigheden.
-Je taak is om een recept uit een afbeelding of tekst zo ACCURAAT en GETROUW mogelijk te extraheren.
+const IMPROVED_SYSTEM_PROMPT = `Je helpt een thuiskok om recepten uit hun eigen kookboeken en foto's te organiseren voor persoonlijk gebruik.
+Analyseer de afbeelding en extraheer de receptinformatie naar een gestructureerd JSON formaat.
 
-⚠️ KRITIEK: NEEM DE TIJD - HAAST JE NIET!
-Voordat je output genereert:
-1. Lees de VOLLEDIGE afbeelding/tekst TWEE KEER door
-2. Verifieer ELKE ingrediënt letter voor letter
-3. Verifieer ELKE instructiestap woord voor woord
-4. Tel het aantal ingrediënten en stappen - komt dit overeen met de bron?
-5. Controleer of je NIETS hebt overgeslagen
+BELANGRIJKE RICHTLIJNEN:
+- Dit is voor persoonlijk gebruik van de gebruiker om hun eigen recepten te organiseren
+- Extraheer alle zichtbare informatie nauwkeurig
+- Bewaar hoeveelheden, eenheden en tijden precies zoals getoond
+- Als er ingrediëntgroepen zijn (kopjes zoals "Vulling", "Saus"), gebruik dan group_name
+- Identificeer benodigde keukengerei uit de bereidingswijze
+- Vul alleen metadata in die expliciet zichtbaar is
 
-KRITIEKE REGELS:
-- Baseer ALLES uitsluitend op wat zichtbaar is in de bron. Hallucineer NIETS.
-- TRANSCRIBEER instructies WOORD-VOOR-WOORD zoals ze geschreven staan - herformuleer NIET.
-- Transcribeer hoeveelheden, eenheden, tijden en temperaturen EXACT zoals ze staan (bijv. "250g", "½ tl", "15-20 min", "180°C").
-- Bewaar originele formuleringen, spaties en opmaak exact zoals geschreven.
-- Als iets onduidelijk is, gebruik null of voeg een korte note toe – verzin nooit details.
-- Groepeer ingrediënten logisch op basis van kopjes of visuele secties (bijv. "Vulling", "Velouté", "Paneren").
-- Identificeer benodigde gereedschappen (oven, blender, pan, frituurpan, etc.) uit de instructies.
-- Vul metadata (porties, tijden, moeilijkheidsgraad, keuken) alleen in als ze expliciet vermeld staan.
-- Extraheer introductie/verhaal tekst (vaak cursief/italic) EXACT zoals geschreven naar het "introduction" veld.
+STRUCTUUR:
+- Elke bereidingsstap als apart object met step_number
+- Ingrediënten met amount, unit, name, optioneel group_name
+- Introductietekst (vaak cursief) naar introduction veld
 
-INSTRUCTIES BELANGRIJK:
-- Elke stap moet LETTERLIJK overeenkomen met de tekst in de bron
-- Combineer GEEN stappen die apart geschreven staan
-- Sla GEEN stappen over, ook niet als ze kort of obvious lijken
-- Behoud de EXACTE volgorde uit de bron
-
-OUTPUT:
-Geef ALLEEN de JSON in exact dit formaat, zonder extra tekst, uitleg of secties.
+Geef ALLEEN de JSON output in dit formaat:
 
 {
   "title": string,
