@@ -150,22 +150,49 @@ function safeJsonParse(text: string): any {
     }
     cleaned = cleaned.trim();
 
-    // Fix common JSON issues from LLMs
-    // 1. Replace single quotes with double quotes (but not inside strings)
-    // 2. Remove trailing commas before ] or }
-    cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
-
     // Try to extract JSON object if there's extra content
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
         cleaned = jsonMatch[0];
     }
 
+    // Fix common JSON issues from LLMs
+    // 1. Remove trailing commas before ] or }
+    cleaned = cleaned.replace(/,(\s*[\}\]])/g, '$1');
+
+    // 2. Fix unquoted property names (simple cases)
+    cleaned = cleaned.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3');
+
+    // 3. Fix single quotes used instead of double quotes for strings
+    // This is tricky - only do for property names and simple string values
+    cleaned = cleaned.replace(/'([^'\\]*)'/g, '"$1"');
+
+    // 4. Remove any control characters that might break parsing
+    cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (char) => {
+        if (char === '\n' || char === '\r' || char === '\t') return char;
+        return '';
+    });
+
+    // 5. Fix missing commas between array elements (common LLM issue)
+    // Look for patterns like: }\n{ or ]\n[ or "value"\n"next"
+    cleaned = cleaned.replace(/\}(\s*)\{/g, '},$1{');
+    cleaned = cleaned.replace(/\](\s*)\[/g, '],$1[');
+    cleaned = cleaned.replace(/"(\s*)\n(\s*)"/g, '",$1\n$2"');
+
     try {
         return JSON.parse(cleaned);
-    } catch (e) {
-        console.error("JSON parse failed, raw text:", text.substring(0, 500));
-        throw new Error(`Invalid JSON from AI: ${(e as Error).message}`);
+    } catch (firstError) {
+        // Second attempt: try to fix more aggressively
+        console.log("First parse failed, attempting repair...");
+
+        try {
+            // Try removing all newlines within strings (sometimes LLMs break mid-string)
+            let repaired = cleaned.replace(/:\s*"([^"]*)\n([^"]*)"/g, ': "$1 $2"');
+            return JSON.parse(repaired);
+        } catch (secondError) {
+            console.error("JSON parse failed after repair, raw text:", text.substring(0, 1000));
+            throw new Error(`Invalid JSON from AI: ${(firstError as Error).message}`);
+        }
     }
 }
 
