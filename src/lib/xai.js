@@ -71,6 +71,19 @@ async function invokeEdgeFunction(functionName, body) {
                     .trim();
 
                 // 4. TRUNCATION REPAIR: Auto-close missing braces/brackets
+
+                // First, robust cleanup of tail
+                jsonStr = jsonStr.trim();
+
+                // If ends with comma, remove it
+                if (jsonStr.endsWith(',')) {
+                    jsonStr = jsonStr.slice(0, -1);
+                }
+                // If ends with colon, append null to make key valid
+                if (jsonStr.endsWith(':')) {
+                    jsonStr += ' null';
+                }
+
                 if (!jsonStr.endsWith('}') && !jsonStr.endsWith(']')) {
                     let openBraces = 0;
                     let openBrackets = 0;
@@ -95,12 +108,15 @@ async function invokeEdgeFunction(functionName, body) {
                         escape = false;
                     }
 
+                    // Handles edge case: truncated at backslash inside string
+                    if (inString && jsonStr.endsWith('\\')) {
+                        jsonStr = jsonStr.slice(0, -1);
+                    }
+
                     // Close any open string first
                     if (inString) jsonStr += '"';
 
-                    // Close arrays and objects in correct order (simplified: assuming mostly tail truncation)
-                    // Note: A perfect stack approach is better but complexity/risk tradeoff.
-                    // Since we just want to close the main structure:
+                    // Close arrays and objects 
                     while (openBrackets > 0) { jsonStr += ']'; openBrackets--; }
                     while (openBraces > 0) { jsonStr += '}'; openBraces--; }
 
