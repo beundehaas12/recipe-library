@@ -261,3 +261,93 @@ export function processHtmlForRecipe(html) {
         data: cleanHtmlForAI(html).substring(0, 50000)
     };
 }
+
+/**
+ * Extract recipe-relevant images from HTML.
+ * Prioritizes Schema.org image, then content images.
+ * Filters out icons, logos, tracking pixels.
+ * 
+ * @param {string} html - Raw HTML content
+ * @param {string} baseUrl - Base URL for resolving relative paths
+ * @returns {string[]} Array of absolute image URLs
+ */
+export function extractImagesFromHtml(html, baseUrl) {
+    const images = new Set();
+
+    // 1. First try Schema.org image (highest priority)
+    const schema = extractSchemaRecipe(html);
+    if (schema?.image) {
+        const schemaImages = Array.isArray(schema.image) ? schema.image : [schema.image];
+        for (const img of schemaImages) {
+            const url = typeof img === 'string' ? img : img?.url;
+            if (url) images.add(url);
+        }
+    }
+
+    // 2. Look for Open Graph image (og:image)
+    const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+    if (ogMatch?.[1]) {
+        images.add(ogMatch[1]);
+    }
+
+    // 3. Extract all img tags
+    const imgMatches = html.matchAll(/<img[^>]*src=["']([^"']+)["'][^>]*>/gi);
+    for (const match of imgMatches) {
+        let src = match[1];
+
+        // Skip common non-recipe images
+        if (
+            src.includes('data:image') ||
+            src.includes('pixel') ||
+            src.includes('tracking') ||
+            src.includes('avatar') ||
+            src.includes('logo') ||
+            src.includes('icon') ||
+            src.includes('share') ||
+            src.includes('button') ||
+            src.includes('ad-') ||
+            src.includes('sponsor') ||
+            src.includes('gravatar') ||
+            src.includes('emoji') ||
+            src.includes('.svg') ||
+            src.includes('.gif') ||
+            src.match(/\/\d+x\d+\./) // size indicators like /1x1.
+        ) {
+            continue;
+        }
+
+        // Resolve relative URLs
+        if (!src.startsWith('http')) {
+            try {
+                src = new URL(src, baseUrl).href;
+            } catch {
+                continue;
+            }
+        }
+
+        images.add(src);
+    }
+
+    // 4. Also check srcset for high-res versions
+    const srcsetMatches = html.matchAll(/srcset=["']([^"']+)["']/gi);
+    for (const match of srcsetMatches) {
+        const srcset = match[1];
+        // Parse srcset - format: "url1 1x, url2 2x" or "url1 300w, url2 600w"
+        const parts = srcset.split(',').map(s => s.trim().split(/\s+/)[0]);
+        for (let src of parts) {
+            if (src.includes('data:image') || src.includes('.svg')) continue;
+
+            if (!src.startsWith('http')) {
+                try {
+                    src = new URL(src, baseUrl).href;
+                } catch {
+                    continue;
+                }
+            }
+            images.add(src);
+        }
+    }
+
+    // Return as array, limit to 12 images max
+    return Array.from(images).slice(0, 12);
+}

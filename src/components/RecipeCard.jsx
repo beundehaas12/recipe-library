@@ -4,6 +4,7 @@ import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus,
 import { Link } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
 import { reviewRecipeWithAI, reAnalyzeRecipeFromStoredImage, enrichRecipe } from '../lib/xai';
+import { extractImagesFromHtml } from '../lib/htmlParser';
 
 import { RecipeReviewModal } from './RecipeReviewModal';
 
@@ -35,6 +36,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     // New state for AI Review
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [pendingRecipe, setPendingRecipe] = useState(null);
+    const [extractedImages, setExtractedImages] = useState([]);
 
     const toggleSection = (section) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -137,9 +139,11 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
     const handleAIImprovement = async () => {
         setIsAIProcessing(true);
+        setExtractedImages([]); // Reset
         try {
             const isPhoto = !!recipe.original_image_url || recipe.source_type === 'image';
             let freshRecipe, usage;
+            let images = [];
 
             if (isPhoto) {
                 // Path 1: Vision Re-analysis with smart validation
@@ -151,8 +155,23 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                 freshRecipe = result.recipe;
                 usage = result.usage;
             } else {
-                // Path 2: Text-based Review
+                // Path 2: Text-based Review - also fetch images from URL
                 const sourceData = recipe.extraction_history?.raw_response || '';
+
+                // If we have a source_url, fetch it to extract images
+                if (recipe.source_url && !recipe.source_url.includes('/storage/v1/')) {
+                    try {
+                        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(recipe.source_url)}`;
+                        const response = await fetch(proxyUrl);
+                        if (response.ok) {
+                            const html = await response.text();
+                            images = extractImagesFromHtml(html, recipe.source_url);
+                        }
+                    } catch (e) {
+                        console.warn('Failed to fetch URL for images:', e);
+                    }
+                }
+
                 const result = await reviewRecipeWithAI(recipe, sourceData);
                 freshRecipe = result.recipe;
                 usage = result.usage;
@@ -176,6 +195,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                     }]
                 };
 
+                setExtractedImages(images);
                 setPendingRecipe(freshRecipe);
                 setShowReviewModal(true);
             }
@@ -188,22 +208,31 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
         }
     };
 
-    const handleConfirmReview = async (improvedRecipe) => {
+    const handleConfirmReview = async (improvedRecipe, selectedImage) => {
         // Merge the improved recipe with the original ID just to be safe
         console.log('✅ Applying AI improvements:', improvedRecipe);
-        await onUpdate({
+        const updates = {
             ...recipe,           // Base: original
             ...improvedRecipe,   // Overlay: improvements
             id: recipe.id        // Critical: keep ID
-        });
+        };
+
+        // If user selected an image, save it as image_url
+        if (selectedImage) {
+            updates.image_url = selectedImage;
+        }
+
+        await onUpdate(updates);
         setShowReviewModal(false);
         setPendingRecipe(null);
+        setExtractedImages([]);
     };
 
     const handleCancelReview = () => {
         console.log('❌ AI improvements cancelled by user');
         setShowReviewModal(false);
         setPendingRecipe(null);
+        setExtractedImages([]);
     };
 
     return (
@@ -961,6 +990,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                         enriched={pendingRecipe}
                         onConfirm={handleConfirmReview}
                         onCancel={handleCancelReview}
+                        extractedImages={extractedImages}
                     />
                 )}
             </AnimatePresence>
