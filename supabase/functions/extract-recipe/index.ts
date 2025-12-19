@@ -1,7 +1,6 @@
 // Supabase Edge Function: extract-recipe
-// Improved version – minimal hallucinations, direct structured extraction using Grok
+// Using Google Gemini Flash 3 for OCR and structured extraction
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import OpenAI from "https://esm.sh/openai@4"
 
 const IMPROVED_SYSTEM_PROMPT = `Je bent een uiterst precieze recept-extractie expert met visuele analysevaardigheden.
 Je taak is om een recept uit een afbeelding of tekst zo ACCURAAT en GETROUW mogelijk te extraheren.
@@ -31,9 +30,8 @@ INSTRUCTIES BELANGRIJK:
 - Behoud de EXACTE volgorde uit de bron
 
 OUTPUT:
-Geef ALLEEN de JSON in exact dit formaat, zonder extra tekst, uitleg of secties zoals RAW_OCR of REASONING.
+Geef ALLEEN de JSON in exact dit formaat, zonder extra tekst, uitleg of secties.
 
-[JSON_START]
 {
   "title": string,
   "description": string,
@@ -61,8 +59,7 @@ Geef ALLEEN de JSON in exact dit formaat, zonder extra tekst, uitleg of secties 
   "cuisine": string | null,
   "ai_tags": [string],
   "extra_data": {}
-}
-[JSON_END]`
+}`
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -77,24 +74,34 @@ serve(async (req) => {
     try {
         const { signedUrl, type, textContent, recipeData, sourceData } = await req.json()
 
-        const xai = new OpenAI({
-            baseURL: "https://api.x.ai/v1",
-            apiKey: Deno.env.get("XAI_API_KEY")
-        })
+        const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")
+        if (!GEMINI_API_KEY) {
+            throw new Error("GEMINI_API_KEY not configured")
+        }
 
-        let systemPrompt = IMPROVED_SYSTEM_PROMPT
-        let userContent: any = "Extraheer het recept zo precies mogelijk en geef alleen de JSON."
+        let systemInstruction = IMPROVED_SYSTEM_PROMPT
+        let parts: any[] = []
 
         if (type === 'image') {
-            userContent = [
-                { type: "text", text: "Analyse de afbeelding grondig en extraheer het recept volgens de instructies." },
-                { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
+            // Fetch the image and convert to base64
+            const imageResponse = await fetch(signedUrl)
+            const imageBuffer = await imageResponse.arrayBuffer()
+            const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
+            const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+
+            parts = [
+                { text: "Analyse de afbeelding grondig en extraheer het recept volgens de instructies. Geef ALLEEN de JSON output." },
+                {
+                    inlineData: {
+                        mimeType: mimeType,
+                        data: base64Image
+                    }
+                }
             ]
         } else if (type === 'text') {
-            userContent = `Extraheer het recept uit de volgende tekst:\n\n${textContent}`
+            parts = [{ text: `Extraheer het recept uit de volgende tekst:\n\n${textContent}\n\nGeef ALLEEN de JSON output.` }]
         } else if (type === 'review' || type === 'vision_review') {
-            // Unified review prompt – works with or without image
-            systemPrompt = `Je bent een recept-validatie expert.
+            systemInstruction = `Je bent een recept-validatie expert.
 Je hebt de huidige geëxtraheerde receptdata en (mogelijk) de originele afbeelding/tekst.
 Je taak is om de data te controleren, fouten te corrigeren en ontbrekende informatie aan te vullen – ALLEEN op basis van wat zichtbaar is.
 
@@ -110,45 +117,61 @@ BELANGRIJK:
 Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
 
             if (type === 'vision_review') {
-                userContent = [
-                    { type: "text", text: "Bekijk de afbeelding opnieuw en verbeter de huidige receptdata waar nodig." },
-                    { type: "image_url", image_url: { url: signedUrl, detail: "high" } }
+                const imageResponse = await fetch(signedUrl)
+                const imageBuffer = await imageResponse.arrayBuffer()
+                const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
+                const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+
+                parts = [
+                    { text: "Bekijk de afbeelding opnieuw en verbeter de huidige receptdata waar nodig. Geef ALLEEN de JSON output." },
+                    {
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: base64Image
+                        }
+                    }
                 ]
             } else {
-                userContent = "Valideer en verbeter de huidige receptdata op basis van de beschikbare informatie."
+                parts = [{ text: "Valideer en verbeter de huidige receptdata op basis van de beschikbare informatie. Geef ALLEEN de JSON output." }]
             }
         } else {
             throw new Error('Unsupported type')
         }
 
-        const response = await xai.chat.completions.create({
-            model: "grok-4-1-fast", // or "grok-4" if available and budget allows
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userContent }
-            ],
-            max_tokens: 4000,
-            temperature: 0.0, // Even lower for maximum consistency
-        })
+        // Call Gemini API
+        const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    systemInstruction: { parts: [{ text: systemInstruction }] },
+                    contents: [{ parts }],
+                    generationConfig: {
+                        temperature: 0.0,
+                        maxOutputTokens: 4000,
+                        responseMimeType: "application/json"
+                    }
+                })
+            }
+        )
 
-        const content = response.choices[0].message.content || ''
-
-        // Robust JSON extraction
-        const jsonMatch = content.match(/\[JSON_START\]([\s\S]*?)\[JSON_END\]/)
-        let jsonStr = jsonMatch ? jsonMatch[1].trim() : ''
-
-        // Fallback: look for code block
-        if (!jsonStr) {
-            const codeBlockMatch = content.match(/```json?\n?([\s\S]*?)\n?```/)
-            if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim()
+        if (!geminiResponse.ok) {
+            const errorText = await geminiResponse.text()
+            console.error('Gemini API error:', errorText)
+            throw new Error(`Gemini API error: ${geminiResponse.status}`)
         }
 
-        // Final fallback: assume whole content is JSON (after trimming markers)
-        if (!jsonStr) {
-            jsonStr = content
-                .replace(/\[JSON_START\]/g, '')
-                .replace(/\[JSON_END\]/g, '')
-                .trim()
+        const geminiData = await geminiResponse.json()
+        const content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+        // Parse JSON from response
+        let jsonStr = content.trim()
+
+        // Try to extract JSON if wrapped in code blocks
+        const codeBlockMatch = jsonStr.match(/```json?\n?([\s\S]*?)\n?```/)
+        if (codeBlockMatch) {
+            jsonStr = codeBlockMatch[1].trim()
         }
 
         let recipe = {}
@@ -160,14 +183,17 @@ Geef ALLEEN de verbeterde JSON in exact hetzelfde formaat.`
             throw new Error('Invalid JSON structure from AI')
         }
 
+        // Extract usage info
+        const usage = geminiData.usageMetadata || {}
+
         return new Response(
             JSON.stringify({
                 recipe,
                 raw_response: content,
                 usage: {
-                    prompt_tokens: response.usage?.prompt_tokens || 0,
-                    completion_tokens: response.usage?.completion_tokens || 0,
-                    total_tokens: response.usage?.total_tokens || 0
+                    prompt_tokens: usage.promptTokenCount || 0,
+                    completion_tokens: usage.candidatesTokenCount || 0,
+                    total_tokens: usage.totalTokenCount || 0
                 }
             }),
             {
