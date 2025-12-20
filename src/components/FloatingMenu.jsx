@@ -40,18 +40,18 @@ export default function FloatingMenu({ onSearch }) {
         <div className="fixed top-4 left-0 right-0 z-[5000] justify-center px-4 pointer-events-none hidden lg:flex">
             <motion.div
                 layout
-                className={`pointer-events-auto bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center h-11 ${isSearchOpen ? 'rounded-full p-1 w-full max-w-2xl' : 'rounded-full p-1'}`}
+                className="pointer-events-auto bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center h-11 rounded-full p-1"
             >
                 <AnimatePresence mode="wait">
                     {/* SEARCH EXPANDED VIEW */}
                     {isSearchOpen ? (
                         <motion.form
                             key="search"
-                            initial={{ opacity: 0, width: '90%' }}
-                            animate={{ opacity: 1, width: '100%' }}
-                            exit={{ opacity: 0, width: '90%' }}
-                            transition={{ duration: 0.2 }}
-                            className="flex items-center gap-3 w-full pl-2"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="flex items-center gap-2 w-full px-2"
                             onSubmit={handleSearchSubmit}
                         >
                             <Search size={18} className="text-white/50" />
