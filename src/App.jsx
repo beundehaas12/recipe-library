@@ -12,6 +12,7 @@ import PlanningPage from './components/PlanningPage';
 import ShoppingListPage from './components/ShoppingListPage';
 import FavoritesPage from './components/FavoritesPage';
 import FloatingMenu from './components/FloatingMenu';
+import AppHeader from './components/AppHeader';
 import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight, CheckCircle2, AlertCircle, Loader2, ExternalLink, ChevronDown, ChevronUp, Check, Menu, Compass, Calendar, ShoppingBasket, Heart } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
@@ -1229,8 +1230,85 @@ function AuthenticatedApp() {
         <Route path="/shopping" element={<ShoppingListPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
       </Routes>
+      <AppHeader
+        user={useAuth().user}
+        signOut={useAuth().signOut}
+        t={t}
+        searchQuery={searchQuery}
+        handleSearch={setSearchQuery}
+        clearSearch={() => setSearchQuery('')}
+        instantFilteredRecipes={null}
+        searchResults={null}
+        onCameraClick={() => document.getElementById('cameraInput')?.click()}
+        onUrlClick={() => setShowUrlInput(true)}
+      />
       <FloatingMenu onSearch={setSearchQuery} />
       <BackgroundTaskBar />
+
+      {/* URL Input Modal Global */}
+      <AnimatePresence>
+        {showUrlInput && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setShowUrlInput(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="glass-panel w-full max-w-md p-8 rounded-[var(--radius)] shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-2xl font-bold text-white mb-2">{t.pasteUrl}</h3>
+              <p className="text-muted-foreground text-sm mb-6">Plak een link van je favoriete receptensite.</p>
+
+              <input
+                type="url"
+                placeholder="https://example.com/lekker-recept"
+                className="input-standard mb-6 !py-4 text-lg"
+                value={urlInputValue}
+                onChange={(e) => setUrlInputValue(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUrlInput(false)}
+                  className="btn-secondary flex-1"
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  onClick={() => processUrl(urlInputValue)}
+                  disabled={!urlInputValue}
+                  className="btn-primary flex-1 !text-black"
+                >
+                  {t.analyzeUrl}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <input
+        type="file"
+        id="cameraInput"
+        ref={cameraInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        accept="image/*"
+      />
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        accept="image/*"
+      />
     </Router>
   );
 }

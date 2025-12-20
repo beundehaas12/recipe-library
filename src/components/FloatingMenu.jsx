@@ -27,7 +27,7 @@ export default function FloatingMenu({ onSearch }) {
     };
 
     const navItems = [
-        { label: 'Ontdek', path: '/' },
+        { label: 'Recepten', path: '/' },
         { label: 'Planning', path: '/planning' },
         { label: 'Boodschappen', path: '/shopping' },
         { label: 'Favorieten', path: '/favorites' },
