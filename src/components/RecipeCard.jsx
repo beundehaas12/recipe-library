@@ -92,7 +92,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     const location = useLocation();
     const [currentServings, setCurrentServings] = useState(recipe?.servings || 4);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = {};
+    const [editForm, setEditForm] = useState({});
     // Collapsible sections state
     const [expandedSections, setExpandedSections] = useState({
         about: true,
