@@ -46,31 +46,11 @@ export async function getWorkspace(workspaceId) {
 export async function getWorkspaceMembers(workspaceId) {
     const { data, error } = await supabase
         .from('workspace_members')
-        .select(`
-            id,
-            user_id,
-            role,
-            joined_at
-        `)
+        .select('id, user_id, role, joined_at')
         .eq('workspace_id', workspaceId);
 
     if (error) throw error;
-
-    // Fetch user metadata for each member
-    const membersWithProfiles = await Promise.all(
-        data.map(async (member) => {
-            // Get user from auth.users via admin or use cached profile
-            // For now, we'll try to get from Supabase auth
-            const { data: userData } = await supabase.auth.admin?.getUserById(member.user_id) || {};
-            return {
-                ...member,
-                email: userData?.user?.email || 'Unknown',
-                avatar_url: userData?.user?.user_metadata?.avatar_url || null
-            };
-        })
-    );
-
-    return membersWithProfiles;
+    return data;
 }
 
 /**
@@ -135,26 +115,12 @@ export async function updateWorkspace(workspaceId, updates) {
  * Send an invitation to join a workspace
  */
 export async function inviteToWorkspace(workspaceId, email, invitedBy) {
-    // Check if already a member
-    const { data: existingMember } = await supabase
-        .from('workspace_members')
-        .select('id')
-        .eq('workspace_id', workspaceId)
-        .eq('user_id', (
-            await supabase.from('auth.users').select('id').eq('email', email).single()
-        )?.data?.id)
-        .maybeSingle();
-
-    if (existingMember) {
-        throw new Error('Deze gebruiker is al lid van de workspace');
-    }
-
     // Check for existing pending invitation
     const { data: existingInvite } = await supabase
         .from('workspace_invitations')
         .select('id')
         .eq('workspace_id', workspaceId)
-        .eq('email', email)
+        .eq('email', email.toLowerCase())
         .eq('accepted', false)
         .maybeSingle();
 

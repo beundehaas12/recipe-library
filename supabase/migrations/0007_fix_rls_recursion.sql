@@ -91,3 +91,25 @@ CREATE POLICY "Users can delete recipes in their workspaces" ON recipes
         workspace_id IN (SELECT get_user_workspace_ids(auth.uid()))
         OR user_id = auth.uid()
     );
+
+-- Fix workspace_invitations policies
+DROP POLICY IF EXISTS "Users can view invitations for their email" ON workspace_invitations;
+DROP POLICY IF EXISTS "Owners can create invitations" ON workspace_invitations;
+DROP POLICY IF EXISTS "Owners can delete invitations" ON workspace_invitations;
+
+CREATE POLICY "Users can view invitations" ON workspace_invitations
+    FOR SELECT USING (
+        invited_by = auth.uid()
+        OR workspace_id IN (SELECT get_user_workspace_ids(auth.uid()))
+    );
+
+CREATE POLICY "Members can create invitations" ON workspace_invitations
+    FOR INSERT WITH CHECK (
+        workspace_id IN (SELECT get_user_workspace_ids(auth.uid()))
+    );
+
+CREATE POLICY "Members can delete invitations" ON workspace_invitations
+    FOR DELETE USING (
+        invited_by = auth.uid()
+        OR workspace_id IN (SELECT id FROM workspaces WHERE owner_id = auth.uid())
+    );
