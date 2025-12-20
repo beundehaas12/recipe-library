@@ -364,7 +364,12 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                     className="absolute inset-0 z-0"
                 >
                     {recipe.image_url ? (
-                        <img src={recipe.image_url} alt={recipe.title} className="w-full h-full object-cover" />
+                        <img
+                            src={recipe.image_url}
+                            alt={recipe.title}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                        />
                     ) : (
                         <div className="w-full h-full bg-secondary flex items-center justify-center">
                             <ChefHat size={100} className="text-muted-foreground/20" strokeWidth={1} />
