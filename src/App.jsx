@@ -39,9 +39,9 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 selection:bg-primary selection:text-white">
 
-      {/* Helper Badge for Loading/Searching States - Fixed to top */}
+      {/* Helper Badge for Searching State Only */}
       <AnimatePresence>
-        {(loading || isSearching) && (
+        {isSearching && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -50,7 +50,7 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
           >
             <Loader2 className="animate-spin text-primary" size={16} />
             <span className="text-xs font-bold text-white uppercase tracking-wider">
-              {isSearching ? 'Zoeken...' : 'Recepten laden...'}
+              Zoeken...
             </span>
           </motion.div>
         )}
