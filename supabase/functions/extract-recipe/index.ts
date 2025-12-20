@@ -1,6 +1,6 @@
 // Supabase Edge Function: extract-recipe
-// Multi-model LLM integration: Gemini 3 Flash, Grok 4, Grok 4.1 Fast
-// Updated: 2025-12-19
+// Mistral OCR 3 for image recognition, Grok 4.1 Fast Reasoning for text analysis
+// Updated: 2025-12-20
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
@@ -199,46 +199,42 @@ function safeJsonParse(text: string): any {
 }
 
 // =============================================================================
-// HELPER: Call Gemini API
+// HELPER: Call Mistral OCR API (for image recognition)
 // =============================================================================
-async function callGemini(parts: any[], apiKey: string, expectJson = true): Promise<{ text: string; usage: any }> {
-    const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
-        {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts }],
-                generationConfig: {
-                    temperature: 0.1,
-                    maxOutputTokens: 16384,
-                    responseMimeType: expectJson ? "application/json" : "text/plain"
-                }
-            })
-        }
-    )
+async function callMistralOCR(prompt: string, imageUrl: string, apiKey: string): Promise<{ text: string; usage: any }> {
+    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: 'mistral-ocr-2512',
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: prompt },
+                    { type: 'image_url', image_url: { url: imageUrl } }
+                ]
+            }],
+            temperature: 0.1,
+            max_tokens: 16384,
+            response_format: { type: 'json_object' }
+        })
+    })
 
     if (!response.ok) {
         const err = await response.text()
-        throw new Error(`Gemini API Error: ${err}`)
+        throw new Error(`Mistral OCR API Error: ${err}`)
     }
 
     const data = await response.json()
-
-    const finishReason = data.candidates?.[0]?.finishReason
-    if (finishReason === 'MAX_TOKENS') {
-        throw new Error('AI response was truncated. Recipe may be too complex - try a clearer photo.')
-    }
-    if (finishReason === 'SAFETY') {
-        throw new Error('AI blocked content for safety reasons.')
-    }
-
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}"
+    const text = data.choices?.[0]?.message?.content || "{}"
 
     const usage = {
-        total_tokens: data.usageMetadata?.totalTokenCount || 0,
-        prompt_tokens: data.usageMetadata?.promptTokenCount || 0,
-        completion_tokens: data.usageMetadata?.candidatesTokenCount || 0
+        total_tokens: data.usage?.total_tokens || 0,
+        prompt_tokens: data.usage?.prompt_tokens || 0,
+        completion_tokens: data.usage?.completion_tokens || 0
     }
 
     return { text, usage }
@@ -294,34 +290,24 @@ async function callGrok(prompt: string, model: string, apiKey: string, imageUrl?
 }
 
 // =============================================================================
-// HELPER: Unified LLM call (routes to Gemini or Grok)
+// HELPER: Route to appropriate LLM (Mistral OCR for images, Grok for text)
 // =============================================================================
 async function callLLM(
     prompt: string,
-    model: string,
-    geminiKey: string,
+    mistralKey: string,
     xaiKey: string,
     imageUrl?: string
 ): Promise<{ text: string; usage: any; model: string }> {
-    if (model.startsWith('grok-')) {
-        if (!xaiKey) throw new Error('XAI_API_KEY not configured for Grok models')
-        const result = await callGrok(prompt, model, xaiKey, imageUrl)
-        return { ...result, model }
+    if (imageUrl) {
+        // Use Mistral OCR for image analysis
+        if (!mistralKey) throw new Error('MISTRAL_API_KEY not configured')
+        const result = await callMistralOCR(prompt, imageUrl, mistralKey)
+        return { ...result, model: 'mistral-ocr-2512' }
     } else {
-        // Default to Gemini
-        const parts: any[] = [{ text: prompt }]
-        if (imageUrl) {
-            // Use the safe chunked encoding to avoid stack overflow
-            const { base64, mimeType } = await fetchAndEncodeImage(imageUrl)
-            parts.push({
-                inline_data: {
-                    mime_type: mimeType,
-                    data: base64
-                }
-            })
-        }
-        const result = await callGemini(parts, geminiKey, true)
-        return { ...result, model: 'gemini-3-flash-preview' }
+        // Use Grok for text-based tasks
+        if (!xaiKey) throw new Error('XAI_API_KEY not configured')
+        const result = await callGrok(prompt, 'grok-4-1-fast-reasoning', xaiKey)
+        return { ...result, model: 'grok-4-1-fast-reasoning' }
     }
 }
 
@@ -334,22 +320,15 @@ serve(async (req: Request) => {
     }
 
     try {
-        const { signedUrl, type, textContent, recipeData, rawData, sourceUrl, model } = await req.json()
-        const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")
+        const { signedUrl, type, textContent, recipeData, rawData, sourceUrl } = await req.json()
+        const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")
         const XAI_API_KEY = Deno.env.get("XAI_API_KEY")
 
-        // Determine which model to use (default to Gemini)
-        const selectedModel = model || 'gemini-3-flash-preview'
+        // Validate API keys
+        if (!MISTRAL_API_KEY) throw new Error("MISTRAL_API_KEY not configured")
+        if (!XAI_API_KEY) throw new Error("XAI_API_KEY not configured")
 
-        // Validate API keys based on model
-        if (selectedModel.startsWith('grok-') && !XAI_API_KEY) {
-            throw new Error("XAI_API_KEY not configured for Grok models")
-        }
-        if (!selectedModel.startsWith('grok-') && !GEMINI_API_KEY) {
-            throw new Error("GEMINI_API_KEY not configured")
-        }
-
-        console.log(`[extract-recipe] Processing type: ${type}, model: ${selectedModel}`)
+        console.log(`[extract-recipe] Processing type: ${type}`)
 
         let result: any = {}
 
@@ -361,8 +340,8 @@ serve(async (req: Request) => {
 
             const prompt = EXTRACTION_PROMPT + "\n\nExtraheer het recept uit deze afbeelding:";
 
-            console.log(`Calling ${selectedModel} for image extraction...`)
-            const { text, usage } = await callLLM(prompt, selectedModel, GEMINI_API_KEY!, XAI_API_KEY!, signedUrl)
+            console.log('Calling Mistral OCR for image extraction...')
+            const { text, usage } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!, signedUrl)
 
             const recipe = safeJsonParse(text)
             const rawText = recipe.raw_text || text
@@ -383,8 +362,8 @@ serve(async (req: Request) => {
         else if (type === 'text') {
             const prompt = EXTRACTION_PROMPT + `\n\nExtraheer het recept uit deze tekst:\n${textContent}`
 
-            console.log(`Calling ${selectedModel} for text extraction...`)
-            const { text, usage } = await callLLM(prompt, selectedModel, GEMINI_API_KEY!, XAI_API_KEY!)
+            console.log('Calling Grok for text extraction...')
+            const { text, usage } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!)
 
             const recipe = safeJsonParse(text)
             const rawText = recipe.raw_text || text
@@ -411,8 +390,8 @@ ${rawData || textContent || 'Geen beschikbaar'}
 
 Analyseer opnieuw en verbeter de structuur. Behoud correcte feiten, corrigeer fouten.`
 
-            console.log(`Calling ${selectedModel} for review...`)
-            const { text, usage } = await callLLM(prompt, selectedModel, GEMINI_API_KEY!, XAI_API_KEY!)
+            console.log('Calling Grok for review...')
+            const { text, usage } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!)
 
             const recipe = safeJsonParse(text)
             delete recipe.raw_text
@@ -430,8 +409,8 @@ Analyseer opnieuw en verbeter de structuur. Behoud correcte feiten, corrigeer fo
                 .replace('{recipeData}', JSON.stringify(recipeData, null, 2))
                 .replace('{rawText}', rawData || 'Niet beschikbaar')
 
-            console.log(`Calling ${selectedModel} for enrichment...`)
-            const { text, usage } = await callLLM(prompt, selectedModel, GEMINI_API_KEY!, XAI_API_KEY!)
+            console.log('Calling Grok for enrichment...')
+            const { text, usage } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!)
 
             const enrichments = safeJsonParse(text)
 

@@ -1,29 +1,17 @@
 /**
- * Recipe AI Client - Multi-model LLM Integration
+ * Recipe AI Client - Mistral OCR 3 + Grok 4.1 Integration
  * Handles all AI-powered recipe extraction and enrichment
- * Supports: Gemini 3 Flash, Grok 4.1, Grok 4 Fast Reasoning
+ * - Mistral OCR 3 for image recognition
+ * - Grok 4.1 Fast Reasoning for text analysis
  */
 import { supabase } from './supabase';
-
-// =============================================================================
-// HELPER: Get selected LLM model
-// =============================================================================
-function getSelectedModel() {
-    return localStorage.getItem('llm_model') || 'gemini-3-flash-preview';
-}
 
 // =============================================================================
 // EDGE FUNCTION INVOKER
 // =============================================================================
 
 async function invokeEdgeFunction(functionName, body) {
-    // Automatically include selected model in all requests
-    const bodyWithModel = {
-        ...body,
-        model: getSelectedModel()
-    };
-
-    const { data, error } = await supabase.functions.invoke(functionName, { body: bodyWithModel });
+    const { data, error } = await supabase.functions.invoke(functionName, { body });
 
     if (error) {
         console.error(`Edge function error [${functionName}]:`, error);

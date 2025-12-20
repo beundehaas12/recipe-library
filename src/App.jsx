@@ -270,22 +270,6 @@ function Home({ activeTasks, setActiveTasks }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlInputValue, setUrlInputValue] = useState("");
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(() => {
-    return localStorage.getItem('llm_model') || 'gemini-3-flash-preview';
-  });
-
-  // Available LLM models
-  const llmModels = [
-    { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google', description: 'Snel en efficiënt' },
-    { id: 'grok-4-1-fast-non-reasoning', name: 'Grok 4.1 Fast', provider: 'xAI', description: 'Snel, lage latency' },
-    { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast Reasoning', provider: 'xAI', description: 'Snel met redeneren' },
-  ];
-
-  const handleModelChange = (modelId) => {
-    setSelectedModel(modelId);
-    localStorage.setItem('llm_model', modelId);
-  };
 
   const handleUploadClick = () => {
     setShowAddMenu(false);
@@ -568,13 +552,7 @@ function Home({ activeTasks, setActiveTasks }) {
                       <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black">{t.signedInAs}</p>
                       <p className="text-white font-bold truncate text-sm">{user.email}</p>
                     </div>
-                    <button
-                      onClick={() => { setShowSettingsModal(true); setShowProfileMenu(false); }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold"
-                    >
-                      <Settings size={18} />
-                      <span>{t.settings || "Instellingen"}</span>
-                    </button>
+
                     <button
                       onClick={signOut}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-bold"
@@ -887,89 +865,7 @@ function Home({ activeTasks, setActiveTasks }) {
         </div>
       </main>
 
-      {/* Settings Modal */}
-      <AnimatePresence>
-        {showSettingsModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowSettingsModal(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Settings size={20} className="text-primary" /> Instellingen
-                  </h2>
-                  <p className="text-white/60 text-sm mt-1">Configureer je voorkeuren</p>
-                </div>
-                <button
-                  onClick={() => setShowSettingsModal(false)}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                >
-                  <X size={20} className="text-white/60" />
-                </button>
-              </div>
 
-              {/* Modal Body */}
-              <div className="p-6 space-y-6">
-                {/* LLM Model Selection */}
-                <div>
-                  <label className="text-xs uppercase font-bold text-white/40 tracking-wider mb-3 block">
-                    AI Model
-                  </label>
-                  <div className="space-y-2">
-                    {llmModels.map((model) => (
-                      <button
-                        key={model.id}
-                        onClick={() => handleModelChange(model.id)}
-                        className={`w-full p-4 rounded-xl border transition-all text-left ${selectedModel === model.id
-                          ? 'border-primary bg-primary/10'
-                          : 'border-white/10 bg-white/5 hover:border-white/20'
-                          }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-bold text-white">{model.name}</div>
-                            <div className="text-sm text-white/60">{model.description}</div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs px-2 py-1 bg-white/10 rounded-full text-white/60">
-                              {model.provider}
-                            </span>
-                            {selectedModel === model.id && (
-                              <Check size={18} className="text-primary" />
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="p-6 border-t border-white/10 bg-black/20">
-                <button
-                  onClick={() => setShowSettingsModal(false)}
-                  className="w-full btn-primary"
-                >
-                  Opslaan
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div >
   );
 }
