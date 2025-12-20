@@ -57,6 +57,16 @@
     @apply bg-background text-foreground antialiased selection:bg-primary/30;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Fix 300ms tap delay on mobile touch devices */
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
 }
 
 /* Design System Utilities */

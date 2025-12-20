@@ -1,10 +1,10 @@
 // Dutch-only translations for Recipe Library
 export const translations = {
     // App General
-    appTitle: "Recepten Bibliotheek",
+    appTitle: "Recepten",
 
     // Add Recipe Menu
-    addRecipe: "Recept Toevoegen",
+    addRecipe: "Toevoegen",
     takePhoto: "Foto Maken",
     uploadImage: "Foto Uploaden",
     fromUrl: "Van URL",
