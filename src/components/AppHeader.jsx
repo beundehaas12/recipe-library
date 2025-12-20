@@ -34,15 +34,15 @@ export default function AppHeader({
                         {/* Mobile Hamburger */}
                         <button
                             onClick={() => setMobileMenuOpen(true)}
-                            className="md:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
+                            className="lg:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
                         >
                             <Menu size={22} />
                         </button>
 
-                        <div className={`hidden md:flex bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full`}>
+                        <div className={`hidden lg:flex bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full`}>
                             <ChefHat size={22} />
                         </div>
-                        <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden md:block">
+                        <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden lg:block">
                             {t.appTitle}
                         </h1>
                     </div>
@@ -54,7 +54,7 @@ export default function AppHeader({
                         {/* Mobile Search Icon */}
                         <button
                             onClick={() => setShowMobileSearch(true)}
-                            className="md:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
+                            className="lg:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
                         >
                             <Search size={22} />
                         </button>

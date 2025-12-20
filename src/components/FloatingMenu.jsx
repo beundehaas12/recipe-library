@@ -36,10 +36,10 @@ export default function FloatingMenu({ onSearch }) {
     if (location.pathname.startsWith('/recipe/')) return null;
 
     return (
-        <div className="fixed top-6 left-0 right-0 z-[60] justify-center px-4 pointer-events-none hidden md:flex">
+        <div className="fixed top-4 left-0 right-0 z-[60] justify-center px-4 pointer-events-none hidden lg:flex">
             <motion.div
                 layout
-                className={`pointer-events-auto bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center ${isSearchOpen ? 'rounded-full p-2 w-full max-w-2xl' : 'rounded-full p-2'}`}
+                className={`pointer-events-auto bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center h-11 ${isSearchOpen ? 'rounded-full p-1 w-full max-w-2xl' : 'rounded-full p-1'}`}
             >
                 <AnimatePresence mode="wait">
                     {/* SEARCH EXPANDED VIEW */}
@@ -53,12 +53,12 @@ export default function FloatingMenu({ onSearch }) {
                             className="flex items-center gap-3 w-full pl-2"
                             onSubmit={handleSearchSubmit}
                         >
-                            <Search size={20} className="text-white/50" />
+                            <Search size={18} className="text-white/50" />
                             <input
                                 ref={inputRef}
                                 type="text"
                                 placeholder="Zoek recepten..."
-                                className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-white/30 h-10 text-base"
+                                className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-white/30 h-full text-sm font-medium"
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
@@ -68,9 +68,9 @@ export default function FloatingMenu({ onSearch }) {
                             <button
                                 type="button"
                                 onClick={handleCloseSearch}
-                                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
                             >
-                                <X size={20} />
+                                <X size={18} />
                             </button>
                         </motion.form>
                     ) : (
@@ -80,7 +80,7 @@ export default function FloatingMenu({ onSearch }) {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="flex items-center gap-1 md:gap-2"
+                            className="flex items-center gap-1 md:gap-1"
                         >
                             {navItems.map((item) => {
                                 const isActive = location.pathname === item.path;
@@ -89,7 +89,7 @@ export default function FloatingMenu({ onSearch }) {
                                         key={item.label}
                                         to={item.path}
                                         className={({ isActive }) => `
-                                            relative px-4 h-10 flex items-center justify-center rounded-full text-sm font-bold tracking-wide transition-all
+                                            relative px-4 h-9 flex items-center justify-center rounded-full text-sm font-bold tracking-wide transition-all
                                             ${isActive ? 'text-black bg-primary' : 'text-white/70 hover:text-white hover:bg-white/10'}
                                         `}
                                     >
@@ -98,13 +98,13 @@ export default function FloatingMenu({ onSearch }) {
                                 );
                             })}
 
-                            <div className="w-px h-5 bg-white/10 mx-2" />
+                            <div className="w-px h-4 bg-white/10 mx-1" />
 
                             <button
                                 onClick={() => setIsSearchOpen(true)}
-                                className="w-10 h-10 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                                className="w-9 h-9 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                             >
-                                <Search size={20} />
+                                <Search size={18} />
                             </button>
                         </motion.div>
                     )}
