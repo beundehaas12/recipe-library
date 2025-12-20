@@ -28,7 +28,7 @@ export default function AppHeader({
     return (
         <>
             {/* Cinematic Navbar - Transparent by default like Detail Page */}
-            <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
+            <header className="fixed top-0 left-0 right-0 z-[100] pointer-events-none px-4 lg:px-20 py-4">
                 <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between">
                     <div className="flex items-center gap-3 pointer-events-auto">
                         {/* Mobile Hamburger */}

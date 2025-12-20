@@ -46,7 +46,7 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-2"
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[110] bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-2"
           >
             <Loader2 className="animate-spin text-primary" size={16} />
             <span className="text-xs font-bold text-white uppercase tracking-wider">
