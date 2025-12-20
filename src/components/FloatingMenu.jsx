@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 
@@ -8,6 +8,7 @@ export default function FloatingMenu({ onSearch }) {
     const [searchQuery, setSearchQuery] = useState('');
     const inputRef = useRef(null);
     const location = useLocation();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (isSearchOpen && inputRef.current) {
@@ -63,6 +64,10 @@ export default function FloatingMenu({ onSearch }) {
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
                                     onSearch(e.target.value);
+                                    // Navigate to home if not already there
+                                    if (location.pathname !== '/') {
+                                        navigate('/');
+                                    }
                                 }}
                             />
                             <button
