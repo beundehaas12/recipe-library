@@ -61,7 +61,9 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
           <div className="relative w-full h-[75vh] md:h-[85vh] overflow-hidden">
             {/* Background */}
             <motion.div
-              layoutId={heroRecipe ? `image-${heroRecipe.id}` : 'hero-bg'}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1 }}
               className="absolute inset-0 z-0"
             >
               {heroRecipe?.image_url ? (
@@ -102,7 +104,6 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
                     </motion.div>
 
                     <motion.h2
-                      layoutId={`title-${heroRecipe.id}`}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
