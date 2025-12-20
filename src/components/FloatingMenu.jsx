@@ -37,7 +37,7 @@ export default function FloatingMenu({ onSearch }) {
         <div className="fixed top-6 left-0 right-0 z-[60] flex justify-center px-4 pointer-events-none">
             <motion.div
                 layout
-                className={`pointer-events-auto bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center ${isSearchOpen ? 'rounded-full p-2 w-full max-w-2xl' : 'rounded-full px-6 py-3 h-14'}`}
+                className={`pointer-events-auto bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center ${isSearchOpen ? 'rounded-full p-2 w-full max-w-2xl' : 'rounded-full p-2'}`}
             >
                 <AnimatePresence mode="wait">
                     {/* SEARCH EXPANDED VIEW */}
@@ -87,7 +87,7 @@ export default function FloatingMenu({ onSearch }) {
                                         key={item.label}
                                         to={item.path}
                                         className={({ isActive }) => `
-                                            relative px-4 py-2 rounded-full text-sm font-bold tracking-wide transition-all
+                                            relative px-4 h-10 flex items-center justify-center rounded-full text-sm font-bold tracking-wide transition-all
                                             ${isActive ? 'text-black bg-primary' : 'text-white/70 hover:text-white hover:bg-white/10'}
                                         `}
                                     >
