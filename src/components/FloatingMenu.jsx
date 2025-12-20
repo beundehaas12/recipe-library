@@ -34,7 +34,7 @@ export default function FloatingMenu({ onSearch }) {
     ];
 
     return (
-        <div className="fixed top-6 left-0 right-0 z-[60] flex justify-center px-4 pointer-events-none">
+        <div className="fixed top-6 left-0 right-0 z-[60] justify-center px-4 pointer-events-none hidden md:flex">
             <motion.div
                 layout
                 className={`pointer-events-auto bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center ${isSearchOpen ? 'rounded-full p-2 w-full max-w-2xl' : 'rounded-full p-2'}`}
