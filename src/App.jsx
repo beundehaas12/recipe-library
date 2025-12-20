@@ -65,12 +65,15 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
               animate={{ opacity: 1 }}
               transition={{ duration: 1 }}
               className="absolute inset-0 z-0"
+              style={{ willChange: 'opacity' }}
             >
               {heroRecipe?.image_url ? (
                 <img
                   src={heroRecipe.image_url}
                   className="w-full h-full object-cover"
                   alt={heroRecipe.title}
+                  loading="eager"
+                  decoding="async"
                 />
               ) : (
                 // Default Gradient if no recipe or image
