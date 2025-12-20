@@ -36,6 +36,12 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Recreate workspace_members policies using the helper function
+DROP POLICY IF EXISTS "Users can view workspace members" ON workspace_members;
+DROP POLICY IF EXISTS "Owners can insert members" ON workspace_members;
+DROP POLICY IF EXISTS "Owners can update members" ON workspace_members;
+DROP POLICY IF EXISTS "Owners can delete members" ON workspace_members;
+DROP POLICY IF EXISTS "Owners can manage members" ON workspace_members;
+
 CREATE POLICY "Users can view workspace members" ON workspace_members
     FOR SELECT USING (
         workspace_id IN (SELECT get_user_workspace_ids(auth.uid()))
@@ -57,6 +63,8 @@ CREATE POLICY "Owners can delete members" ON workspace_members
     );
 
 -- Recreate workspaces policy using the helper function
+DROP POLICY IF EXISTS "Users can view their workspaces" ON workspaces;
+
 CREATE POLICY "Users can view their workspaces" ON workspaces
     FOR SELECT USING (
         id IN (SELECT get_user_workspace_ids(auth.uid()))
@@ -96,6 +104,9 @@ CREATE POLICY "Users can delete recipes in their workspaces" ON recipes
 DROP POLICY IF EXISTS "Users can view invitations for their email" ON workspace_invitations;
 DROP POLICY IF EXISTS "Owners can create invitations" ON workspace_invitations;
 DROP POLICY IF EXISTS "Owners can delete invitations" ON workspace_invitations;
+DROP POLICY IF EXISTS "Users can view invitations" ON workspace_invitations;
+DROP POLICY IF EXISTS "Members can create invitations" ON workspace_invitations;
+DROP POLICY IF EXISTS "Members can delete invitations" ON workspace_invitations;
 
 CREATE POLICY "Users can view invitations" ON workspace_invitations
     FOR SELECT USING (
