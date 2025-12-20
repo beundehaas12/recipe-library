@@ -200,26 +200,41 @@ function safeJsonParse(text: string): any {
 
 // =============================================================================
 // HELPER: Call Mistral OCR API (for image recognition)
+// Uses the dedicated /v1/ocr endpoint for document processing
 // =============================================================================
 async function callMistralOCR(prompt: string, imageUrl: string, apiKey: string): Promise<{ text: string; usage: any }> {
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    // Fetch the image and convert to base64
+    const imageResponse = await fetch(imageUrl)
+    if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`)
+    const imageBuffer = await imageResponse.arrayBuffer()
+
+    // Convert to base64 in chunks to avoid stack overflow
+    const u8 = new Uint8Array(imageBuffer);
+    const CHUNK_SIZE = 0x8000;
+    let index = 0;
+    let binaryString = '';
+    while (index < u8.length) {
+        const slice = u8.subarray(index, Math.min(index + CHUNK_SIZE, u8.length));
+        binaryString += String.fromCharCode(...slice);
+        index += CHUNK_SIZE;
+    }
+    const base64 = btoa(binaryString);
+    const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+    const dataUrl = `data:${mimeType};base64,${base64}`
+
+    // Call Mistral OCR endpoint
+    const response = await fetch('https://api.mistral.ai/v1/ocr', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-            model: 'mistral-ocr-2512',
-            messages: [{
-                role: 'user',
-                content: [
-                    { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: imageUrl } }
-                ]
-            }],
-            temperature: 0.1,
-            max_tokens: 16384,
-            response_format: { type: 'json_object' }
+            model: 'mistral-ocr-latest',
+            document: {
+                type: 'image_url',
+                image_url: dataUrl
+            }
         })
     })
 
@@ -228,16 +243,25 @@ async function callMistralOCR(prompt: string, imageUrl: string, apiKey: string):
         throw new Error(`Mistral OCR API Error: ${err}`)
     }
 
-    const data = await response.json()
-    const text = data.choices?.[0]?.message?.content || "{}"
+    const ocrData = await response.json()
+
+    // OCR returns pages with markdown content - extract the text
+    const extractedText = ocrData.pages?.map((p: any) => p.markdown || '').join('\n') || ''
+
+    // Now use Grok to structure the OCR output into recipe JSON
+    // The OCR just extracts text, we need LLM to structure it
+    const structuredPrompt = prompt + `\n\nHier is de geëxtraheerde tekst uit de afbeelding:\n${extractedText}`
+
+    // We'll pass this text to Grok for structuring - handled by callLLM routing
+    // Return the raw text for now, the caller will need to re-process with Grok
 
     const usage = {
-        total_tokens: data.usage?.total_tokens || 0,
-        prompt_tokens: data.usage?.prompt_tokens || 0,
-        completion_tokens: data.usage?.completion_tokens || 0
+        total_tokens: ocrData.usage_info?.pages_processed || 1,
+        prompt_tokens: 0,
+        completion_tokens: 0
     }
 
-    return { text, usage }
+    return { text: extractedText, usage }
 }
 
 // =============================================================================
@@ -290,7 +314,7 @@ async function callGrok(prompt: string, model: string, apiKey: string, imageUrl?
 }
 
 // =============================================================================
-// HELPER: Route to appropriate LLM (Mistral OCR for images, Grok for text)
+// HELPER: Route to appropriate LLM (Mistral OCR + Grok for images, Grok for text)
 // =============================================================================
 async function callLLM(
     prompt: string,
@@ -299,10 +323,27 @@ async function callLLM(
     imageUrl?: string
 ): Promise<{ text: string; usage: any; model: string }> {
     if (imageUrl) {
-        // Use Mistral OCR for image analysis
+        // Step 1: Use Mistral OCR to extract text from image
         if (!mistralKey) throw new Error('MISTRAL_API_KEY not configured')
-        const result = await callMistralOCR(prompt, imageUrl, mistralKey)
-        return { ...result, model: 'mistral-ocr-2512' }
+        if (!xaiKey) throw new Error('XAI_API_KEY not configured')
+
+        console.log('Step 1: Extracting text with Mistral OCR...')
+        const ocrResult = await callMistralOCR(prompt, imageUrl, mistralKey)
+
+        // Step 2: Use Grok to structure the extracted text into recipe JSON
+        console.log('Step 2: Structuring with Grok...')
+        const structuredPrompt = prompt + `\n\nHier is de geëxtraheerde tekst uit de afbeelding:\n${ocrResult.text}`
+        const grokResult = await callGrok(structuredPrompt, 'grok-4-1-fast-reasoning', xaiKey)
+
+        // Combine usage
+        const combinedUsage = {
+            total_tokens: ocrResult.usage.total_tokens + grokResult.usage.total_tokens,
+            prompt_tokens: grokResult.usage.prompt_tokens,
+            completion_tokens: grokResult.usage.completion_tokens,
+            ocr_pages: ocrResult.usage.total_tokens
+        }
+
+        return { text: grokResult.text, usage: combinedUsage, model: 'mistral-ocr + grok-4-1-fast-reasoning' }
     } else {
         // Use Grok for text-based tasks
         if (!xaiKey) throw new Error('XAI_API_KEY not configured')
