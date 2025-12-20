@@ -30,7 +30,7 @@ export default function AppHeader({
             {/* Cinematic Navbar - Transparent by default like Detail Page */}
             <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
                 <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between">
-                    <div className="flex items-center gap-3 pointer-events-auto relative z-[100]">
+                    <div className="flex items-center gap-3 pointer-events-auto relative z-[5000]">
                         {/* Mobile Hamburger */}
                         <button
                             onClick={() => setMobileMenuOpen(true)}
@@ -47,7 +47,7 @@ export default function AppHeader({
                         </h1>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto relative z-[100]">
+                    <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto relative z-[5000]">
                         {/* Search Input Moved to FloatingMenu - Keep spacer if needed or remove */}
                         <div className="flex-1" />
 
