@@ -8,14 +8,18 @@ import { useAuth } from './context/AuthContext';
 import LoginScreen from './components/LoginScreen';
 import RecipeList from './components/RecipeList';
 import RecipeCard from './components/RecipeCard';
+import PlanningPage from './components/PlanningPage';
+import ShoppingListPage from './components/ShoppingListPage';
+import FavoritesPage from './components/FavoritesPage';
+import FloatingMenu from './components/FloatingMenu';
 import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight, CheckCircle2, AlertCircle, Loader2, ExternalLink, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 
-function Home({ activeTasks, setActiveTasks }) {
+function Home({ activeTasks, setActiveTasks, searchQuery }) {
   const { user, signOut } = useAuth();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  // searchQuery is now passed via props
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -36,6 +40,13 @@ function Home({ activeTasks, setActiveTasks }) {
       fetchRecipes();
     }
   }, [user]);
+
+  // React to search query changes from props
+  useEffect(() => {
+    if (searchQuery !== undefined) {
+      handleSearch(searchQuery);
+    }
+  }, [searchQuery]);
 
   async function fetchRecipes() {
     try {
@@ -87,7 +98,7 @@ function Home({ activeTasks, setActiveTasks }) {
   }, [searchQuery, recipes]);
 
   async function handleSearch(query) {
-    setSearchQuery(query);
+    // setSearchQuery(query); // No local state update needed
 
     // Clear pending database search
     if (searchTimeoutRef.current) {
@@ -137,7 +148,7 @@ function Home({ activeTasks, setActiveTasks }) {
   }
 
   const clearSearch = () => {
-    setSearchQuery('');
+    // setSearchQuery(''); // Handled by parent
     setSearchResults(null);
   };
 
@@ -439,25 +450,8 @@ function Home({ activeTasks, setActiveTasks }) {
           </div>
 
           <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto">
-            {/* Search Input */}
-            <div className="relative w-full max-w-md hidden md:block group">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 group-hover:text-white transition-colors z-10" />
-              <input
-                type="text"
-                placeholder={t.searchPlaceholder}
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full bg-black/40 backdrop-blur-md border border-white/10 rounded-full pl-11 pr-4 h-11 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all shadow-xl"
-              />
-              {searchQuery && (
-                <button
-                  onClick={clearSearch}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+            {/* Search Input Moved to FloatingMenu - Keep spacer if needed or remove */}
+            <div className="flex-1" />
 
             {/* Mobile Search Icon */}
             <button
@@ -1004,6 +998,7 @@ function RecipePage({ activeTasks, setActiveTasks }) {
 
 function AuthenticatedApp() {
   const [activeTasks, setActiveTasks] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // --- Background Tasks UI Component (Thinking Box) ---
   const BackgroundTaskBar = () => {
@@ -1147,9 +1142,13 @@ function AuthenticatedApp() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home activeTasks={activeTasks} setActiveTasks={setActiveTasks} />} />
+        <Route path="/" element={<Home activeTasks={activeTasks} setActiveTasks={setActiveTasks} searchQuery={searchQuery} />} />
         <Route path="/recipe/:id" element={<RecipePage activeTasks={activeTasks} setActiveTasks={setActiveTasks} />} />
+        <Route path="/planning" element={<PlanningPage />} />
+        <Route path="/shopping" element={<ShoppingListPage />} />
+        <Route path="/favorites" element={<FavoritesPage />} />
       </Routes>
+      <FloatingMenu onSearch={setSearchQuery} />
       <BackgroundTaskBar />
     </Router>
   );

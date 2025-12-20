@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2, FileText, Image, X } from 'lucide-react';
+import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2, FileText, Image, X, Heart, Calendar as CalendarIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
 import { reviewRecipeWithAI, reAnalyzeRecipeFromStoredImage, enrichRecipe } from '../lib/xai';
@@ -8,6 +8,9 @@ import { extractImagesFromHtml } from '../lib/htmlParser';
 import { uploadExternalImage } from '../lib/supabase';
 
 import { RecipeReviewModal } from './RecipeReviewModal';
+import AddToPlanModal from './AddToPlanModal';
+import { useAuth } from '../context/AuthContext';
+import { toggleFavorite, checkIsFavorite } from '../lib/plannerService';
 
 // Language code to Dutch name mapping
 const languageNames = {
@@ -98,6 +101,26 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
     const [isAIProcessing, setIsAIProcessing] = useState(false);
     const [showSourceModal, setShowSourceModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    // Planner & Favorites
+    const { user } = useAuth();
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [showPlanModal, setShowPlanModal] = useState(false);
+
+    useEffect(() => {
+        if (user && recipe) {
+            checkIsFavorite(recipe.id, user.id).then(setIsFavorite);
+        }
+    }, [user, recipe]);
+
+    const handleToggleFavorite = async () => {
+        try {
+            const newState = await toggleFavorite(recipe.id, user.id);
+            setIsFavorite(newState);
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     // New state for AI Review
     const [showReviewModal, setShowReviewModal] = useState(false);
@@ -349,6 +372,17 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                     <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent z-10" />
                 </motion.div>
 
+                {/* Modals */}
+                <AnimatePresence>
+                    {showPlanModal && (
+                        <AddToPlanModal
+                            recipe={recipe}
+                            onClose={() => setShowPlanModal(false)}
+                            onShowShoppingConfirm={() => alert("Ingrediënten toegevoegd aan boodschappenlijst!")}
+                        />
+                    )}
+                </AnimatePresence>
+
                 {/* Cinematic Floating Header - Completely transparent background version */}
                 <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
                     <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
@@ -384,6 +418,25 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                     )}
                                     <button onClick={() => setShowDeleteModal(true)} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center !bg-red-500/10 !text-red-500 !border-red-500/20 hover:!bg-red-500/20 transition-all">
                                         <Trash2 size={20} />
+                                    </button>
+                                </>
+                            )}
+                            {!isEditing && (
+                                <>
+                                    <div className="w-px h-6 bg-white/10 mx-1" />
+                                    <button
+                                        onClick={() => setShowPlanModal(true)}
+                                        className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center text-white/70 hover:text-white"
+                                        title="Inplannen"
+                                    >
+                                        <CalendarIcon size={20} /> {/* Renamed Calendar to CalendarIcon in imports if conflict, wait Calendar is imported as Calendar */}
+                                    </button>
+                                    <button
+                                        onClick={handleToggleFavorite}
+                                        className={`btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center transition-colors ${isFavorite ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-white/70 hover:text-red-500'}`}
+                                        title={isFavorite ? 'Verwijder uit favorieten' : 'Zet in favorieten'}
+                                    >
+                                        <Heart size={20} className={isFavorite ? 'fill-current' : ''} />
                                     </button>
                                 </>
                             )}
