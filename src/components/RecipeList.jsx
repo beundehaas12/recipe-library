@@ -58,16 +58,13 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
 
             {/* Grid Container - Aligned with Header via padding */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 px-4 lg:px-20">
-                {recipes.map((recipe, index) => (
-                    <motion.div
+                {recipes.map((recipe) => (
+                    <div
                         key={recipe.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.03, duration: 0.3 }}
                         className="w-full"
                     >
                         <RecipeThumbnail recipe={recipe} t={t} />
-                    </motion.div>
+                    </div>
                 ))}
             </div>
         </div>
