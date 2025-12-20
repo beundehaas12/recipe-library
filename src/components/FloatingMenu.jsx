@@ -1,15 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, Calendar, ShoppingBasket, Heart, Search, X } from 'lucide-react';
-import { translations as t } from '../lib/translations';
+import { Search, X } from 'lucide-react';
 
 export default function FloatingMenu({ onSearch }) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const inputRef = useRef(null);
     const location = useLocation();
-    const navigate = useNavigate();
 
     useEffect(() => {
         if (isSearchOpen && inputRef.current) {
@@ -29,44 +27,46 @@ export default function FloatingMenu({ onSearch }) {
     };
 
     const navItems = [
-        { icon: Compass, label: 'Ontdek', path: '/' },
-        { icon: Calendar, label: 'Planning', path: '/planning' },
-        { icon: ShoppingBasket, label: 'Boodschappen', path: '/shopping' },
-        { icon: Heart, label: 'Favorieten', path: '/favorites' },
+        { label: 'Ontdek', path: '/' },
+        { label: 'Planning', path: '/planning' },
+        { label: 'Boodschappen', path: '/shopping' },
+        { label: 'Favorieten', path: '/favorites' },
     ];
 
     return (
-        <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+        <div className="fixed top-6 left-0 right-0 z-[60] flex justify-center px-4 pointer-events-none">
             <motion.div
                 layout
-                className={`pointer-events-auto bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center gap-1 ${isSearchOpen ? 'rounded-2xl p-2 w-full max-w-2xl' : 'rounded-full p-2'}`}
+                className={`pointer-events-auto bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center ${isSearchOpen ? 'rounded-full p-2 w-full max-w-2xl' : 'rounded-full px-6 py-3 h-14'}`}
             >
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence mode="wait">
                     {/* SEARCH EXPANDED VIEW */}
                     {isSearchOpen ? (
                         <motion.form
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="flex-1 flex items-center gap-2 w-full"
+                            key="search"
+                            initial={{ opacity: 0, width: '90%' }}
+                            animate={{ opacity: 1, width: '100%' }}
+                            exit={{ opacity: 0, width: '90%' }}
+                            transition={{ duration: 0.2 }}
+                            className="flex items-center gap-3 w-full pl-2"
                             onSubmit={handleSearchSubmit}
                         >
-                            <Search size={20} className="text-white/50 ml-3 shrink-0" />
+                            <Search size={20} className="text-white/50" />
                             <input
                                 ref={inputRef}
                                 type="text"
-                                placeholder="Zoek recepten..." // t.searchPlaceholder
-                                className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-white/30 h-10"
+                                placeholder="Zoek recepten..."
+                                className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-white/30 h-10 text-base"
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    onSearch(e.target.value); // Live search
+                                    onSearch(e.target.value);
                                 }}
                             />
                             <button
                                 type="button"
                                 onClick={handleCloseSearch}
-                                className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -74,10 +74,11 @@ export default function FloatingMenu({ onSearch }) {
                     ) : (
                         /* DEFAULT MENU VIEW */
                         <motion.div
+                            key="menu"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="flex items-center gap-1 sm:gap-2"
+                            className="flex items-center gap-1 md:gap-2"
                         >
                             {navItems.map((item) => {
                                 const isActive = location.pathname === item.path;
@@ -86,36 +87,22 @@ export default function FloatingMenu({ onSearch }) {
                                         key={item.label}
                                         to={item.path}
                                         className={({ isActive }) => `
-                                            relative flex items-center justify-center w-12 h-12 rounded-full transition-all group
-                                            ${isActive ? 'text-primary bg-white/10' : 'text-white/60 hover:text-white hover:bg-white/5'}
+                                            relative px-4 py-2 rounded-full text-sm font-bold tracking-wide transition-all
+                                            ${isActive ? 'text-black bg-primary' : 'text-white/70 hover:text-white hover:bg-white/10'}
                                         `}
                                     >
-                                        <item.icon size={22} className="relative z-10" />
-                                        {isActive && (
-                                            <motion.div
-                                                layoutId="activeTab"
-                                                className="absolute inset-0 bg-white/10 rounded-full"
-                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                            />
-                                        )}
-
-                                        {/* Tooltip */}
-                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 rounded text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-white/10">
-                                            {item.label}
-                                        </div>
+                                        {item.label}
                                     </NavLink>
                                 );
                             })}
 
-                            {/* Separator */}
-                            <div className="w-px h-6 bg-white/10 mx-1" />
+                            <div className="w-px h-5 bg-white/10 mx-2" />
 
-                            {/* Search Trigger */}
                             <button
                                 onClick={() => setIsSearchOpen(true)}
-                                className="flex items-center justify-center w-12 h-12 rounded-full text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                                className="w-10 h-10 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                             >
-                                <Search size={22} />
+                                <Search size={20} />
                             </button>
                         </motion.div>
                     )}
