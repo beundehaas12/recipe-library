@@ -38,129 +38,117 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 selection:bg-primary selection:text-white">
-      {/* Background with parallax processing */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 bg-background" />
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/5 blur-[120px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/5 blur-[120px]" />
-      </div>
 
-      <div className="relative z-10 max-w-[1600px] mx-auto px-4 lg:px-20 pt-24 lg:pt-32">
-        {/* Helper Badge for Empty/Loading States */}
-        <AnimatePresence>
-          {(loading || isSearching) && (
+      {/* Helper Badge for Loading/Searching States - Fixed to top */}
+      <AnimatePresence>
+        {(loading || isSearching) && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-2"
+          >
+            <Loader2 className="animate-spin text-primary" size={16} />
+            <span className="text-xs font-bold text-white uppercase tracking-wider">
+              {isSearching ? 'Zoeken...' : 'Recepten laden...'}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <main className="relative min-h-screen">
+        {!searchQuery && (
+          <div className="relative w-full h-[75vh] md:h-[85vh] overflow-hidden">
+            {/* Background */}
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="fixed top-24 left-1/2 -translate-x-1/2 z-40 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-2"
+              layoutId={heroRecipe ? `image-${heroRecipe.id}` : 'hero-bg'}
+              className="absolute inset-0 z-0"
             >
-              <Loader2 className="animate-spin text-primary" size={16} />
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
-                {isSearching ? 'Zoeken...' : 'Recepten laden...'}
-              </span>
+              {heroRecipe?.image_url ? (
+                <img
+                  src={heroRecipe.image_url}
+                  className="w-full h-full object-cover"
+                  alt={heroRecipe.title}
+                />
+              ) : (
+                // Default Gradient if no recipe or image
+                <div className="w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-[#000000] to-[#000000]" />
+              )}
+
+              {/* Cinematic Vignettes */}
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent z-10" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent z-10" />
             </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Hero Section - Only show when not searching */}
-        <AnimatePresence>
-          {!searchQuery && heroRecipe && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mb-16 md:mb-24 relative group cursor-pointer"
-              onClick={() => navigate(`/recipe/${heroRecipe.id}`)}
-            >
-              <div className="relative aspect-[21/9] md:aspect-[2.4/1] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10">
-                {heroRecipe.image_url ? (
-                  <motion.img
-                    layoutId={`recipe-image-${heroRecipe.id}`}
-                    src={heroRecipe.image_url}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    alt={heroRecipe.title}
-                  />
+            {/* Hero Content - Anchored to bottom like Detail Page */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 pb-12 pointer-events-none">
+              <div className="max-w-[1600px] mx-auto px-4 lg:px-20 w-full flex flex-col items-start gap-4">
+                {heroRecipe ? (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="flex flex-wrap gap-3 items-center pointer-events-auto"
+                    >
+                      <span className="px-3 py-1 rounded-md bg-white/10 backdrop-blur-md border border-white/10 text-white/90 text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-lg">
+                        {t.latestDiscovery}
+                      </span>
+                      {heroRecipe.cuisine && (
+                        <span className="text-white/60 text-sm font-medium border-l border-white/20 pl-3 uppercase tracking-wider">
+                          {heroRecipe.cuisine}
+                        </span>
+                      )}
+                    </motion.div>
+
+                    <motion.h2
+                      layoutId={`title-${heroRecipe.id}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-5xl md:text-7xl lg:text-9xl font-black text-white leading-[0.85] drop-shadow-2xl font-display max-w-4xl pointer-events-auto"
+                    >
+                      {heroRecipe.title}
+                    </motion.h2>
+
+                    <motion.p
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-gray-200 text-lg md:text-xl line-clamp-3 max-w-2xl drop-shadow-md font-medium leading-relaxed pointer-events-auto"
+                    >
+                      {heroRecipe.description || ''}
+                    </motion.p>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="flex items-center gap-4 mt-2 pointer-events-auto"
+                    >
+                      <button
+                        onClick={() => navigate(`/recipe/${heroRecipe.id}`)}
+                        className="btn-primary !px-10 !py-5 !text-black font-black uppercase tracking-widest flex items-center gap-4 text-sm group/btn shadow-2xl shadow-primary/20 active:scale-95"
+                      >
+                        <span>{t.startCooking}</span>
+                        <ArrowRight size={20} className="group-hover/btn:translate-x-1 transition-transform" />
+                      </button>
+                    </motion.div>
+                  </>
                 ) : (
-                  <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
-                    <ChefHat size={64} className="text-white/20" />
+                  <div className="flex flex-col items-start gap-4 pointer-events-auto">
+                    <h1 className="text-6xl font-black text-white mb-4 leading-tight">{t.appTitle}</h1>
+                    <p className="text-xl text-gray-400 max-w-md">Jouw culinaire reis begint hier. Scan recepten en ontdek nieuwe smaken.</p>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-
-                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 lg:p-16 flex flex-col items-start gap-4 md:gap-6">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-primary/90 text-black text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-widest backdrop-blur-sm"
-                  >
-                    Laatst toegevoegd
-                  </motion.div>
-                  <motion.h2
-                    layoutId={`recipe-title-${heroRecipe.id}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-3xl md:text-5xl lg:text-7xl font-black text-white leading-[0.9] tracking-tighter max-w-4xl drop-shadow-2xl"
-                  >
-                    {heroRecipe.title}
-                  </motion.h2>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="flex flex-wrap items-center gap-4 text-white/80 font-medium text-sm md:text-base bg-black/40 backdrop-blur-md px-6 py-3 rounded-full border border-white/10"
-                  >
-                    {heroRecipe.cuisine && (
-                      <>
-                        <span className="uppercase tracking-wider">{heroRecipe.cuisine}</span>
-                        <span className="w-1 h-1 rounded-full bg-white/40" />
-                      </>
-                    )}
-                    <span className="flex items-center gap-2">
-                      <Clock size={16} /> {heroRecipe.cook_time || '30m'}
-                    </span>
-                    <span className="w-1 h-1 rounded-full bg-white/40" />
-                    <span className="flex items-center gap-2">
-                      <Users size={16} /> {heroRecipe.servings || '4'} personen
-                    </span>
-                  </motion.div>
-                </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+        )}
 
-        {/* Recipe Grid */}
-        <div className="relative min-h-[50vh]">
-          {isNoResults ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-20 text-center"
-            >
-              <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                <Search size={40} className="text-white/20" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-2">{t.noResults}</h3>
-              <p className="text-muted-foreground">{t.tryDifferentTerm}</p>
-              <button
-                // This needs to communicate up? Actually calling setSearchResults here won't work perfectly if simpler Home. But Home receives searchResults prop.
-                // Wait, setSearchResults is not passed as a setter?
-                // Actually I am not passing setSearchResults SETTER to Home.
-                // But Home doesn't need to clear results, the clear button is in header.
-                // This 'button' here is probably just 'Try again' or similar. 
-                // Ah, line 155 in original code: clearSearch(). 
-                // I should remove this button or make it clear the search query
-                // But Home doesn't have setSearchQuery.
-                // Let's just remove the button for now or leave it static.
-                className="mt-6 text-primary hover:text-primary/80 font-bold"
-              >
-                {/* Just text hint */}
-              </button>
-            </motion.div>
-          ) : isEmptyState ? (
+        {/* Content Area - No negative margins for better mobile stability */}
+        <div className={`relative z-20 space-y-12 pb-24 bg-background max-w-[1600px] mx-auto ${searchQuery ? 'pt-32' : 'pt-6'}`}>
+          {isEmptyState ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -177,13 +165,25 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
                 Klik op + om te beginnen
               </p>
             </motion.div>
+          ) : isNoResults ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-20 text-center"
+            >
+              <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6">
+                <Search size={40} className="text-white/20" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">{t.noResults}</h3>
+              <p className="text-muted-foreground">{t.tryDifferentTerm}</p>
+            </motion.div>
           ) : (
             <>
               {searchQuery && (
                 <motion.h3
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="text-2xl font-bold text-white mb-8 flex items-center gap-3"
+                  className="text-2xl font-bold text-white mb-8 flex items-center gap-3 px-4"
                 >
                   Zoekresultaten
                   <span className="text-primary bg-primary/10 px-3 py-1 rounded-full text-sm">
@@ -191,12 +191,11 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
                   </span>
                 </motion.h3>
               )}
-
               <RecipeList recipes={searchQuery ? displayRecipes : recipes.slice(1)} />
             </>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
