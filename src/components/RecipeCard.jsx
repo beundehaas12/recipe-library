@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Clock, Users, ArrowLeft, ChefHat, Flame, Utensils, Edit, Camera, Minus, Plus, Trash2, Sparkles, Globe, Share2, Info, ExternalLink, ChevronDown, Zap, Loader2, FileText, Image, X, Heart, Calendar as CalendarIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { translations as t } from '../lib/translations';
 import { reviewRecipeWithAI, reAnalyzeRecipeFromStoredImage, enrichRecipe } from '../lib/xai';
 import { extractImagesFromHtml } from '../lib/htmlParser';
@@ -88,9 +88,11 @@ function ImageSelectModal({ images, onSelect, onCancel }) {
 }
 
 export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }) {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [currentServings, setCurrentServings] = useState(recipe?.servings || 4);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({});
+    const [editForm, setEditForm] = {};
     // Collapsible sections state
     const [expandedSections, setExpandedSections] = useState({
         about: true,
@@ -386,9 +388,18 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                 {/* Cinematic Floating Header - Completely transparent background version */}
                 <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
                     <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
-                        <Link to="/" className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto">
+                        <button
+                            onClick={() => {
+                                if (location.key !== "default") {
+                                    navigate(-1);
+                                } else {
+                                    navigate('/');
+                                }
+                            }}
+                            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto"
+                        >
                             <ArrowLeft size={20} />
-                        </Link>
+                        </button>
 
                         <div className="flex gap-3 pointer-events-auto">
                             {isEditing ? (
