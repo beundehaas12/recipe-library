@@ -33,6 +33,8 @@ export default function FloatingMenu({ onSearch }) {
         { label: 'Favorieten', path: '/favorites' },
     ];
 
+    if (location.pathname.startsWith('/recipe/')) return null;
+
     return (
         <div className="fixed top-6 left-0 right-0 z-[60] justify-center px-4 pointer-events-none hidden md:flex">
             <motion.div
