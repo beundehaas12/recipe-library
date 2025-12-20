@@ -1,5 +1,5 @@
 // Supabase Edge Function: extract-recipe
-// Pixtral (pixtral-large-latest) for raw image extraction
+// Mistral OCR 3 (mistral-ocr-latest) for raw image extraction
 // Grok 4.1 Fast Reasoning for structuring, analysis, and enrichment
 // Updated: 2025-12-20
 
@@ -200,10 +200,10 @@ function safeJsonParse(text: string): any {
 }
 
 // =============================================================================
-// HELPER: Call Mistral Pixtral API (multimodal vision for raw extraction)
-// Uses pixtral-large-latest for comprehensive image understanding
+// HELPER: Call Mistral OCR 3 API (for raw image extraction)
+// Uses /v1/ocr endpoint with mistral-ocr-latest model
 // =============================================================================
-async function callPixtral(imageUrl: string, apiKey: string): Promise<{ rawText: string; usage: any }> {
+async function callMistralOCR(imageUrl: string, apiKey: string): Promise<{ rawText: string; usage: any }> {
     // Fetch the image and convert to base64
     const imageResponse = await fetch(imageUrl)
     if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`)
@@ -223,64 +223,37 @@ async function callPixtral(imageUrl: string, apiKey: string): Promise<{ rawText:
     const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
     const dataUrl = `data:${mimeType};base64,${base64}`
 
-    // Raw extraction prompt - 100% fidelity, no interpretation
-    const rawExtractionPrompt = `Extraheer ALLE zichtbare content uit deze afbeelding EXACT zoals weergegeven.
-
-INSTRUCTIES:
-1. Transcribeer ALLE tekst letterlijk en verbatim (behoud spelling, interpunctie, formattering)
-2. Behoud de visuele layout en structuur:
-   - Koppen en titels
-   - Lijsten en opsommingen
-   - Tabellen (inclusief kolommen/rijen)
-   - Handgeschreven notities
-   - Voetnoten of kanttekeningen
-3. Markeer structuurelementen met deze tags:
-   [TITEL]: voor hoofdtitels
-   [KOP]: voor koppen/subkoppen
-   [INGREDIENTEN]: voor ingrediëntenlijsten
-   [BEREIDING]: voor bereidingsstappen
-   [NOTITIE]: voor handgeschreven of extra notities
-   [TABEL]: voor tabellen
-   [ONLEESBAAR]: voor onduidelijke tekst
-4. VERZIN NIETS - alleen wat letterlijk zichtbaar is
-5. Als er meerdere recepten of pagina's zijn, scheid ze met ---
-
-OUTPUT: Gestructureerde ruwe tekst met alle zichtbare elementen.`
-
-    // Call Pixtral via chat completions
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    // Call Mistral OCR endpoint
+    const response = await fetch('https://api.mistral.ai/v1/ocr', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-            model: 'pixtral-large-latest',
-            messages: [{
-                role: 'user',
-                content: [
-                    { type: 'text', text: rawExtractionPrompt },
-                    { type: 'image_url', image_url: { url: dataUrl } }
-                ]
-            }],
-            temperature: 0.1,
-            max_tokens: 16384
+            model: 'mistral-ocr-latest',
+            document: {
+                type: 'image_url',
+                image_url: dataUrl
+            }
         })
     })
 
     if (!response.ok) {
         const err = await response.text()
-        throw new Error(`Pixtral API Error: ${err}`)
+        throw new Error(`Mistral OCR API Error: ${err}`)
     }
 
-    const data = await response.json()
-    const rawText = data.choices?.[0]?.message?.content || ''
+    const ocrData = await response.json()
+
+    // OCR returns pages with markdown content - extract all text
+    const rawText = ocrData.pages?.map((p: any) => p.markdown || '').join('\n') || ''
 
     const usage = {
-        total_tokens: data.usage?.total_tokens || 0,
-        prompt_tokens: data.usage?.prompt_tokens || 0,
-        completion_tokens: data.usage?.completion_tokens || 0,
-        model: 'pixtral-large-latest'
+        total_tokens: ocrData.usage_info?.pages_processed || 1,
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        model: 'mistral-ocr-latest'
     }
 
     return { rawText, usage }
@@ -345,31 +318,31 @@ async function callLLM(
     imageUrl?: string
 ): Promise<{ text: string; usage: any; model: string; rawExtraction?: string }> {
     if (imageUrl) {
-        // Step 1: Use Pixtral to extract raw content from image (100% fidelity)
+        // Step 1: Use Mistral OCR 3 to extract raw content from image (100% fidelity)
         if (!mistralKey) throw new Error('MISTRAL_API_KEY not configured')
         if (!xaiKey) throw new Error('XAI_API_KEY not configured')
 
-        console.log('Step 1: Extracting raw content with Pixtral...')
-        const pixtralResult = await callPixtral(imageUrl, mistralKey)
+        console.log('Step 1: Extracting raw content with Mistral OCR 3...')
+        const ocrResult = await callMistralOCR(imageUrl, mistralKey)
 
-        // Step 2: Use Grok to structure the extracted text into recipe JSON
-        console.log('Step 2: Structuring with Grok...')
-        const structuredPrompt = prompt + `\n\nHier is de geëxtraheerde tekst uit de afbeelding:\n${pixtralResult.rawText}`
+        // Step 2: Use Grok 4.1 Fast Reasoning to structure the extracted text into recipe JSON
+        console.log('Step 2: Structuring with Grok 4.1 Fast Reasoning...')
+        const structuredPrompt = prompt + `\n\nHier is de geëxtraheerde tekst uit de afbeelding:\n${ocrResult.rawText}`
         const grokResult = await callGrok(structuredPrompt, 'grok-4-1-fast-reasoning', xaiKey)
 
         // Combine usage
         const combinedUsage = {
-            total_tokens: pixtralResult.usage.total_tokens + grokResult.usage.total_tokens,
+            total_tokens: ocrResult.usage.total_tokens + grokResult.usage.total_tokens,
             prompt_tokens: grokResult.usage.prompt_tokens,
             completion_tokens: grokResult.usage.completion_tokens,
-            pixtral_tokens: pixtralResult.usage.total_tokens
+            ocr_pages: ocrResult.usage.total_tokens
         }
 
         return {
             text: grokResult.text,
             usage: combinedUsage,
-            model: 'pixtral-large-latest + grok-4-1-fast-reasoning',
-            rawExtraction: pixtralResult.rawText
+            model: 'mistral-ocr-latest + grok-4-1-fast-reasoning',
+            rawExtraction: ocrResult.rawText
         }
     } else {
         // Use Grok for text-based tasks
@@ -408,7 +381,7 @@ serve(async (req: Request) => {
 
             const prompt = EXTRACTION_PROMPT + "\n\nExtraheer het recept uit deze afbeelding:";
 
-            console.log('Calling Pixtral + Grok for image extraction...')
+            console.log('Calling Mistral OCR 3 + Grok 4.1 for image extraction...')
             const { text, usage, rawExtraction } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!, signedUrl)
 
             const recipe = safeJsonParse(text)
@@ -418,11 +391,11 @@ serve(async (req: Request) => {
 
             result = {
                 recipe,
-                // Store Pixtral's raw extraction (100% fidelity, immutable)
+                // Store Mistral OCR 3's raw extraction (100% fidelity, immutable)
                 raw_extracted_data: {
-                    pixtral_extraction: rawExtraction,
+                    ocr_extraction: rawExtraction,
                     grok_response: text,
-                    models_used: 'pixtral-large-latest + grok-4-1-fast-reasoning',
+                    models_used: 'mistral-ocr-latest + grok-4-1-fast-reasoning',
                     extracted_at: new Date().toISOString()
                 },
                 usage
