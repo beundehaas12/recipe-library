@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { supabase, uploadTempImage, uploadSourceImage, deleteImageByUrl } from './lib/supabase';
 import { analyzeRecipeImage, extractRecipeFromText } from './lib/xai';
 import { processHtmlForRecipe } from './lib/htmlParser';
@@ -342,7 +342,6 @@ function AuthenticatedApp() {
   const { user, signOut } = useAuth();
   const [activeTasks, setActiveTasks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchParams, setSearchParams] = useSearchParams();
 
   // Lifted state from Home
   const [recipes, setRecipes] = useState([]);
@@ -374,14 +373,16 @@ function AuthenticatedApp() {
   // Fetch workspaces and handle invitation tokens
   useEffect(() => {
     if (user) {
-      const inviteToken = searchParams.get('invite');
+      const urlParams = new URLSearchParams(window.location.search);
+      const inviteToken = urlParams.get('invite');
       if (inviteToken) {
         // Accept invitation and clear the URL param
         acceptInvitation(inviteToken)
           .then(result => {
             if (result?.success) {
               console.log('✅ Invitation accepted');
-              setSearchParams({});
+              // Clear the invite param from URL
+              window.history.replaceState({}, '', window.location.pathname);
             }
           })
           .catch(err => console.error('Failed to accept invitation:', err))
