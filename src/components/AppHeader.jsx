@@ -256,7 +256,7 @@ export default function AppHeader({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-md md:hidden"
+                        className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md lg:hidden"
                         onClick={() => setMobileMenuOpen(false)}
                     >
                         <motion.div
