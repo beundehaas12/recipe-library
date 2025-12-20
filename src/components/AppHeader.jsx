@@ -195,7 +195,13 @@ export default function AppHeader({
                                     placeholder={t.searchPlaceholder}
                                     className="input-standard !rounded-full pl-10 py-3"
                                     value={searchQuery}
-                                    onChange={(e) => handleSearch(e.target.value)}
+                                    onChange={(e) => {
+                                        handleSearch(e.target.value);
+                                        // Navigate to home if not already there
+                                        if (location.pathname !== '/') {
+                                            navigate('/');
+                                        }
+                                    }}
                                 />
                                 {searchQuery && (
                                     <button
