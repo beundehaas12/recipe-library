@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChefHat, Mail, Lock, Eye, EyeOff, Sparkles, Camera } from 'lucide-react';
+import { ChefHat, Mail, Lock, Eye, EyeOff, Sparkles, Camera, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginScreen() {
@@ -12,6 +12,16 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [hasInvite, setHasInvite] = useState(false);
+
+    // Check for invitation token in URL
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('invite')) {
+            setHasInvite(true);
+            setIsSignUp(true); // Default to sign up for new invitees
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -88,6 +98,24 @@ export default function LoginScreen() {
                         Jouw AI-gestuurde culinaire assistent
                     </motion.p>
                 </div>
+
+                {/* Invitation Banner */}
+                {hasInvite && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.45, duration: 0.5 }}
+                        className="w-full mb-6 bg-primary/10 border border-primary/30 rounded-2xl p-5 flex items-center gap-4"
+                    >
+                        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                            <Users size={24} className="text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-white font-bold text-sm">Je bent uitgenodigd! 🎉</p>
+                            <p className="text-white/60 text-xs mt-0.5">Log in of registreer om deel te nemen aan een gedeelde receptenbibliotheek.</p>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Main Auth Card */}
                 <motion.div
