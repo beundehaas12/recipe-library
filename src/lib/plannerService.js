@@ -50,7 +50,7 @@ export async function checkIsFavorite(recipeId, userId) {
         .select('id')
         .eq('user_id', userId)
         .eq('recipe_id', recipeId)
-        .single();
+        .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 is no rows found
     return !!data;
