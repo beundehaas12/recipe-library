@@ -14,9 +14,10 @@ const corsHeaders = {
 // PROMPTS
 // =============================================================================
 
-const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. Analyseer de input GRONDIG.
+const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. Analyseer de input EXTREEM GRONDIG.
 
 DOEL: Extraheer ALLE receptinformatie met maximale nauwkeurigheid in één keer.
+SPECIALE FOCUS: BEREIDINGSINSTRUCTIES - dit is het BELANGRIJKSTE onderdeel!
 
 OUTPUT JSON STRUCTUUR:
 {
@@ -31,7 +32,7 @@ OUTPUT JSON STRUCTUUR:
   }],
   "instructions": [{ 
     "step_number": number, 
-    "description": string 
+    "description": string (VOLLEDIGE stap, niet afkorten!)
   }],
   "prep_time": string|null (bijv. "15 minuten"),
   "cook_time": string|null (bijv. "30 minuten"),
@@ -44,14 +45,24 @@ OUTPUT JSON STRUCTUUR:
   "raw_text": string (ALLE zichtbare tekst exact zoals weergegeven, voor auditabiliteit)
 }
 
-REGELS:
+REGELS VOOR INSTRUCTIES (KRITIEK!):
+1. Zoek ALLE bereidingsstappen - vaak genummerd of als doorlopende tekst
+2. ELKE actie is een aparte stap: "snipper de ui" en "fruit de ui" zijn 2 stappen
+3. Splits lange paragrafen in logische stappen
+4. Herken verborgen stappen: "laat 30 minuten rusten" is ook een stap
+5. Tips en variaties aan het einde zijn GEEN stappen, maar neem ze apart op
+6. Als instructies onduidelijk gescheiden zijn, splits op werkwoorden (verhit, roer, voeg toe, etc.)
+7. Behoud ALLE details: temperaturen, tijden, technieken
+8. Minimaal 3-5 stappen voor een normaal recept, tot 15+ voor complexe recepten
+
+ALGEMENE REGELS:
 1. Wees 100% trouw aan de bron. Verzin NIETS.
 2. Lees ALLE tekst, ook kleine lettertjes, tips, variaties.
 3. Splits hoeveelheden correct: "500g bloem" → amount: 500, unit: "g", name: "bloem"
 4. Bewaar ingrediëntgroepen als ze er zijn.
 5. Include "raw_text" met ALLE zichtbare tekst voor auditabiliteit.
 6. description en introduction: ALLEEN letterlijke tekst uit de bron, NOOIT zelf samenvatten of genereren.
-6. Bereidingstijd en portieaantal zijn CRUCIAAL - zoek ze actief.
+7. Bereidingstijd en portieaantal zijn CRUCIAAL - zoek ze actief.
 `
 
 const ENRICHMENT_PROMPT = `Je bent een culinaire AI-assistent. Verrijk dit recept met waardevolle extra informatie.
