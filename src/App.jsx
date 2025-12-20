@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, uploadTempImage, uploadSourceImage, deleteImageByUrl } from './lib/supabase';
 import { analyzeRecipeImage, extractRecipeFromText } from './lib/xai';
 import { processHtmlForRecipe } from './lib/htmlParser';
@@ -13,6 +13,8 @@ import ShoppingListPage from './components/ShoppingListPage';
 import FavoritesPage from './components/FavoritesPage';
 import FloatingMenu from './components/FloatingMenu';
 import AppHeader from './components/AppHeader';
+import InviteModal from './components/InviteModal';
+import { getMyWorkspaces, getWorkspaceMembersBasic, acceptInvitation } from './lib/workspaceService';
 import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight, CheckCircle2, AlertCircle, Loader2, ExternalLink, ChevronDown, ChevronUp, Check, Menu, Compass, Calendar, ShoppingBasket, Heart, Clock, Users } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
@@ -340,6 +342,7 @@ function AuthenticatedApp() {
   const { user, signOut } = useAuth();
   const [activeTasks, setActiveTasks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Lifted state from Home
   const [recipes, setRecipes] = useState([]);
@@ -350,6 +353,11 @@ function AuthenticatedApp() {
   const [scrolled, setScrolled] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlInputValue, setUrlInputValue] = useState("");
+
+  // Workspace state
+  const [currentWorkspace, setCurrentWorkspace] = useState(null);
+  const [workspaceMembers, setWorkspaceMembers] = useState([]);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -362,6 +370,41 @@ function AuthenticatedApp() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Fetch workspaces and handle invitation tokens
+  useEffect(() => {
+    if (user) {
+      const inviteToken = searchParams.get('invite');
+      if (inviteToken) {
+        // Accept invitation and clear the URL param
+        acceptInvitation(inviteToken)
+          .then(result => {
+            if (result?.success) {
+              console.log('✅ Invitation accepted');
+              setSearchParams({});
+            }
+          })
+          .catch(err => console.error('Failed to accept invitation:', err))
+          .finally(() => fetchWorkspaces());
+      } else {
+        fetchWorkspaces();
+      }
+    }
+  }, [user]);
+
+  const fetchWorkspaces = async () => {
+    try {
+      const workspaces = await getMyWorkspaces(user.id);
+      if (workspaces.length > 0) {
+        const ws = workspaces[0]; // Use first workspace for now
+        setCurrentWorkspace(ws);
+        const members = await getWorkspaceMembersBasic(ws.id);
+        setWorkspaceMembers(members);
+      }
+    } catch (err) {
+      console.error('Failed to fetch workspaces:', err);
+    }
+  };
 
   // Fetch recipes
   useEffect(() => {
@@ -788,9 +831,24 @@ function AuthenticatedApp() {
         searchResults={searchResults}
         onCameraClick={() => document.getElementById('cameraInput')?.click()}
         onUrlClick={() => setShowUrlInput(true)}
+        workspace={currentWorkspace}
+        workspaceMembers={workspaceMembers}
+        onInviteClick={() => setShowInviteModal(true)}
       />
       <FloatingMenu onSearch={setSearchQuery} />
       <BackgroundTaskBar />
+
+      {/* Invite Modal */}
+      <AnimatePresence>
+        {showInviteModal && currentWorkspace && (
+          <InviteModal
+            workspace={currentWorkspace}
+            currentUserId={user.id}
+            onClose={() => setShowInviteModal(false)}
+            onMembersChange={fetchWorkspaces}
+          />
+        )}
+      </AnimatePresence>
 
       {/* URL Input Modal Global */}
       <AnimatePresence>

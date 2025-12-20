@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart } from 'lucide-react';
+import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 
@@ -13,7 +13,10 @@ export default function AppHeader({
     instantFilteredRecipes,
     searchResults,
     onCameraClick,
-    onUrlClick
+    onUrlClick,
+    workspace,
+    workspaceMembers = [],
+    onInviteClick
 }) {
     const [showAddMenu, setShowAddMenu] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -128,6 +131,41 @@ export default function AppHeader({
                                 )}
                             </AnimatePresence>
                         </div>
+
+                        {/* Stacked Workspace Member Avatars */}
+                        {workspaceMembers.length > 1 && (
+                            <div className="hidden md:flex items-center -space-x-2">
+                                {workspaceMembers.slice(0, 3).map((member, idx) => (
+                                    <div
+                                        key={member.user_id || idx}
+                                        className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md border-2 border-black flex items-center justify-center text-white text-xs font-bold shadow-lg"
+                                        style={{ zIndex: 10 - idx }}
+                                    >
+                                        {member.avatar_url ? (
+                                            <img src={member.avatar_url} className="w-full h-full object-cover rounded-full" alt="" />
+                                        ) : (
+                                            member.email?.[0]?.toUpperCase() || '?'
+                                        )}
+                                    </div>
+                                ))}
+                                {workspaceMembers.length > 3 && (
+                                    <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md border-2 border-black flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                                        +{workspaceMembers.length - 3}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Invite Button */}
+                        {onInviteClick && (
+                            <button
+                                onClick={onInviteClick}
+                                className="hidden md:flex h-11 w-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 items-center justify-center text-white/70 hover:text-primary hover:bg-black/60 transition-all"
+                                title="Uitnodigen"
+                            >
+                                <UserPlus size={18} />
+                            </button>
+                        )}
 
                         {/* User Profile */}
                         <div className="relative">
