@@ -438,6 +438,25 @@ function AuthenticatedApp() {
     }
   }
 
+  // Subscribe to real-time changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('recipes_updates')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'recipes' },
+        (payload) => {
+          console.log('New recipe added!', payload.new);
+          setRecipes(current => [payload.new, ...current]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // Search Logic
   const searchTimeoutRef = useRef(null);
 
