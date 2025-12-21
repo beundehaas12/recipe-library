@@ -55,26 +55,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
         );
     }
 
-    // Handle drag events
-    const handleDrag = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === "dragenter" || e.type === "dragover") {
-            setDragActive(true);
-        } else if (e.type === "dragleave") {
-            setDragActive(false);
-        }
-    };
 
-    // Handle drop
-    const handleDrop = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            onUpload(e.dataTransfer.files);
-        }
-    };
 
     // If no recipe selected, show upload dropzone
     if (!selectedRecipe) {
