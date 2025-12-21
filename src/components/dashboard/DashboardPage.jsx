@@ -66,7 +66,13 @@ export default function DashboardPage() {
 
     // Combine Queue + DB Recipes
     const allRecipes = useMemo(() => {
-        return [...queue, ...dbRecipes];
+        const mappedQueue = queue.map(q => ({
+            ...q,
+            recipe_collections: q.context?.collectionId
+                ? [{ collection_id: q.context.collectionId }]
+                : []
+        }));
+        return [...mappedQueue, ...dbRecipes];
     }, [queue, dbRecipes]);
 
     // Filter Logic
@@ -102,32 +108,16 @@ export default function DashboardPage() {
 
     const selectedRecipe = allRecipes.find(r => r.id === selectedId);
 
-    const handleUpload = (files) => {
-        uploadFiles(files, user.id);
-        setActiveFilter('drafts'); // Auto-switch to drafts to see progress
-    };
-
     // Unified Update Handler
     const handleUpdate = async (id, updates) => {
-        // Check if it's a queue item (starts with 'temp-') or DB item (UUID)
         const isQueueItem = id.toString().startsWith('temp-');
 
         if (isQueueItem) {
             updateQueueItem(id, updates);
         } else {
-            // Optimistic update
             setDbRecipes(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
-
-            // Persist to DB
-            const { error } = await supabase
-                .from('recipes')
-                .update(updates)
-                .eq('id', id);
-
-            if (error) {
-                console.error("Failed to update recipe:", error);
-                // Revert logic could go here
-            }
+            const { error } = await supabase.from('recipes').update(updates).eq('id', id);
+            if (error) console.error("Failed to update recipe:", error);
         }
     };
 
@@ -152,6 +142,56 @@ export default function DashboardPage() {
         }
 
         if (selectedId === id) setSelectedId(null);
+    };
+
+    const handleApprove = async (tempId) => {
+        const item = queue.find(q => q.id === tempId);
+        if (!item) return;
+
+        // Insert into DB
+        const { data: recipe, error } = await supabase.from('recipes').insert([
+            {
+                user_id: user.id,
+                title: item.title || 'Untitled',
+                description: item.description || '',
+                source_type: 'image',
+                status: 'completed',
+                source_url: item.source_url || '',
+                cook_time: item.cook_time || '',
+                prep_time: item.prep_time || '',
+                intro: item.intro || ''
+            }
+        ]).select().single();
+
+        if (error) {
+            console.error("Save error", error);
+            return;
+        }
+
+        // Link Collection if context exists
+        if (item.context && item.context.collectionId) {
+            await supabase.from('recipe_collections').insert({
+                recipe_id: recipe.id,
+                collection_id: item.context.collectionId
+            });
+            recipe.recipe_collections = [{ collection_id: item.context.collectionId }];
+        }
+
+        // Cleanup and Update UI
+        setDbRecipes(prev => [recipe, ...prev]);
+        deleteQueueItem(tempId);
+        setSelectedId(recipe.id);
+    };
+
+    const handleUpload = (files) => {
+        const context = {};
+        const isCollection = collections.some(c => c.id === activeFilter);
+        if (isCollection) {
+            context.collectionId = activeFilter;
+        }
+
+        uploadFiles(files, user.id, context);
+        setActiveFilter('drafts'); // Auto-switch to drafts to see progress
     };
 
     // Collection Toggle Logic
@@ -226,6 +266,7 @@ export default function DashboardPage() {
                 onUpload={handleUpload}
                 collections={collections}
                 onCollectionToggle={handleCollectionToggle}
+                onApprove={handleApprove}
             />
 
             <CreateCollectionModal

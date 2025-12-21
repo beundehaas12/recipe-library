@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle }) {
+export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle, onApprove }) {
     const [dragActive, setDragActive] = useState(false);
 
     // Handle drag events
@@ -76,10 +76,15 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                     <button className="btn-secondary px-4 py-1.5 text-xs font-bold uppercase tracking-wider">
                         Edit Full
                     </button>
-                    <button className="btn-primary px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                        <Check size={14} />
-                        Approve
-                    </button>
+                    {selectedRecipe.id.toString().startsWith('temp-') && (
+                        <button
+                            onClick={() => onApprove && onApprove(selectedRecipe.id)}
+                            className="btn-primary px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                        >
+                            <Check size={14} />
+                            Approve
+                        </button>
+                    )}
                 </div>
             </div>
 
