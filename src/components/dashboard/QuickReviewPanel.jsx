@@ -102,7 +102,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                 </div>
 
                 {/* Quick Edit Form */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
                     <div className="space-y-4 md:col-span-2">
                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Recipe Title</label>
                         <input
@@ -150,6 +150,37 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                             onChange={(e) => onUpdate(selectedRecipe.id, { source_url: e.target.value })}
                             className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
                             placeholder="https://..."
+                        />
+                    </div>
+
+                    {/* Extended Details */}
+                    <div className="md:col-span-2 space-y-4 border-t border-white/10 pt-6">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Ingredients</label>
+                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-4 text-sm text-zinc-300 space-y-2">
+                            {Array.isArray(selectedRecipe.ingredients) ? (
+                                selectedRecipe.ingredients.map((ing, i) => (
+                                    <div key={i} className="flex items-start gap-2 border-b border-white/5 last:border-0 pb-2 last:pb-0">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                                        <span>
+                                            {typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.item || ''}`}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="italic text-white/20">No ingredients parsed</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-2 space-y-4">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Instructions</label>
+                        <textarea
+                            value={Array.isArray(selectedRecipe.instructions)
+                                ? selectedRecipe.instructions.join('\n\n')
+                                : selectedRecipe.instructions || ''}
+                            onChange={(e) => onUpdate(selectedRecipe.id, { instructions: e.target.value })}
+                            className="w-full h-64 bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-primary/50 transition-all resize-none leading-relaxed"
+                            placeholder="Step 1..."
                         />
                     </div>
                 </div>

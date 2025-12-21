@@ -13,7 +13,7 @@ export default function RecipeQueueList({ recipes, selectedId, onSelect }) {
     };
 
     return (
-        <div className="flex-1 bg-zinc-900 border-r border-white/10 flex flex-col min-w-[300px] max-w-md">
+        <div className="flex-1 bg-zinc-900 border-r border-white/10 flex flex-col min-w-[300px] max-w-md h-full">
             {/* List Header */}
             <div className="h-10 border-b border-white/10 flex items-center px-4 bg-zinc-950/50">
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Name</span>
@@ -32,8 +32,8 @@ export default function RecipeQueueList({ recipes, selectedId, onSelect }) {
                             key={recipe.id}
                             onClick={() => onSelect(recipe.id)}
                             className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-all ${selectedId === recipe.id
-                                    ? 'bg-primary text-black'
-                                    : 'hover:bg-white/5 text-zinc-300 hover:text-white'
+                                ? 'bg-primary text-black'
+                                : 'hover:bg-white/5 text-zinc-300 hover:text-white'
                                 }`}
                         >
                             <div className={`w-10 h-10 rounded-md flex items-center justify-center shrink-0 overflow-hidden border ${selectedId === recipe.id ? 'border-black/20 bg-black/10' : 'border-white/10 bg-zinc-800'}`}>
