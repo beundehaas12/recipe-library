@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat } from 'lucide-react';
+import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload }) {
@@ -114,6 +114,18 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                         />
                     </div>
 
+                    <div className="space-y-4 md:col-span-2">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                            <FileText size={14} /> Description
+                        </label>
+                        <textarea
+                            value={selectedRecipe.description || selectedRecipe.intro || ''}
+                            onChange={(e) => onUpdate(selectedRecipe.id, { description: e.target.value })}
+                            className="w-full h-24 bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all resize-none"
+                            placeholder="A brief description of this recipe..."
+                        />
+                    </div>
+
                     <div className="space-y-4">
                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                             <Clock size={14} /> Prep Time
@@ -122,6 +134,19 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                             type="text"
                             value={selectedRecipe.prep_time || ''}
                             onChange={(e) => onUpdate(selectedRecipe.id, { prep_time: e.target.value })}
+                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                            placeholder="e.g. 15 min"
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                            <Timer size={14} /> Cook Time
+                        </label>
+                        <input
+                            type="text"
+                            value={selectedRecipe.cook_time || ''}
+                            onChange={(e) => onUpdate(selectedRecipe.id, { cook_time: e.target.value })}
                             className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
                             placeholder="e.g. 30 min"
                         />
@@ -137,6 +162,19 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                             onChange={(e) => onUpdate(selectedRecipe.id, { servings: e.target.value })}
                             className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
                             placeholder="e.g. 4 people"
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                            <UtensilsCrossed size={14} /> Cuisine
+                        </label>
+                        <input
+                            type="text"
+                            value={selectedRecipe.cuisine || ''}
+                            onChange={(e) => onUpdate(selectedRecipe.id, { cuisine: e.target.value })}
+                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                            placeholder="e.g. Italian, Mexican..."
                         />
                     </div>
 

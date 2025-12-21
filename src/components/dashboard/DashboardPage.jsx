@@ -13,19 +13,39 @@ export default function DashboardPage() {
     const [dbRecipes, setDbRecipes] = useState([]);
     const [activeFilter, setActiveFilter] = useState('all');
 
-    // Fetch existing recipes
+    // Fetch existing recipes with related data
     useEffect(() => {
         if (!user) return;
 
         async function fetchRecipes() {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from('recipes')
-                .select('*')
+                .select(`
+                    *,
+                    recipe_ingredients (id, name, quantity, unit, group_name, notes, order_index),
+                    recipe_steps (id, step_number, description, extra)
+                `)
                 .order('created_at', { ascending: false });
 
+            if (error) {
+                console.error('Error fetching recipes:', error);
+                return;
+            }
+
             if (data) {
-                // Map DB recipes to ensure they have a status for the list
-                setDbRecipes(data.map(r => ({ ...r, status: 'completed' })));
+                // Map DB recipes to ensure they have the expected structure
+                setDbRecipes(data.map(r => ({
+                    ...r,
+                    status: 'completed',
+                    // Map normalized ingredients to a simple array format for display
+                    ingredients: r.recipe_ingredients?.sort((a, b) => a.order_index - b.order_index).map(ing =>
+                        `${ing.quantity || ''} ${ing.unit || ''} ${ing.name}${ing.notes ? ` (${ing.notes})` : ''}`.trim()
+                    ) || [],
+                    // Map normalized steps to a simple array format for display
+                    instructions: r.recipe_steps?.sort((a, b) => a.step_number - b.step_number).map(step =>
+                        step.description
+                    ) || []
+                })));
             }
         }
 
