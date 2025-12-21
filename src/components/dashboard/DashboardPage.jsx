@@ -11,7 +11,16 @@ export default function DashboardPage() {
     const { queue, uploadFiles, updateItem: updateQueueItem, deleteItem: deleteQueueItem } = useBatchProcessing();
     const [selectedId, setSelectedId] = useState(null);
     const [dbRecipes, setDbRecipes] = useState([]);
+    const [collections, setCollections] = useState([]);
     const [activeFilter, setActiveFilter] = useState('all');
+
+    // Fetch collections
+    useEffect(() => {
+        if (!user) return;
+        supabase.from('collections').select('*').order('name').then(({ data }) => {
+            if (data) setCollections(data);
+        });
+    }, [user]);
 
     // Fetch existing recipes with related data
     useEffect(() => {
@@ -23,7 +32,8 @@ export default function DashboardPage() {
                 .select(`
                     *,
                     recipe_ingredients (id, name, quantity, unit, group_name, notes, order_index),
-                    recipe_steps (id, step_number, description, extra)
+                    recipe_steps (id, step_number, description, extra),
+                    recipe_collections (collection_id)
                 `)
                 .order('created_at', { ascending: false });
 
@@ -66,7 +76,14 @@ export default function DashboardPage() {
                 // Show last 5 from combined
                 return allRecipes.slice(0, 5);
             case 'all':
+                return allRecipes;
             default:
+                // Filter by Collection ID
+                if (activeFilter) {
+                    return allRecipes.filter(r =>
+                        r.recipe_collections?.some(rc => rc.collection_id === activeFilter)
+                    );
+                }
                 return allRecipes;
         }
     }, [activeFilter, allRecipes]);
@@ -125,12 +142,25 @@ export default function DashboardPage() {
         if (selectedId === id) setSelectedId(null);
     };
 
+    const handleCreateCollection = async (name) => {
+        const { data, error } = await supabase
+            .from('collections')
+            .insert([{ user_id: user.id, name }])
+            .select()
+            .single();
+
+        if (data) setCollections(prev => [...prev, data]);
+        if (error) console.error('Error creating collection:', error);
+    };
+
     return (
         <DashboardLayout
             user={user}
             signOut={signOut}
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
+            collections={collections}
+            onCreateCollection={handleCreateCollection}
         >
             {/* Finder Column 2: List */}
             <RecipeQueueList

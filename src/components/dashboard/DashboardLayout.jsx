@@ -3,7 +3,7 @@ import { ChefHat, Search, Upload, Bell, ChevronLeft, Plus, Settings, User } from
 import { Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 
-export default function DashboardLayout({ children, user, signOut, activeFilter, onFilterChange }) {
+export default function DashboardLayout({ children, user, signOut, activeFilter, onFilterChange, collections = [], onCreateCollection }) {
     return (
         <div className="h-screen bg-black text-foreground flex flex-col overflow-hidden">
             {/* Dashboard Toolbar (Finder-style) */}
@@ -55,7 +55,12 @@ export default function DashboardLayout({ children, user, signOut, activeFilter,
 
             {/* Main Workspace Area (Finder Layout) */}
             <div className="flex-1 flex overflow-hidden min-h-0">
-                <Sidebar activeFilter={activeFilter} onFilterChange={onFilterChange} />
+                <Sidebar
+                    activeFilter={activeFilter}
+                    onFilterChange={onFilterChange}
+                    collections={collections}
+                    onCreateCollection={onCreateCollection}
+                />
 
                 {/* Content Area (List + Preview) */}
                 <div className="flex-1 flex min-w-0 bg-background relative min-h-0">

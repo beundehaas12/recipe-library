@@ -1,17 +1,19 @@
 import React from 'react';
 import { LayoutGrid, Clock, FolderOpen, Star, PlusCircle } from 'lucide-react';
 
-export default function Sidebar({ activeFilter, onFilterChange }) {
+export default function Sidebar({ activeFilter, onFilterChange, collections = [], onCreateCollection }) {
     const mainFilters = [
         { id: 'all', label: 'All Recipes', icon: LayoutGrid },
         { id: 'drafts', label: 'Processing', icon: Clock },
         { id: 'recent', label: 'Recently Added', icon: Star },
     ];
 
-    const folders = [
-        { id: 'folder1', label: 'Dinner Ideas', icon: FolderOpen },
-        { id: 'folder2', label: 'Desserts', icon: FolderOpen },
-    ];
+    const handleAddCollection = () => {
+        const name = window.prompt("Enter collection name:");
+        if (name && onCreateCollection) {
+            onCreateCollection(name);
+        }
+    };
 
     return (
         <div className="w-64 bg-zinc-950 border-r border-white/10 flex flex-col h-full">
@@ -37,22 +39,28 @@ export default function Sidebar({ activeFilter, onFilterChange }) {
             <div className="p-4 pt-0">
                 <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-3 mb-2 flex items-center justify-between group">
                     Collections
-                    <button className="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity">
+                    <button
+                        onClick={handleAddCollection}
+                        className="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
+                    >
                         <PlusCircle size={14} />
                     </button>
                 </h2>
                 <div className="space-y-1">
-                    {folders.map((folder) => (
+                    {collections.length === 0 && (
+                        <div className="px-3 py-2 text-xs text-zinc-500 italic">No collections</div>
+                    )}
+                    {collections.map((collection) => (
                         <button
-                            key={folder.id}
-                            onClick={() => onFilterChange(folder.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all ${activeFilter === folder.id
+                            key={collection.id}
+                            onClick={() => onFilterChange(collection.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all ${activeFilter === collection.id
                                 ? 'bg-white/10 text-white font-semibold shadow-sm'
                                 : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
                                 }`}
                         >
-                            <folder.icon size={18} className={activeFilter === folder.id ? "text-primary" : "text-zinc-500 group-hover:text-zinc-400"} />
-                            {folder.label}
+                            <FolderOpen size={18} className={activeFilter === collection.id ? "text-primary" : "text-zinc-500 group-hover:text-zinc-400"} />
+                            {collection.name}
                         </button>
                     ))}
                 </div>
