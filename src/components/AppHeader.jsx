@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart, UserPlus } from 'lucide-react';
+import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart, UserPlus, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 
@@ -198,6 +198,14 @@ export default function AppHeader({
                                             <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black">{t.signedInAs}</p>
                                             <p className="text-white font-bold truncate text-sm">{user.email}</p>
                                         </div>
+
+                                        <Link
+                                            to="/dashboard"
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-white hover:bg-white/10 transition-colors text-sm font-medium"
+                                        >
+                                            <LayoutGrid size={18} />
+                                            <span>Dashboard</span>
+                                        </Link>
 
                                         <button
                                             onClick={signOut}

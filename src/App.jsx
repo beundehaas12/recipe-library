@@ -11,6 +11,7 @@ import RecipeCard from './components/RecipeCard';
 import PlanningPage from './components/PlanningPage';
 import ShoppingListPage from './components/ShoppingListPage';
 import FavoritesPage from './components/FavoritesPage';
+import DashboardPage from './components/dashboard/DashboardPage';
 import FloatingMenu from './components/FloatingMenu';
 import AppHeader from './components/AppHeader';
 import InviteModal from './components/InviteModal';
@@ -820,23 +821,30 @@ function AuthenticatedApp() {
         <Route path="/planning" element={<PlanningPage />} />
         <Route path="/shopping" element={<ShoppingListPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
-      <AppHeader
-        user={user}
-        signOut={signOut}
-        t={t}
-        searchQuery={searchQuery}
-        handleSearch={setSearchQuery} // Updates state
-        clearSearch={() => setSearchQuery('')}
-        instantFilteredRecipes={instantFilteredRecipes}
-        searchResults={searchResults}
-        onCameraClick={() => document.getElementById('cameraInput')?.click()}
-        onUrlClick={() => setShowUrlInput(true)}
-        workspace={currentWorkspace}
-        workspaceMembers={workspaceMembers}
-        onInviteClick={() => setShowInviteModal(true)}
-      />
-      <FloatingMenu onSearch={setSearchQuery} />
+
+      {/* Show standard header only if NOT on dashboard */}
+      {!window.location.pathname.startsWith('/dashboard') && (
+        <>
+          <AppHeader
+            user={user}
+            signOut={signOut}
+            t={t}
+            searchQuery={searchQuery}
+            handleSearch={setSearchQuery} // Updates state
+            clearSearch={() => setSearchQuery('')}
+            instantFilteredRecipes={instantFilteredRecipes}
+            searchResults={searchResults}
+            onCameraClick={() => document.getElementById('cameraInput')?.click()}
+            onUrlClick={() => setShowUrlInput(true)}
+            workspace={currentWorkspace}
+            workspaceMembers={workspaceMembers}
+            onInviteClick={() => setShowInviteModal(true)}
+          />
+          <FloatingMenu onSearch={setSearchQuery} />
+        </>
+      )}
       <BackgroundTaskBar />
 
       {/* Invite Modal */}
