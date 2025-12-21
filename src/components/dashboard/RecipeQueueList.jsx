@@ -13,7 +13,7 @@ export default function RecipeQueueList({ recipes, selectedId, onSelect }) {
     };
 
     return (
-        <div className="flex-1 bg-zinc-900 border-r border-white/10 flex flex-col min-w-[300px] max-w-md h-full">
+        <div className="flex-1 bg-zinc-900 border-r border-white/10 flex flex-col min-w-[300px] max-w-md h-full min-h-0">
             {/* List Header */}
             <div className="h-10 border-b border-white/10 flex items-center px-4 bg-zinc-950/50">
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Name</span>
