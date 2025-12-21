@@ -56,7 +56,33 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
     }
 
     return (
-        <div className="flex-1 bg-zinc-950 flex flex-col min-w-0 overflow-y-auto">
+        <div
+            className="flex-1 bg-zinc-950 flex flex-col min-w-0 overflow-y-auto relative"
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+        >
+            {/* Drag Overlay */}
+            <AnimatePresence>
+                {dragActive && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-50 bg-primary/20 backdrop-blur-sm flex items-center justify-center p-8"
+                    >
+                        <div className="bg-zinc-900/90 p-8 rounded-2xl border-2 border-primary border-dashed shadow-2xl text-center">
+                            <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
+                                <Upload size={40} className="text-primary" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white">Drop to Upload</h3>
+                            <p className="text-white/60 mt-2">Add recipes to {collections?.find(c => selectedRecipe?.recipe_collections?.some(rc => rc.collection_id === c.id))?.name || 'Processing'}</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Top Action Bar */}
             <div className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
