@@ -45,7 +45,7 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
     return (
         <div className="relative pt-4 pb-12">
             {/* Header - Aligned with Hero */}
-            <div className="px-4 lg:px-20 mb-8">
+            <div className="px-0 md:px-4 lg:px-20 mb-4 md:mb-8">
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
                         {t.myCookbook}
@@ -56,8 +56,8 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
                 </div>
             </div>
 
-            {/* Grid Container - Aligned with Header via padding */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 px-4 lg:px-20">
+            {/* Grid Container - Edge-to-edge on mobile, padded on larger screens */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-0.5 md:gap-1 lg:gap-2 px-0 md:px-4 lg:px-20">
                 {recipes.map((recipe) => (
                     <div
                         key={recipe.id}
