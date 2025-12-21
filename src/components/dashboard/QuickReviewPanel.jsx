@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink } from 'lucide-react';
+import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload }) {
+export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle }) {
     const [dragActive, setDragActive] = useState(false);
 
     // Handle drag events
@@ -177,7 +177,35 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                             placeholder="e.g. Italian, Mexican..."
                         />
                     </div>
-
+                    {/* Collections Assignment */}
+                    <div className="md:col-span-2 space-y-4 border-t border-white/10 pt-6">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                <FolderPlus size={14} /> Collections
+                            </label>
+                            {collections?.length === 0 && (
+                                <span className="text-xs text-muted-foreground italic">No collections created</span>
+                            )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {collections?.map(collection => {
+                                const isActive = selectedRecipe.recipe_collections?.some(rc => rc.collection_id === collection.id);
+                                return (
+                                    <button
+                                        key={collection.id}
+                                        onClick={() => onCollectionToggle(selectedRecipe.id, collection.id)}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${isActive
+                                            ? 'bg-white text-black border-white'
+                                            : 'bg-zinc-900 text-zinc-400 border-white/10 hover:border-white/30 hover:text-zinc-200'
+                                            }`}
+                                    >
+                                        {isActive && <Check size={12} />}
+                                        {collection.name}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
                     {/* Source Type Display */}
                     <div className="md:col-span-2 space-y-4 border-t border-white/10 pt-6">
                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Source</label>

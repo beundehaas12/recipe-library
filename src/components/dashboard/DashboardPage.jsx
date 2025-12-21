@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import DashboardLayout from './DashboardLayout';
 import RecipeQueueList from './RecipeQueueList';
 import QuickReviewPanel from './QuickReviewPanel';
+import CreateCollectionModal from './CreateCollectionModal';
 import { useBatchProcessing } from '../../hooks/useBatchProcessing';
 
 export default function DashboardPage() {
@@ -13,6 +14,7 @@ export default function DashboardPage() {
     const [dbRecipes, setDbRecipes] = useState([]);
     const [collections, setCollections] = useState([]);
     const [activeFilter, setActiveFilter] = useState('all');
+    const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
 
     // Fetch collections
     useEffect(() => {
@@ -142,6 +144,40 @@ export default function DashboardPage() {
         if (selectedId === id) setSelectedId(null);
     };
 
+    // Collection Toggle Logic
+    const handleCollectionToggle = async (recipeId, collectionId) => {
+        const recipe = dbRecipes.find(r => r.id === recipeId);
+        if (!recipe) return; // Only DB recipes supported for now
+
+        const exists = recipe.recipe_collections?.some(rc => rc.collection_id === collectionId);
+
+        // Optimistic Update
+        setDbRecipes(prev => prev.map(r => {
+            if (r.id === recipeId) {
+                const newCollections = exists
+                    ? r.recipe_collections.filter(rc => rc.collection_id !== collectionId)
+                    : [...(r.recipe_collections || []), { collection_id: collectionId }];
+                return { ...r, recipe_collections: newCollections };
+            }
+            return r;
+        }));
+
+        // DB Update
+        try {
+            if (exists) {
+                await supabase.from('recipe_collections')
+                    .delete()
+                    .match({ recipe_id: recipeId, collection_id: collectionId });
+            } else {
+                await supabase.from('recipe_collections')
+                    .insert({ recipe_id: recipeId, collection_id: collectionId });
+            }
+        } catch (error) {
+            console.error("Error toggling collection:", error);
+            // Revert could happen here
+        }
+    };
+
     const handleCreateCollection = async (name) => {
         const { data, error } = await supabase
             .from('collections')
@@ -149,7 +185,10 @@ export default function DashboardPage() {
             .select()
             .single();
 
-        if (data) setCollections(prev => [...prev, data]);
+        if (data) {
+            setCollections(prev => [...prev, data]);
+            setIsCollectionModalOpen(false);
+        }
         if (error) console.error('Error creating collection:', error);
     };
 
@@ -160,7 +199,7 @@ export default function DashboardPage() {
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
             collections={collections}
-            onCreateCollection={handleCreateCollection}
+            onCreateCollection={() => setIsCollectionModalOpen(true)}
         >
             {/* Finder Column 2: List */}
             <RecipeQueueList
@@ -175,6 +214,14 @@ export default function DashboardPage() {
                 onUpdate={handleUpdate}
                 onDelete={handleDelete}
                 onUpload={handleUpload}
+                collections={collections}
+                onCollectionToggle={handleCollectionToggle}
+            />
+
+            <CreateCollectionModal
+                isOpen={isCollectionModalOpen}
+                onClose={() => setIsCollectionModalOpen(false)}
+                onCreate={handleCreateCollection}
             />
         </DashboardLayout>
     );

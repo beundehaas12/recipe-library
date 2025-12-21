@@ -9,9 +9,8 @@ export default function Sidebar({ activeFilter, onFilterChange, collections = []
     ];
 
     const handleAddCollection = () => {
-        const name = window.prompt("Enter collection name:");
-        if (name && onCreateCollection) {
-            onCreateCollection(name);
+        if (onCreateCollection) {
+            onCreateCollection();
         }
     };
 
