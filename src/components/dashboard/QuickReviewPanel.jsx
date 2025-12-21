@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText } from 'lucide-react';
+import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload }) {
@@ -178,17 +178,82 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                         />
                     </div>
 
-                    <div className="md:col-span-2 space-y-4">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                            <Globe size={14} /> Source URL
-                        </label>
-                        <input
-                            type="text"
-                            value={selectedRecipe.source_url || ''}
-                            onChange={(e) => onUpdate(selectedRecipe.id, { source_url: e.target.value })}
-                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
-                            placeholder="https://..."
-                        />
+                    {/* Source Type Display */}
+                    <div className="md:col-span-2 space-y-4 border-t border-white/10 pt-6">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Source</label>
+                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    {selectedRecipe.original_image_url || selectedRecipe.source_type === 'image' ? (
+                                        <>
+                                            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                                                <Camera size={20} className="text-amber-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-white font-medium">Photo Upload</div>
+                                                <div className="text-white/40 text-xs">Captured from image</div>
+                                            </div>
+                                        </>
+                                    ) : selectedRecipe.source_url ? (
+                                        <>
+                                            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                                <Globe size={20} className="text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <div className="text-white font-medium">Website URL</div>
+                                                <div className="text-white/40 text-xs truncate max-w-[200px]">
+                                                    {selectedRecipe.source_url.replace(/^https?:\/\//, '').split('/')[0]}
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
+                                                <FileText size={20} className="text-white/40" />
+                                            </div>
+                                            <div>
+                                                <div className="text-white/60 font-medium">Manual Entry</div>
+                                                <div className="text-white/40 text-xs">No source linked</div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Action Button */}
+                                {selectedRecipe.original_image_url ? (
+                                    <a
+                                        href={selectedRecipe.original_image_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-lg font-bold text-xs uppercase tracking-wider transition-all"
+                                    >
+                                        View Photo <ExternalLink size={14} />
+                                    </a>
+                                ) : selectedRecipe.source_url && (
+                                    <a
+                                        href={selectedRecipe.source_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 rounded-lg font-bold text-xs uppercase tracking-wider transition-all"
+                                    >
+                                        Open URL <ExternalLink size={14} />
+                                    </a>
+                                )}
+                            </div>
+
+                            {/* Editable source_url field */}
+                            {selectedRecipe.source_url && (
+                                <div className="mt-4 pt-4 border-t border-white/5">
+                                    <input
+                                        type="text"
+                                        value={selectedRecipe.source_url || ''}
+                                        onChange={(e) => onUpdate(selectedRecipe.id, { source_url: e.target.value })}
+                                        className="w-full bg-zinc-800 border border-white/10 rounded-lg p-2 text-sm text-white/70 focus:outline-none focus:border-primary/50 transition-all"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Extended Details */}
