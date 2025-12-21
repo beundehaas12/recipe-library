@@ -1,7 +1,10 @@
-import React from 'react';
-import { Clock, CheckCircle2, AlertCircle, FileText, Image as ImageIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, CheckCircle2, AlertCircle, FileText, Image as ImageIcon, Upload } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export default function RecipeQueueList({ recipes, selectedId, onSelect }) {
+export default function RecipeQueueList({ recipes, selectedId, onSelect, onUpload }) {
+    const [dragActive, setDragActive] = useState(false);
+
     // Group recipes by status or date
     const getStatusIcon = (status) => {
         switch (status) {
@@ -12,8 +15,51 @@ export default function RecipeQueueList({ recipes, selectedId, onSelect }) {
         }
     };
 
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0] && onUpload) {
+            onUpload(e.dataTransfer.files);
+        }
+    };
+
     return (
-        <div className="flex-1 bg-zinc-900 border-r border-white/10 flex flex-col min-w-[300px] max-w-md h-full min-h-0">
+        <div
+            className="flex-1 bg-zinc-900 border-r border-white/10 flex flex-col min-w-[300px] max-w-md h-full min-h-0 relative"
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+        >
+            <AnimatePresence>
+                {dragActive && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-50 bg-primary/20 backdrop-blur-sm flex items-center justify-center p-4"
+                    >
+                        <div className="bg-zinc-900/90 p-6 rounded-2xl border-2 border-primary border-dashed shadow-2xl text-center w-full max-w-[200px]">
+                            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
+                                <Upload size={24} className="text-primary" />
+                            </div>
+                            <h3 className="text-sm font-bold text-white">Drop to Upload</h3>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* List Header */}
             <div className="h-10 border-b border-white/10 flex items-center px-4 bg-zinc-950/50">
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Name</span>

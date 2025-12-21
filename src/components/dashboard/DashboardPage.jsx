@@ -256,6 +256,7 @@ export default function DashboardPage() {
                 recipes={filteredRecipes}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
+                onUpload={handleUpload}
             />
 
             {/* Finder Column 3: Preview/Action */}
