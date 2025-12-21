@@ -221,12 +221,17 @@ export default function DashboardPage() {
     const handleUpload = (files) => {
         const context = {};
         const isCollection = collections.some(c => c.id === activeFilter);
+
         if (isCollection) {
             context.collectionId = activeFilter;
         }
 
         uploadFiles(files, user.id, context);
-        setActiveFilter('drafts'); // Auto-switch to drafts to see progress
+
+        // Only switch to drafts if on a view where the new item won't appear
+        if (activeFilter === 'favorites' || activeFilter === 'recent') {
+            setActiveFilter('drafts');
+        }
     };
 
     // Collection Toggle Logic
