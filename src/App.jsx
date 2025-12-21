@@ -824,27 +824,22 @@ function AuthenticatedApp() {
         <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
 
-      {/* Show standard header only if NOT on dashboard */}
-      {!window.location.pathname.startsWith('/dashboard') && (
-        <>
-          <AppHeader
-            user={user}
-            signOut={signOut}
-            t={t}
-            searchQuery={searchQuery}
-            handleSearch={setSearchQuery} // Updates state
-            clearSearch={() => setSearchQuery('')}
-            instantFilteredRecipes={instantFilteredRecipes}
-            searchResults={searchResults}
-            onCameraClick={() => document.getElementById('cameraInput')?.click()}
-            onUrlClick={() => setShowUrlInput(true)}
-            workspace={currentWorkspace}
-            workspaceMembers={workspaceMembers}
-            onInviteClick={() => setShowInviteModal(true)}
-          />
-          <FloatingMenu onSearch={setSearchQuery} />
-        </>
-      )}
+      <AppHeader
+        user={user}
+        signOut={signOut}
+        t={t}
+        searchQuery={searchQuery}
+        handleSearch={setSearchQuery} // Updates state
+        clearSearch={() => setSearchQuery('')}
+        instantFilteredRecipes={instantFilteredRecipes}
+        searchResults={searchResults}
+        onCameraClick={() => document.getElementById('cameraInput')?.click()}
+        onUrlClick={() => setShowUrlInput(true)}
+        workspace={currentWorkspace}
+        workspaceMembers={workspaceMembers}
+        onInviteClick={() => setShowInviteModal(true)}
+      />
+      <FloatingMenu onSearch={setSearchQuery} />
       <BackgroundTaskBar />
 
       {/* Invite Modal */}
