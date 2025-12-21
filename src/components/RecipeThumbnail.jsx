@@ -9,7 +9,7 @@ export default function RecipeThumbnail({ recipe, t }) {
             className="block group relative w-full active:scale-[0.98] transition-transform duration-200"
         >
             <motion.div
-                className="relative aspect-[2/3] rounded-[1px] md:rounded lg:rounded-lg overflow-hidden shadow-lg md:shadow-xl lg:shadow-2xl isolate"
+                className="relative aspect-[2/3] rounded-[2px] md:rounded lg:rounded-lg overflow-hidden shadow-lg md:shadow-xl lg:shadow-2xl isolate"
                 style={{
                     WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                     transform: 'translateZ(0)',
