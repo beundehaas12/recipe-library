@@ -36,7 +36,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
             >
-                <div className={`relative w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all ${dragActive ? 'border-primary bg-primary/10 scale-105' : 'border-white/10 hover:border-primary/50 hover:bg-white/5'}`}>
+                <div className={`relative w-full max-w-lg aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all ${dragActive ? 'border-primary bg-primary/10 scale-105' : 'border-white/10 hover:border-primary/50 hover:bg-white/5'}`}>
                     <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center">
                         <Upload size={32} className={dragActive ? "text-primary" : "text-muted-foreground"} />
                     </div>
@@ -85,7 +85,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
 
             <div className="p-8 max-w-4xl mx-auto w-full space-y-8">
                 {/* Image Preview */}
-                <div className="aspect-video w-full bg-zinc-900 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative group">
+                <div className="aspect-video w-full bg-zinc-900 rounded-xl overflow-hidden border border-white/10 shadow-2xl relative group">
                     {selectedRecipe.image_url ? (
                         <img src={selectedRecipe.image_url} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -109,7 +109,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                             type="text"
                             value={selectedRecipe.title || ''}
                             onChange={(e) => onUpdate(selectedRecipe.id, { title: e.target.value })}
-                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-xl font-bold text-white focus:outline-none focus:border-primary/50 transition-all font-display"
+                            className="w-full bg-zinc-900 border border-white/10 rounded-lg p-4 text-xl font-bold text-white focus:outline-none focus:border-primary/50 transition-all font-display"
                             placeholder="Untitled Recipe"
                         />
                     </div>
@@ -121,7 +121,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                         <textarea
                             value={selectedRecipe.description || selectedRecipe.intro || ''}
                             onChange={(e) => onUpdate(selectedRecipe.id, { description: e.target.value })}
-                            className="w-full h-24 bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all resize-none"
+                            className="w-full h-24 bg-zinc-900 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary/50 transition-all resize-none"
                             placeholder="A brief description of this recipe..."
                         />
                     </div>
@@ -134,7 +134,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                             type="text"
                             value={selectedRecipe.prep_time || ''}
                             onChange={(e) => onUpdate(selectedRecipe.id, { prep_time: e.target.value })}
-                            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                            className="w-full bg-zinc-900 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
                             placeholder="e.g. 15 min"
                         />
                     </div>
@@ -282,7 +282,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                 ? selectedRecipe.instructions.join('\n\n')
                                 : selectedRecipe.instructions || ''}
                             onChange={(e) => onUpdate(selectedRecipe.id, { instructions: e.target.value })}
-                            className="w-full h-64 bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-primary/50 transition-all resize-none leading-relaxed"
+                            className="w-full h-64 bg-zinc-900 border border-white/10 rounded-lg p-4 text-white focus:outline-none focus:border-primary/50 transition-all resize-none leading-relaxed"
                             placeholder="Step 1..."
                         />
                     </div>

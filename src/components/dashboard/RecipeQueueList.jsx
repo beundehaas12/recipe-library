@@ -21,7 +21,7 @@ export default function RecipeQueueList({ recipes, selectedId, onSelect }) {
             </div>
 
             {/* List Content */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
                 {recipes.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground text-sm">
                         No recipes found
@@ -31,16 +31,16 @@ export default function RecipeQueueList({ recipes, selectedId, onSelect }) {
                         <button
                             key={recipe.id}
                             onClick={() => onSelect(recipe.id)}
-                            className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-all ${selectedId === recipe.id
-                                ? 'bg-primary text-black'
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-all ${selectedId === recipe.id
+                                ? 'bg-primary text-black shadow-sm'
                                 : 'hover:bg-white/5 text-zinc-300 hover:text-white'
                                 }`}
                         >
-                            <div className={`w-10 h-10 rounded-md flex items-center justify-center shrink-0 overflow-hidden border ${selectedId === recipe.id ? 'border-black/20 bg-black/10' : 'border-white/10 bg-zinc-800'}`}>
+                            <div className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 overflow-hidden border ${selectedId === recipe.id ? 'border-black/20 bg-black/10' : 'border-white/10 bg-zinc-800'}`}>
                                 {recipe.image_url ? (
                                     <img src={recipe.image_url} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                    <ImageIcon size={18} className="opacity-50" />
+                                    <ImageIcon size={16} className="opacity-50" />
                                 )}
                             </div>
 

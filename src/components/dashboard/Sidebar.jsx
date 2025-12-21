@@ -22,12 +22,12 @@ export default function Sidebar({ activeFilter, onFilterChange }) {
                         <button
                             key={filter.id}
                             onClick={() => onFilterChange(filter.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === filter.id
-                                    ? 'bg-primary/20 text-primary'
-                                    : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all ${activeFilter === filter.id
+                                ? 'bg-white/10 text-white font-semibold shadow-sm'
+                                : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
                                 }`}
                         >
-                            <filter.icon size={18} />
+                            <filter.icon size={18} className={activeFilter === filter.id ? "text-primary" : "text-zinc-500 group-hover:text-zinc-400"} />
                             {filter.label}
                         </button>
                     ))}
@@ -46,12 +46,12 @@ export default function Sidebar({ activeFilter, onFilterChange }) {
                         <button
                             key={folder.id}
                             onClick={() => onFilterChange(folder.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === folder.id
-                                    ? 'bg-primary/20 text-primary'
-                                    : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all ${activeFilter === folder.id
+                                ? 'bg-white/10 text-white font-semibold shadow-sm'
+                                : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
                                 }`}
                         >
-                            <folder.icon size={18} />
+                            <folder.icon size={18} className={activeFilter === folder.id ? "text-primary" : "text-zinc-500 group-hover:text-zinc-400"} />
                             {folder.label}
                         </button>
                     ))}
