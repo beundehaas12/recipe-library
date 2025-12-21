@@ -90,6 +90,16 @@ export default function DashboardPage() {
         }
     }, [activeFilter, allRecipes]);
 
+    // Auto-select first recipe
+    useEffect(() => {
+        if (filteredRecipes.length > 0) {
+            const isValid = selectedId && filteredRecipes.some(r => r.id === selectedId);
+            if (!isValid) {
+                setSelectedId(filteredRecipes[0].id);
+            }
+        }
+    }, [filteredRecipes, selectedId]);
+
     const selectedRecipe = allRecipes.find(r => r.id === selectedId);
 
     const handleUpload = (files) => {
