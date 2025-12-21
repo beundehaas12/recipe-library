@@ -36,7 +36,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
             >
-                <div className={`w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all ${dragActive ? 'border-primary bg-primary/10 scale-105' : 'border-white/10 hover:border-primary/50 hover:bg-white/5'}`}>
+                <div className={`relative w-full max-w-lg aspect-video rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all ${dragActive ? 'border-primary bg-primary/10 scale-105' : 'border-white/10 hover:border-primary/50 hover:bg-white/5'}`}>
                     <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center">
                         <Upload size={32} className={dragActive ? "text-primary" : "text-muted-foreground"} />
                     </div>

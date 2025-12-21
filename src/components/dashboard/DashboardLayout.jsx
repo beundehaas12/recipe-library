@@ -54,7 +54,7 @@ export default function DashboardLayout({ children, user, signOut, activeFilter,
             </div>
 
             {/* Main Workspace Area (Finder Layout) */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex overflow-hidden min-h-0">
                 <Sidebar activeFilter={activeFilter} onFilterChange={onFilterChange} />
 
                 {/* Content Area (List + Preview) */}
