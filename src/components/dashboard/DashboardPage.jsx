@@ -156,9 +156,13 @@ export default function DashboardPage() {
                 description: item.description || '',
                 source_type: 'image',
                 status: 'completed',
+                original_image_url: item.original_image_url || '',  // Save source image path
+                image_url: item.original_image_url || '',           // Use source as main image for now
                 source_url: item.source_url || '',
                 cook_time: item.cook_time || '',
                 prep_time: item.prep_time || '',
+                servings: item.servings,
+                cuisine: item.cuisine,
                 intro: item.intro || ''
             }
         ]).select().single();
@@ -166,6 +170,33 @@ export default function DashboardPage() {
         if (error) {
             console.error("Save error", error);
             return;
+        }
+
+        // Insert Ingredients
+        if (item.ingredients && item.ingredients.length > 0) {
+            const ingredientsToInsert = item.ingredients.map((ing, index) => {
+                // Handle string vs object ingredients
+                const isObj = typeof ing === 'object';
+                return {
+                    recipe_id: recipe.id,
+                    order_index: index,
+                    name: isObj ? ing.item || ing.name : ing,
+                    amount: isObj ? ing.amount : null,
+                    unit: isObj ? ing.unit : null,
+                    notes: isObj ? ing.notes : null
+                };
+            });
+            await supabase.from('recipe_ingredients').insert(ingredientsToInsert);
+        }
+
+        // Insert Steps
+        if (item.instructions && item.instructions.length > 0) {
+            const stepsToInsert = item.instructions.map((step, index) => ({
+                recipe_id: recipe.id,
+                step_number: index + 1,
+                description: typeof step === 'string' ? step : (step.text || step.description)
+            }));
+            await supabase.from('recipe_steps').insert(stepsToInsert);
         }
 
         // Link Collection if context exists
@@ -176,6 +207,10 @@ export default function DashboardPage() {
             });
             recipe.recipe_collections = [{ collection_id: item.context.collectionId }];
         }
+
+        // Attach parsed data to local state for immediate display
+        recipe.ingredients = item.ingredients?.map(ing => typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.item || ''}`.trim()) || [];
+        recipe.instructions = item.instructions?.map(s => typeof s === 'string' ? s : s.description) || [];
 
         // Cleanup and Update UI
         setDbRecipes(prev => [recipe, ...prev]);

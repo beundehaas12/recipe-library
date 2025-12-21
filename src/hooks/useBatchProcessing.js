@@ -7,7 +7,7 @@ export function useBatchProcessing() {
     const [isUploading, setIsUploading] = useState(false);
 
     // Mock upload function for now - in real implementation this would use the existing upload logic
-    const uploadFiles = useCallback(async (files, userId) => {
+    const uploadFiles = useCallback(async (files, userId, context = {}) => {
         setIsUploading(true);
         const newItems = Array.from(files).map((file, index) => ({
             id: `temp-${Date.now()}-${index}`,
@@ -15,30 +15,63 @@ export function useBatchProcessing() {
             title: file.name.split('.')[0],
             status: 'processing',
             created_at: new Date().toISOString(),
-            image_url: URL.createObjectURL(file) // Preliminary preview
+            image_url: URL.createObjectURL(file), // Preliminary preview
+            context // Store context (e.g. { collectionId })
         }));
 
         setQueue(prev => [...newItems, ...prev]);
 
-        // Process each file (simulated for now)
+        // Process each file with Real AI
         for (const item of newItems) {
             try {
-                // 1. Upload to storage
-                // const publicUrl = await uploadTempImage(item.file);
+                console.log('[BatchProcess] Starting upload for:', item.file.name, 'userId:', userId);
 
-                // 2. Simulate AI processing
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // 1. Upload to storage (Permanent Source)
+                const uploadResult = await uploadSourceImage(item.file, userId);
+                console.log('[BatchProcess] Upload complete:', uploadResult);
+                const { publicUrl, signedUrl } = uploadResult;
 
+                // Update item with image immediately so user sees it
+                setQueue(prev => prev.map(q =>
+                    q.id === item.id ? { ...q, image_url: publicUrl, source_url: publicUrl } : q
+                ));
+
+                // 2. Real AI processing
+                console.log('[BatchProcess] Starting AI analysis with signedUrl:', signedUrl?.substring(0, 80) + '...');
+                const aiResult = await analyzeRecipeImage(signedUrl);
+                console.log('[BatchProcess] AI result:', aiResult);
+
+                const recipe = aiResult?.recipe;
+                if (!recipe) {
+                    throw new Error('AI returned no recipe data');
+                }
+
+                // 3. Update queue with AI results
+                console.log('[BatchProcess] Updating queue with recipe:', recipe.title);
                 setQueue(prev => prev.map(q =>
                     q.id === item.id
-                        ? { ...q, status: 'review_needed', title: 'Start typing to edit...' }
+                        ? {
+                            ...q,
+                            status: 'review_needed',
+                            title: recipe.title || q.title,
+                            description: recipe.description || recipe.intro || '',
+                            prep_time: recipe.prep_time,
+                            cook_time: recipe.cook_time,
+                            servings: recipe.servings,
+                            cuisine: recipe.cuisine,
+                            ingredients: recipe.ingredients || [],
+                            instructions: recipe.instructions || recipe.steps || [],
+                            original_image_url: publicUrl,
+                            ai_data: recipe // Store full raw data just in case
+                        }
                         : q
                 ));
+                console.log('[BatchProcess] ✅ Complete for:', item.file.name);
             } catch (error) {
-                console.error("Batch process error:", error);
+                console.error("[BatchProcess] ❌ Error:", error);
                 setQueue(prev => prev.map(q =>
                     q.id === item.id
-                        ? { ...q, status: 'error' }
+                        ? { ...q, status: 'error', error: error.message }
                         : q
                 ));
             }
