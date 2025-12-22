@@ -435,7 +435,6 @@ function AuthenticatedApp() {
         .select(`
           *,
           recipe_collections (
-            count,
             recipe:recipes (
               id,
               image_url
@@ -448,16 +447,22 @@ function AuthenticatedApp() {
       if (colsError) throw colsError;
 
       setRecipes(data || []);
-      setCollections(colsData?.map(c => ({
-        ...c,
-        recipe_count: c.recipe_collections?.[0]?.count || 0,
-        // Extract images from nested relation for bento grid
-        // Limit to 4 images for the grid
-        preview_images: c.recipe_collections
-          ?.map(rc => rc.recipe?.image_url)
-          .filter(url => url)
-          .slice(0, 4) || []
-      })) || []);
+      setCollections(colsData?.map(c => {
+        // Filter out null recipes (deleted ones)
+        const validRecipes = c.recipe_collections
+          ?.map(rc => rc.recipe)
+          .filter(r => r) || [];
+
+        return {
+          ...c,
+          recipe_count: validRecipes.length,
+          // Extract limit 4 images
+          preview_images: validRecipes
+            .map(r => r.image_url)
+            .filter(url => url)
+            .slice(0, 4)
+        };
+      }) || []);
     } catch (error) {
       console.error('Error fetching recipes:', error.message);
     } finally {
