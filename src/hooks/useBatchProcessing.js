@@ -70,12 +70,7 @@ export function useBatchProcessing() {
                         ? {
                             ...q,
                             status: 'done', // Marked as done/approved
-                            id: savedRecipe.id, // Replace temp ID with real ID
-                            // Keep display data for the "Recently Added" view
-                            title: savedRecipe.title,
-                            description: savedRecipe.description,
-                            ingredients: savedRecipe.ingredients,
-                            instructions: savedRecipe.instructions,
+                            ...savedRecipe, // Spread ALL DB fields (prep_time, servings, etc.)
                             original_image_url: publicUrl,
                             ai_data: aiResult
                         }
