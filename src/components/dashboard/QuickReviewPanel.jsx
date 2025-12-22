@@ -452,14 +452,18 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                     {/* Breakdown of tokens */}
                                     {(() => {
                                         const usage = extractionHistory.usage || extractionHistory;
-                                        const total = usage.total_tokens || 0;
+                                        // Support legacy props and new explicit props
+                                        const grokInput = usage.grok_input_tokens || usage.prompt_tokens || 0;
+                                        const grokOutput = usage.grok_output_tokens || usage.completion_tokens || 0;
+                                        const grokTotal = grokInput + grokOutput;
+
+                                        const total = usage.total_tokens || grokTotal;
                                         const ocrPages = usage.ocr_pages;
-                                        const grokTokens = (usage.prompt_tokens || 0) + (usage.completion_tokens || 0);
 
                                         return (
                                             <div className="flex flex-col">
                                                 <div className="text-xl font-mono text-white mb-2">
-                                                    {total} <span className="text-xs text-muted-foreground font-sans uppercase">Total</span>
+                                                    {total} <span className="text-xs text-muted-foreground font-sans uppercase">LLM Tokens</span>
                                                 </div>
                                                 <div className="space-y-1 border-t border-white/5 pt-2">
                                                     {ocrPages !== undefined && (
@@ -468,10 +472,10 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                                             <span className="text-white font-mono">{ocrPages}</span>
                                                         </div>
                                                     )}
-                                                    {grokTokens > 0 && (
+                                                    {grokTotal > 0 && (
                                                         <div className="flex justify-between text-xs">
                                                             <span className="text-muted-foreground">Grok (Tokens):</span>
-                                                            <span className="text-white font-mono">{grokTokens}</span>
+                                                            <span className="text-white font-mono">{grokTotal}</span>
                                                         </div>
                                                     )}
                                                 </div>

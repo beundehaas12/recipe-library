@@ -220,7 +220,9 @@ async function callMistralOCR(imageUrl: string, apiKey: string): Promise<{ rawTe
             type: "image_url",
             image_url: imageUrl
         },
-        table_format: "html"
+        table_format: "html",
+        extract_header: true,
+        extract_footer: true
     }
 
     const response = await fetch('https://api.mistral.ai/v1/ocr', {
@@ -318,24 +320,31 @@ async function callLLM(
 
         // Step 2: Use Grok 4.1 to structure the data using the OCR text
         console.log('Step 2: Structuring with Grok 4.1...')
-        const extractionPrompt = EXTRACTION_PROMPT + "\n\nExtraheer het recept uit deze OCR markdown tekst:\n\n" + ocrResult.rawText
+
+        // Incorporate LAYOUT_ANALYSIS_PROMPT to guide Grok in interpreting the OCR data
+        // We append the raw markdown at the end
+        const extractionPrompt = EXTRACTION_PROMPT +
+            "\n\nLAYOUT ANALYSIS GUIDELINES:\n" + LAYOUT_ANALYSIS_PROMPT +
+            "\n\nSOURCE OCR MARKDOWN:\n" + ocrResult.rawText
+
         const grokResult = await callGrok(extractionPrompt, 'grok-4-1-fast-reasoning', xaiKey)
 
         const combinedUsage = {
-            total_tokens: ocrResult.usage.pages_processed + grokResult.usage.total_tokens, // Mixed units (pages vs tokens) but stored as sum
-            prompt_tokens: grokResult.usage.prompt_tokens,
-            completion_tokens: grokResult.usage.completion_tokens,
-            ocr_pages: ocrResult.usage.pages_processed
+            // Keep separated for clarity in UI
+            ocr_pages: ocrResult.usage.pages_processed,
+            grok_input_tokens: grokResult.usage.prompt_tokens,
+            grok_output_tokens: grokResult.usage.completion_tokens,
+            total_tokens: grokResult.usage.total_tokens // Only counting LLM tokens for "total" to avoid unit confusion
         }
 
         return {
             text: grokResult.text,
             usage: combinedUsage,
-            model: `mistral-ocr-2512 + grok-4-1-fast-reasoning`,
+            model: `${ocrResult.usage.model} + grok-4-1-fast-reasoning`, // Dynamic model name
             rawExtraction: ocrResult.rawText
         }
     } else {
-        // Use Grok for text-based tasks
+        // Direct text extraction (Grok only)
         if (!xaiKey) throw new Error('XAI_API_KEY not configured')
         const result = await callGrok(prompt, 'grok-4-1-fast-reasoning', xaiKey)
         return { ...result, model: 'grok-4-1-fast-reasoning' }
