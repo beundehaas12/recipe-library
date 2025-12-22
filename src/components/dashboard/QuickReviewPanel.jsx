@@ -409,24 +409,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                 Extraction Metadata
                             </h3>
 
-                            {/* Mistral OCR Raw Text Section */}
-                            {(rawData.ocr_extraction || rawData.raw_text) && (
-                                <div className="bg-zinc-950/50 rounded-xl border border-white/10 overflow-hidden">
-                                    <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                                        <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase">
-                                            <FileText size={14} /> Mistral OCR Extraction
-                                        </div>
-                                        <div className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
-                                            Raw Text
-                                        </div>
-                                    </div>
-                                    <div className="p-4 overflow-x-auto max-h-60 overflow-y-auto">
-                                        <pre className="text-xs font-mono text-zinc-300 leading-relaxed whitespace-pre-wrap break-words">
-                                            {rawData.ocr_extraction || rawData.raw_text}
-                                        </pre>
-                                    </div>
-                                </div>
-                            )}
+
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-zinc-950 border border-white/10 rounded-xl p-4">
@@ -506,11 +489,30 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                         )}
 
                         <div className="space-y-4">
+                            {/* 2. Mistral OCR Output (Moved below KPIs) */}
+                            {(rawData.ocr_extraction || rawData.raw_text) && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                            <FileText size={14} /> Mistral OCR Output
+                                        </label>
+                                        <span className="text-xs text-zinc-500">Step 1: Raw Extraction</span>
+                                    </div>
+                                    <div className="bg-zinc-950/50 rounded-xl border border-white/10 overflow-hidden">
+                                        <div className="p-4 overflow-x-auto max-h-96 overflow-y-auto bg-zinc-950">
+                                            <pre className="text-xs font-mono text-zinc-300 leading-relaxed whitespace-pre-wrap break-words">
+                                                {rawData.ocr_extraction || rawData.raw_text}
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                                    <Code size={14} /> Raw AI Response
+                                    <Code size={14} /> Grok Response
                                 </label>
-                                <span className="text-xs text-muted-foreground">JSON</span>
+                                <span className="text-xs text-muted-foreground">Step 2: Structured JSON</span>
                             </div>
                             <div className="bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden">
                                 <div className="p-2 border-b border-white/5 bg-white/5 flex gap-2">

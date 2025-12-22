@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { supabase, uploadTempImage, uploadSourceImage } from '../lib/supabase';
+import { uploadSourceImage } from '../lib/supabase';
 import { analyzeRecipeImage } from '../lib/xai';
+import { saveRecipe } from '../lib/recipeService';
 
 export function useBatchProcessing() {
     const [queue, setQueue] = useState([]);
@@ -41,28 +42,42 @@ export function useBatchProcessing() {
                 const aiResult = await analyzeRecipeImage(signedUrl);
                 console.log('[BatchProcess] AI result:', aiResult);
 
-                const recipe = aiResult?.recipe;
-                if (!recipe) {
+                const recipeRaw = aiResult?.recipe;
+                if (!recipeRaw) {
                     throw new Error('AI returned no recipe data');
                 }
 
-                // 3. Update queue with AI results
-                console.log('[BatchProcess] Updating queue with recipe:', recipe.title);
+                // 3. AUTO-APPROVE: Save directly to database
+                console.log('[BatchProcess] Auto-Approving recipe:', recipeRaw.title);
+
+                // Merge context into extra_data if needed, or handle collections
+                // For now, saveRecipe handles the main insert. Collection linking happens logic usually in Dashboard, 
+                // but we can try to do it here if we had access to the join table logic. 
+                // However, saveRecipe returns the SAVED recipe.
+
+                const savedRecipe = await saveRecipe(userId, recipeRaw, {
+                    url: publicUrl,
+                    type: 'image',
+                    original_image_url: publicUrl,
+                    raw_extracted_data: aiResult.raw_extracted_data
+                }, aiResult.usage);
+
+                console.log('[BatchProcess] Recipe saved with ID:', savedRecipe.id);
+
+                // 4. Update queue to DONE
                 setQueue(prev => prev.map(q =>
                     q.id === item.id
                         ? {
                             ...q,
-                            status: 'review_needed',
-                            title: recipe.title || q.title,
-                            description: recipe.description || recipe.intro || '',
-                            prep_time: recipe.prep_time,
-                            cook_time: recipe.cook_time,
-                            servings: recipe.servings,
-                            cuisine: recipe.cuisine,
-                            ingredients: recipe.ingredients || [],
-                            instructions: recipe.instructions || recipe.steps || [],
+                            status: 'done', // Marked as done/approved
+                            id: savedRecipe.id, // Replace temp ID with real ID
+                            // Keep display data for the "Recently Added" view
+                            title: savedRecipe.title,
+                            description: savedRecipe.description,
+                            ingredients: savedRecipe.ingredients,
+                            instructions: savedRecipe.instructions,
                             original_image_url: publicUrl,
-                            ai_data: aiResult // Store full result (recipe, usage, raw_data)
+                            ai_data: aiResult
                         }
                         : q
                 ));
