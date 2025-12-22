@@ -317,14 +317,15 @@ async function callLLM(
         const ocrResult = await callMistralOCR(imageUrl, mistralKey)
 
         // Step 2: Use Grok 4.1 to structure the data using the OCR text
-        console.log('Step 2: Structuring with Grok 4.1...')
+        console.log('Step 2: Structuring with Grok 4.1 (OCR + Vision)...')
 
-        // Incorporate LAYOUT_ANALYSIS_PROMPT to guide Grok in interpreting the OCR data
-        // We append the raw markdown at the end
+        // Grok gets BOTH the OCR text AND the original image for deeper visual understanding
         const extractionPrompt = EXTRACTION_PROMPT +
-            "\n\nSOURCE OCR MARKDOWN (from Mistral OCR):\n" + ocrResult.rawText
+            "\n\nSOURCE OCR MARKDOWN (from Mistral OCR):\n" + ocrResult.rawText +
+            "\n\nJe hebt ook toegang tot de originele afbeelding. Gebruik deze voor visuele context en om details te verrijken die de OCR mogelijk heeft gemist."
 
-        const grokResult = await callGrok(extractionPrompt, 'grok-4-1-fast-reasoning', xaiKey)
+        // Pass image URL so Grok can see the actual image
+        const grokResult = await callGrok(extractionPrompt, 'grok-4-1-fast-reasoning', xaiKey, imageUrl)
 
         const combinedUsage = {
             // Keep separated for clarity in UI
