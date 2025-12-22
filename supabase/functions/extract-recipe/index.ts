@@ -88,6 +88,9 @@ extra_data.visual_notes: "Totaal ca. 8 uur incl. wachten"
 
 Voor servings: gebruik string voor ranges (bijv. "5 tot 8 stuks").
 
+Voor titel: als er een duidelijke subtitel onder de hoofdtitel staat (vaak kleiner of italic), zet die in subtitle. Anders voeg toe aan title.
+Voorbeeld: "LINZENKROKET" als title, "MET UIENCHUTNEY" als subtitle.
+
 SOURCE OCR MARKDOWN (ter referentie only):
 `
 

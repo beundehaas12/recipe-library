@@ -605,7 +605,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                                 </div>
                                                             </div>
 
-                                                            {(prepMin > 0 || cookMin > 0) && (
+                                                            {(prepMin > 0 || cookMin > 0 || recipe.passive_time) && (
                                                                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                                                                     <div className="space-y-1">
                                                                         <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{t.prepTime}</div>
@@ -615,6 +615,12 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                                                         <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{t.cookTime}</div>
                                                                         <div className="text-white font-bold">{recipe.cook_time || '-'}</div>
                                                                     </div>
+                                                                    {recipe.passive_time && (
+                                                                        <div className="space-y-1 col-span-2">
+                                                                            <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Wachttijd</div>
+                                                                            <div className="text-white font-bold">{recipe.passive_time}</div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </div>
