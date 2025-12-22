@@ -286,10 +286,20 @@ export default function DashboardPage() {
         }
     };
 
-    const handleCreateCollection = async (name) => {
+    const handleCreateCollection = async (input) => {
+        // Support both string (old) and object (new) formats
+        const name = typeof input === 'string' ? input : input.name;
+        const image_url = typeof input === 'object' ? input.image_url : null;
+        const color = typeof input === 'object' ? input.color : null;
+
         const { data, error } = await supabase
             .from('collections')
-            .insert([{ user_id: user.id, name }])
+            .insert([{
+                user_id: user.id,
+                name,
+                image_url,
+                color
+            }])
             .select()
             .single();
 
