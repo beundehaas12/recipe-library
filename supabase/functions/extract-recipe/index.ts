@@ -22,6 +22,11 @@ Regel 1: De afbeelding is altijd de primaire bron. Gebruik je ogen. Corrigeer OC
 Regel 2: Je doel is een schoon, accuraat en bruikbaar digitaal recept dat 100% trouw is aan wat er op de foto staat, maar logisch en leesbaar georganiseerd.
 Regel 3: Wees kritisch en gebruik je culinaire kennis. Als iets niet klopt in de OCR, fix het. Als de layout iets duidelijk scheidt (groepen, kaders, iconen), weerspiegel dat in je structuur.
 
+Output altijd precies in deze volgorde:
+- Eerst je korte visuele analyse in platte tekst.
+- Dan direct één markdown code block beginnend met \`\`\`json
+- Geen tekst vóór de analyse, geen tekst na de closing \`\`\`
+
 Stap 1 – Korte visuele analyse (3-6 zinnen, voor mijn debugging)
 Beschrijf kort:
 - Hoofdstructuur en secties die je ziet (titel, infoblok, intro, ingrediënten-groepen, bereiding, tips, tools, etc.)
@@ -63,10 +68,15 @@ Gebruik je gezond verstand bij het invullen van velden – forceer niets als het
   "serving_suggestion": string | null,
   "tools": string[] | null,
   "ai_tags": string[],
-  "source_url": string | null
+  "source_url": string | null,
+  "extra_data": {
+    "ai_reasoning_trace": string | null,
+    "cross_references": string[] | null,
+    "visual_notes": string | null
+  }
 }
 
-Zorg dat er geen tekst staat na de closing \`\`\`
+Voor tijden: neem letterlijk over wat er staat in total_time. Als er duidelijk een actieve vs passieve tijd is (bijv. "60 minuten + 7 uur wachtijd"), zet de actieve deel in prep_time/cook_time waar logisch.
 
 SOURCE OCR MARKDOWN (ter referentie only):
 `
@@ -308,7 +318,7 @@ async function callLLM(
 
         // Grok gets BOTH the OCR text AND the original image for deeper visual understanding
         // The prompt already explains the image is primary, OCR is reference
-        const extractionPrompt = EXTRACTION_PROMPT + ocrResult.rawText
+        const extractionPrompt = EXTRACTION_PROMPT + "\n\n" + ocrResult.rawText
 
         // Pass image URL so Grok can see the actual image
         const grokResult = await callGrok(extractionPrompt, 'grok-4-1-fast-reasoning', xaiKey, imageUrl)
