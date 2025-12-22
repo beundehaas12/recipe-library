@@ -33,6 +33,7 @@ Beschrijf kort:
 - Belangrijke metadata uit iconen/blokken (porties, tijden, moeilijkheid, keuken)
 - Duidelijke OCR-fouten of visuele details die de OCR mist
 - Lastige of ambigue delen en hoe jij ze oplost
+- Leg uit hoe je tijden splitst (actief vs passief)
 
 Stap 2 – Gestructureerde extractie
 Geef daarna precies één markdown code block met valide JSON volgens onderstaand schema.
@@ -43,10 +44,11 @@ Gebruik je gezond verstand bij het invullen van velden – forceer niets als het
   "subtitle": string | null,
   "description": string | null,
   "introduction": string | null,
-  "servings": number | null,
+  "servings": string | null,
   "prep_time": string | null,
   "cook_time": string | null,
   "total_time": string | null,
+  "passive_time": string | null,
   "difficulty": string | null,
   "cuisine": string | null,
   "author": string | null,
@@ -76,7 +78,15 @@ Gebruik je gezond verstand bij het invullen van velden – forceer niets als het
   }
 }
 
-Voor tijden: neem letterlijk over wat er staat in total_time. Als er duidelijk een actieve vs passieve tijd is (bijv. "60 minuten + 7 uur wachtijd"), zet de actieve deel in prep_time/cook_time waar logisch.
+Voor tijden: neem letterlijk over wat er staat in total_time (bijv. "60 minuten + 7 uur wachtijd"). Gebruik culinaire logica om te splitsen: zet actief werk in prep_time of cook_time, passief (wacht/koel/rust) in passive_time. Bereken waar nuttig een genormaliseerde totaal in extra_data.visual_notes.
+
+Voorbeeld: bij "Bereidingstijd: 60 minuten + 7 uur wachtijd" →
+total_time: "60 minuten + 7 uur wachtijd"
+prep_time: "60 minuten"
+passive_time: "7 uur wachtijd"
+extra_data.visual_notes: "Totaal ca. 8 uur incl. wachten"
+
+Voor servings: gebruik string voor ranges (bijv. "5 tot 8 stuks").
 
 SOURCE OCR MARKDOWN (ter referentie only):
 `
@@ -273,7 +283,7 @@ async function callGrok(prompt: string, model: string, apiKey: string, imageUrl?
         body: JSON.stringify({
             model: modelId,
             messages,
-            temperature: 0.2,
+            temperature: 0.3,
             max_tokens: 16384
             // No response_format - allow natural output with JSON code block
         })
