@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus, Loader2, CheckCircle2, Cpu, Hash, Code, Database } from 'lucide-react';
+import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus, Loader2, CheckCircle2, Cpu, Hash, Code, Database, BrainCircuit } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle, onApprove }) {
@@ -486,6 +486,25 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                     {!selectedRecipe.title && <li>Title could not be confidently extracted</li>}
                                     {!selectedRecipe.ingredients?.length && <li>No ingredients identified</li>}
                                 </ul>
+                            </div>
+                        )}
+
+                        {/* 1.5 AI Reasoning Trace */}
+                        {(selectedRecipe.extra_data?.ai_reasoning_trace || rawData.grok_response?.includes('Redenering')) && (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                        <BrainCircuit size={14} className="text-purple-400" /> AI Analysis
+                                    </label>
+                                    <span className="text-xs text-purple-400">Step 1.5: Reasoning Chain</span>
+                                </div>
+                                <div className="bg-purple-950/20 border border-purple-500/20 rounded-xl overflow-hidden">
+                                    <div className="p-4 max-h-60 overflow-y-auto">
+                                        <pre className="text-xs font-mono text-purple-200/80 leading-relaxed whitespace-pre-wrap break-words">
+                                            {selectedRecipe.extra_data?.ai_reasoning_trace || 'Reasoning trace available in JSON.'}
+                                        </pre>
+                                    </div>
+                                </div>
                             </div>
                         )}
 

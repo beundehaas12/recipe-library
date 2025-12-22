@@ -14,9 +14,25 @@ const corsHeaders = {
 // PROMPTS
 // =============================================================================
 
-const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. Analyseer de input EXTREEM GRONDIG en nauwkeurig.
-DOEL: Extraheer ALLE receptinformatie met maximale trouw aan de bron in één keer. Verzin ABSOLUUT NIETS.
-BELANGRIJK: Alle onderdelen van het recept (titel, inleiding, ingrediënten, instructies, tijden, porties, tips, variaties, etc.) zijn even belangrijk en moeten met gelijke zorgvuldigheid en nauwkeurigheid worden geëxtraheerd.
+const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. 
+INSTRUCTIE:
+FASE 1: REDENEREN & ANALYSE (Chain-of-Thought)
+Neem even de tijd om de input GRONDIG te analyseren.
+- Scan de hele tekst en identificeer potentieel verwarrende elementen (bijv. is dit de titel of een subtitel?).
+- Vergelijk gevonden data met de mogelijke velden.
+- Leg je keuzes uit in deze fase. Schrijf je redenering uit.
+
+FASE 2: GESTRUCTUREERDE EXTRACTIE
+Genereer daarna het JSON object.
+
+OUTPUT FORMAAT:
+[Jouw Redenering hier...]
+
+\`\`\`json
+{
+  ...
+}
+\`\`\`
 
 OUTPUT JSON STRUCTUUR (gebruik ALTIJD exact deze velden en volgorde):
 {
@@ -390,6 +406,15 @@ serve(async (req: Request) => {
 
             const recipe = safeJsonParse(text)
 
+            // Extract reasoning trace (everything before the first '{')
+            const jsonStartIndex = text.indexOf('{');
+            const reasoningTrace = jsonStartIndex > 0 ? text.substring(0, jsonStartIndex).trim() : null;
+
+            if (reasoningTrace) {
+                if (!recipe.extra_data) recipe.extra_data = {};
+                recipe.extra_data.ai_reasoning_trace = reasoningTrace;
+            }
+
             // Remove raw_text from recipe object if present
             delete recipe.raw_text
 
@@ -416,6 +441,16 @@ serve(async (req: Request) => {
             const { text, usage } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!)
 
             const recipe = safeJsonParse(text)
+
+            // Extract reasoning trace
+            const jsonStartIndex = text.indexOf('{');
+            const reasoningTrace = jsonStartIndex > 0 ? text.substring(0, jsonStartIndex).trim() : null;
+
+            if (reasoningTrace) {
+                if (!recipe.extra_data) recipe.extra_data = {};
+                recipe.extra_data.ai_reasoning_trace = reasoningTrace;
+            }
+
             const rawText = recipe.raw_text || text
             delete recipe.raw_text
 
