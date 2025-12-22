@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus, Loader2, CheckCircle2 } from 'lucide-react';
+import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus, Loader2, CheckCircle2, Cpu, Hash, Code } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle, onApprove }) {
