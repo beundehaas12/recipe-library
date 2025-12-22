@@ -346,10 +346,10 @@ export default function AppHeader({
 
                             <nav className="flex flex-col gap-2">
                                 {[
-                                    { icon: Compass, label: 'Recepten', path: '/' },
+                                    { icon: Compass, label: 'Ontdek', path: '/' },
                                     { icon: Calendar, label: 'Planning', path: '/planning' },
                                     { icon: ShoppingBasket, label: 'Boodschappen', path: '/shopping' },
-                                    { icon: Heart, label: 'Favorieten', path: '/favorites' },
+                                    { icon: Heart, label: 'Mijn kookboek', path: '/favorites' },
                                 ].map((item) => (
                                     <NavLink
                                         key={item.label}
