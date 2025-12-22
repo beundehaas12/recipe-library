@@ -14,55 +14,73 @@ const corsHeaders = {
 // PROMPTS
 // =============================================================================
 
-const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. Analyseer de input EXTREEM GRONDIG.
+const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. Analyseer de input EXTREEM GRONDIG en nauwkeurig.
+DOEL: Extraheer ALLE receptinformatie met maximale trouw aan de bron in één keer. Verzin ABSOLUUT NIETS.
+BELANGRIJK: Alle onderdelen van het recept (titel, inleiding, ingrediënten, instructies, tijden, porties, tips, variaties, etc.) zijn even belangrijk en moeten met gelijke zorgvuldigheid en nauwkeurigheid worden geëxtraheerd.
 
-DOEL: Extraheer ALLE receptinformatie met maximale nauwkeurigheid in één keer.
-SPECIALE FOCUS: BEREIDINGSINSTRUCTIES - dit is het BELANGRIJKSTE onderdeel!
-
-OUTPUT JSON STRUCTUUR:
+OUTPUT JSON STRUCTUUR (gebruik ALTIJD exact deze velden en volgorde):
 {
-  "title": string (exacte titel zoals weergegeven),
-  "description": string|null (ALLEEN als er letterlijk een beschrijving/introductie bij het recept staat, anders null - VERZIN NIETS),
-  "introduction": string|null (introductietekst als letterlijk aanwezig),
-  "ingredients": [{ 
-    "amount": number|null, 
-    "unit": string|null, 
-    "name": string, 
-    "group_name": string|null (bijv. "Voor de saus", "Garnering")
-  }],
-  "instructions": [{ 
-    "step_number": number, 
-    "description": string (VOLLEDIGE stap, niet afkorten!)
-  }],
-  "prep_time": string|null (bijv. "15 minuten"),
-  "cook_time": string|null (bijv. "30 minuten"),
-  "servings": number|null,
-  "difficulty": string|null ("Makkelijk", "Gemiddeld", "Moeilijk"),
-  "cuisine": string|null,
+  "title": string (exacte titel zoals weergegeven, anders null),
+  "description": string|null (ALLEEN letterlijke korte beschrijving/introductie als die direct onder de titel staat, anders null),
+  "introduction": string|null (ALLEEN letterlijke langere inleidende tekst vóór ingrediënten of bereiding, stop bij eerste kopje als "Ingrediënten" of "Bereiding", anders null),
+  "servings": number|null (aantal porties/personen),
+  "prep_time": string|null (voorbereidingstijd, exact zoals in bron bijv. "15 minuten" of "ca. 20 min"),
+  "cook_time": string|null (bereidingstijd/kooktijd),
+  "total_time": string|null (totale tijd als expliciet vermeld),
+  "difficulty": string|null (bijv. "Makkelijk", "Gemiddeld", "Moeilijk" - alleen als letterlijk vermeld),
+  "cuisine": string|null (bijv. "Italiaans", "Vegan" - alleen als letterlijk vermeld),
   "author": string|null,
-  "cookbook_name": string|null,
-  "ai_tags": string[] (relevante tags: "vegetarisch", "snel", etc.),
-  "raw_text": string (ALLE zichtbare tekst exact zoals weergegeven, voor auditabiliteit)
+  "ingredients": [{
+    "amount": number|null,
+    "unit": string|null,
+    "name": string,
+    "preparation": string|null (bijv. "fijngesneden", "in ringen", "koud"),
+    "note": string|null (bijv. "naar smaak", "+ extra om in te vetten"),
+    "optional": boolean (true als "naar smaak", tussen haakjes of expliciet optioneel),
+    "group_name": string|null (bijv. "Voor de saus", "Voor de marinade", "Garnering")
+  }],
+  "instructions": [{
+    "step_number": number (doorlopend vanaf 1),
+    "description": string (volledige staptekst, exact en niet afkorten)
+  }],
+  "tips": string[]|null (losse tips, niet als stap),
+  "variations": string[]|null (variaties en alternatieven),
+  "serving_suggestion": string|null (serveertips, garnering, presentatie - niet als stap),
+  "ai_tags": string[] (ALLEEN tags die letterlijk in de bron staan of direct afleidbaar zonder interpretatie, bijv. "vegetarisch" als expliciet vermeld - wees extreem conservatief),
+  "source_url": string|null (indien bekend of in input),
+  "raw_text": string (ALLE zichtbare tekst uit de input exact overnemen, voor auditabiliteit)
 }
 
-REGELS VOOR INSTRUCTIES (KRITIEK!):
-1. Zoek ALLE bereidingsstappen - vaak genummerd of als doorlopende tekst
-2. ELKE actie is een aparte stap: "snipper de ui" en "fruit de ui" zijn 2 stappen
-3. Splits lange paragrafen in logische stappen
-4. Herken verborgen stappen: "laat 30 minuten rusten" is ook een stap
-5. Tips en variaties aan het einde zijn GEEN stappen, maar neem ze apart op
-6. Als instructies onduidelijk gescheiden zijn, splits op werkwoorden (verhit, roer, voeg toe, etc.)
-7. Behoud ALLE details: temperaturen, tijden, technieken
-8. Minimaal 3-5 stappen voor een normaal recept, tot 15+ voor complexe recepten
+REGELS VOOR METADATA (tijden, porties, etc.):
+1. Zoek prep_time, cook_time, total_time, servings en difficulty eerst in duidelijke infoblokken, icoontjes of kopjes.
+2. Als die ontbreken, scan dan zorgvuldig de inleidende tekst en eventuele voetnoten.
+3. Neem exact de tekst over uit de bron. Zet null als echt afwezig.
+
+REGELS VOOR INGREDIËNTEN:
+1. Splits hoeveelheden correct: "500g bloem" → amount: 500, unit: "g", name: "bloem".
+2. Plaats bereidingsinstructies bij ingrediënt (bijv. "in ringen", "fijngesneden") in "preparation".
+3. Plaats extra opmerkingen (bijv. "naar smaak", "+ extra om te bakken") in "note" en zet "optional: true" waar van toepassing.
+4. Behoud ingrediëntgroepen exact: gebruik "group_name" voor kopjes als "Voor de saus".
+
+REGELS VOOR BEREIDINGSINSTRUCTIES:
+1. Zoek ALLE bereidingsstappen - genummerd, opsommingstekens of doorlopende tekst.
+2. ELKE duidelijke actie of werkwoordgroep is een aparte stap. Splits altijd bij nieuw werkwoord of overgang (bijv. "snipper de ui" en "fruit de ui" = 2 stappen).
+3. Combineer alleen als acties letterlijk in één zin staan en onlosmakelijk verbonden zijn (bijv. "voeg toe en meng goed").
+4. Bij twijfel: altijd splitsen.
+5. Splits lange paragrafen in logische stappen op basis van werkwoorden (verhit, snijd, voeg toe, roer, bak, laat rusten, etc.).
+6. Herken verborgen stappen: "laat 30 minuten rusten", "afkoelen tot kamertemperatuur" of "voorverwarmen oven" zijn aparte stappen.
+7. Behoud ALLE details: temperaturen, tijden, technieken, pannen, etc.
+8. Serveersuggesties, garnituren en presentatietips aan het einde zijn GEEN stappen → naar "serving_suggestion".
+9. Tips en variaties aan het einde zijn GEEN stappen → naar "tips" of "variations".
+10. Alternatieve methodes (bijv. "in oven of airfryer") → ofwel opsplitsen in stappen met noot, of naar "variations".
+11. Nummer stappen doorlopend vanaf 1, ook als bron dat niet doet.
+12. Minimaal 4-6 stappen voor normale recepten, tot 15+ voor complexe.
 
 ALGEMENE REGELS:
-1. Wees 100% trouw aan de bron. Verzin NIETS.
-2. Lees ALLE tekst, ook kleine lettertjes, tips, variaties.
-3. Splits hoeveelheden correct: "500g bloem" → amount: 500, unit: "g", name: "bloem"
-4. Bewaar ingrediëntgroepen als ze er zijn.
-5. Include "raw_text" met ALLE zichtbare tekst voor auditabiliteit.
-6. description en introduction: ALLEEN letterlijke tekst uit de bron, NOOIT zelf samenvatten of genereren.
-7. Bereidingstijd en portieaantal zijn CRUCIAAL - zoek ze actief.
+1. Wees 100% trouw aan de bron. Verzin, samenvat of parafraseer NIETS.
+2. Lees ALLE tekst grondig, inclusief kleine lettertjes, voetnoten, tips en variaties.
+3. Alle informatie is even belangrijk en moet met maximale nauwkeurigheid worden geëxtraheerd.
+4. Include altijd "raw_text" met de volledige inputtekst exact.
 `
 
 const ENRICHMENT_PROMPT = `Je bent een culinaire AI-assistent. Verrijk dit recept met waardevolle extra informatie.
