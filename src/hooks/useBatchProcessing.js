@@ -62,7 +62,7 @@ export function useBatchProcessing() {
                             ingredients: recipe.ingredients || [],
                             instructions: recipe.instructions || recipe.steps || [],
                             original_image_url: publicUrl,
-                            ai_data: recipe // Store full raw data just in case
+                            ai_data: aiResult // Store full result (recipe, usage, raw_data)
                         }
                         : q
                 ));

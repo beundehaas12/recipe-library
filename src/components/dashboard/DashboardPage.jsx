@@ -157,6 +157,9 @@ export default function DashboardPage() {
             const { saveRecipe } = await import('../../lib/recipeService');
 
             // Construct recipe data from queue item (which might be edited)
+            const aiResult = item.ai_data || {};
+            const aiRecipe = aiResult.recipe || {};
+
             const recipeData = {
                 title: item.title || 'Untitled',
                 description: item.description || '',
@@ -167,17 +170,23 @@ export default function DashboardPage() {
                 intro: item.intro,
                 ingredients: item.ingredients,
                 instructions: item.instructions,
-                ai_tags: item.ai_data?.ai_tags || ['📷 foto', 'batch-upload']
+                ai_tags: aiRecipe.ai_tags || ['📷 foto', 'batch-upload']
             };
 
             const sourceInfo = {
                 type: 'image',
                 original_image_url: item.original_image_url,
-                raw_extracted_data: item.ai_data
+                raw_extracted_data: aiResult.raw_extracted_data
+            };
+
+            const extractionHistory = {
+                ...aiResult.usage,
+                ai_model: aiResult.ai_model || 'gemini-3-flash-preview',
+                processing_time_ms: aiResult.processing_time_ms
             };
 
             // Use shared service to save (ensures identical logic to main app)
-            const recipe = await saveRecipe(user.id, recipeData, sourceInfo);
+            const recipe = await saveRecipe(user.id, recipeData, sourceInfo, extractionHistory);
 
             // Link Collection if context exists
             if (item.context && item.context.collectionId) {
