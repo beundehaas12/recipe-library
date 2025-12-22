@@ -263,6 +263,112 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                     placeholder="e.g. Italian, Mexican..."
                                 />
                             </div>
+
+                            <div className="space-y-4">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                    <ChefHat size={14} /> Difficulty
+                                </label>
+                                <input
+                                    type="text"
+                                    value={selectedRecipe.difficulty || ''}
+                                    onChange={(e) => onUpdate(selectedRecipe.id, { difficulty: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                                    placeholder="e.g. Easy, Medium, Hard"
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                    <Clock size={14} /> Passive Time
+                                </label>
+                                <input
+                                    type="text"
+                                    value={selectedRecipe.passive_time || ''}
+                                    onChange={(e) => onUpdate(selectedRecipe.id, { passive_time: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                                    placeholder="e.g. 2 uur wachttijd"
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                    <Timer size={14} /> Total Time
+                                </label>
+                                <input
+                                    type="text"
+                                    value={selectedRecipe.total_time || selectedRecipe.extra_data?.total_time || ''}
+                                    onChange={(e) => onUpdate(selectedRecipe.id, { total_time: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                                    placeholder="e.g. 1 uur 30 min"
+                                />
+                            </div>
+
+                            <div className="space-y-4 md:col-span-2">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Subtitle</label>
+                                <input
+                                    type="text"
+                                    value={selectedRecipe.subtitle || ''}
+                                    onChange={(e) => onUpdate(selectedRecipe.id, { subtitle: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                                    placeholder="e.g. Met uienchutney"
+                                />
+                            </div>
+
+                            <div className="space-y-4 md:col-span-2">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Introduction</label>
+                                <textarea
+                                    value={selectedRecipe.introduction || ''}
+                                    onChange={(e) => onUpdate(selectedRecipe.id, { introduction: e.target.value })}
+                                    className="w-full h-20 bg-zinc-900 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary/50 transition-all resize-none"
+                                    placeholder="Introductory text..."
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Author</label>
+                                <input
+                                    type="text"
+                                    value={selectedRecipe.author || ''}
+                                    onChange={(e) => onUpdate(selectedRecipe.id, { author: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                                    placeholder="e.g. Jamie Oliver"
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Cookbook</label>
+                                <input
+                                    type="text"
+                                    value={selectedRecipe.cookbook_name || ''}
+                                    onChange={(e) => onUpdate(selectedRecipe.id, { cookbook_name: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                                    placeholder="e.g. De Zilveren Lepel"
+                                />
+                            </div>
+
+                            <div className="space-y-4 md:col-span-2">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                    <Globe size={14} /> Source URL
+                                </label>
+                                <input
+                                    type="url"
+                                    value={selectedRecipe.source_url || ''}
+                                    onChange={(e) => onUpdate(selectedRecipe.id, { source_url: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary/50 transition-all font-mono text-sm"
+                                    placeholder="https://..."
+                                />
+                            </div>
+
+                            <div className="space-y-4 md:col-span-2">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Tags (comma separated)</label>
+                                <input
+                                    type="text"
+                                    value={Array.isArray(selectedRecipe.ai_tags) ? selectedRecipe.ai_tags.join(', ') : (selectedRecipe.ai_tags || '')}
+                                    onChange={(e) => onUpdate(selectedRecipe.id, { ai_tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-primary/50 transition-all"
+                                    placeholder="e.g. vegetarisch, makkelijk, feestelijk"
+                                />
+                            </div>
                             {/* Collections Assignment */}
                             <div className="md:col-span-2 space-y-4 border-t border-white/10 pt-6">
                                 <div className="flex items-center justify-between">
