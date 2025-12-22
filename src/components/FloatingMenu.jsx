@@ -28,10 +28,10 @@ export default function FloatingMenu({ onSearch }) {
     };
 
     const navItems = [
-        { label: 'Recepten', path: '/' },
+        { label: 'Ontdek', path: '/' },
         { label: 'Planning', path: '/planning' },
         { label: 'Boodschappen', path: '/shopping' },
-        { label: 'Favorieten', path: '/favorites' },
+        { label: 'Mijn kookboek', path: '/favorites' },
     ];
 
     if (location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/dashboard')) return null;
