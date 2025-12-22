@@ -414,17 +414,51 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase mb-2">
                                         <Cpu size={14} /> AI Model
                                     </div>
-                                    <div className="text-xl font-mono text-white">
-                                        {extractionHistory.ai_model || 'Unknown'}
+                                    <div className="text-sm font-mono text-white break-words">
+                                        {/* Logic to determine correct model display name */}
+                                        {(() => {
+                                            const model = rawData.models_used || extractionHistory.ai_model || 'Unknown';
+                                            // Fallback correction for legacy/incorrect default
+                                            if (model === 'gemini-3-flash-preview' && (extractionHistory.ocr_pages || extractionHistory.usage?.ocr_pages)) {
+                                                return 'Mistral OCR 3 + Grok 4';
+                                            }
+                                            return model;
+                                        })()}
                                     </div>
                                 </div>
                                 <div className="bg-zinc-950 border border-white/10 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase mb-2">
                                         <Hash size={14} /> Tokens Used
                                     </div>
-                                    <div className="text-xl font-mono text-white">
-                                        {extractionHistory.usage?.total_tokens || extractionHistory.total_tokens || (typeof extractionHistory.tokens === 'number' ? extractionHistory.tokens : extractionHistory.tokens?.total_tokens) || 0}
-                                    </div>
+                                    {/* Breakdown of tokens */}
+                                    {(() => {
+                                        const usage = extractionHistory.usage || extractionHistory;
+                                        const total = usage.total_tokens || 0;
+                                        const ocrPages = usage.ocr_pages;
+                                        const grokTokens = (usage.prompt_tokens || 0) + (usage.completion_tokens || 0);
+
+                                        return (
+                                            <div className="flex flex-col">
+                                                <div className="text-xl font-mono text-white mb-2">
+                                                    {total} <span className="text-xs text-muted-foreground font-sans uppercase">Total</span>
+                                                </div>
+                                                <div className="space-y-1 border-t border-white/5 pt-2">
+                                                    {ocrPages !== undefined && (
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-muted-foreground">Mistral (Pages):</span>
+                                                            <span className="text-white font-mono">{ocrPages}</span>
+                                                        </div>
+                                                    )}
+                                                    {grokTokens > 0 && (
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-muted-foreground">Grok (Tokens):</span>
+                                                            <span className="text-white font-mono">{grokTokens}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 <div className="bg-zinc-950 border border-white/10 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase mb-2">
