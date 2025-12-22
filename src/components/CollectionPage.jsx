@@ -76,7 +76,7 @@ export default function CollectionPage() {
     return (
         <div className="min-h-screen bg-background pb-20">
             {/* Header - Same structure as RecipeCard */}
-            <header className="fixed top-20 left-0 right-0 z-40 pointer-events-none px-4 lg:px-20 py-4">
+            <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
                 <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
                     <BackButton />
                 </div>

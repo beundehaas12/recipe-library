@@ -35,8 +35,8 @@ export default function AppHeader({
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
-    // Hide header on recipe detail pages to favor the back button, and on dashboard
-    if (location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/dashboard')) return null;
+    // Hide header on detail pages (recipe, collection) to favor the back button, and on dashboard
+    if (location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/collection/') || location.pathname.startsWith('/dashboard')) return null;
 
     return (
         <>
