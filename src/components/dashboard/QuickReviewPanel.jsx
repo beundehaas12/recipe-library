@@ -167,7 +167,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                 </button>
             </div>
 
-            <div className="p-8 max-w-4xl mx-auto w-full">
+            <div className="p-6 pt-4 max-w-4xl mx-auto w-full">
                 {activeTab === 'recipe' ? (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {/* Image Preview */}
