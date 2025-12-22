@@ -17,9 +17,11 @@ const corsHeaders = {
 const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. Analyseer de input grondig en extraheer alle informatie.
 
 BELANGRIJK: Output ALLEEN valide JSON. Geen tekst ervoor of erna. Geen markdown code blocks.
+BELANGRIJK: Gebruik GEEN letterlijke newlines in strings. Vervang nieuwe regels door een spatie.
 
 JSON STRUCTUUR:
 {
+  "reasoning": string (Leg hier kort uit wat je ziet en welke keuzes je maakt bij het extraheren),
   "title": string (exacte titel, of null),
   "description": string|null (korte beschrijving onder titel),
   "introduction": string|null (langere inleidende tekst),
@@ -379,6 +381,13 @@ serve(async (req: Request) => {
             const { text, usage, rawExtraction, model } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!, signedUrl)
 
             const recipe = safeJsonParse(text)
+
+            // Store reasoning in extra_data for UI visibility
+            if (recipe.reasoning) {
+                if (!recipe.extra_data) recipe.extra_data = {};
+                recipe.extra_data.ai_reasoning_trace = recipe.reasoning;
+                delete recipe.reasoning;
+            }
             delete recipe.raw_text
 
             result = {
@@ -403,6 +412,13 @@ serve(async (req: Request) => {
             const { text, usage } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!)
 
             const recipe = safeJsonParse(text)
+
+            // Store reasoning in extra_data for UI visibility
+            if (recipe.reasoning) {
+                if (!recipe.extra_data) recipe.extra_data = {};
+                recipe.extra_data.ai_reasoning_trace = recipe.reasoning;
+                delete recipe.reasoning;
+            }
             const rawText = recipe.raw_text || text
             delete recipe.raw_text
 
