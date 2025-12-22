@@ -156,7 +156,7 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, 
         )}
 
         {/* Content Area - No negative margins for better mobile stability */}
-        <div className={`relative z-20 space-y-12 pb-24 bg-background max-w-[1600px] mx-auto ${searchQuery || activeCollectionId ? 'pt-32' : 'pt-6'}`}>
+        <div className={`relative z-20 space-y-12 pb-24 bg-background max-w-[1600px] mx-auto ${searchQuery ? 'pt-32' : 'pt-6'}`}>
           {isEmptyState ? (
             <motion.div
               initial={{ opacity: 0 }}
