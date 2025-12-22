@@ -16,26 +16,11 @@ const corsHeaders = {
 
 const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. 
 INSTRUCTIE:
-FASE 1: REDENEREN & ANALYSE (Chain-of-Thought)
-Neem even de tijd om de input GRONDIG te analyseren.
-- Scan de hele tekst en identificeer potentieel verwarrende elementen (bijv. is dit de titel of een subtitel?).
-- Vergelijk gevonden data met de mogelijke velden.
-- Leg je keuzes uit in deze fase. Schrijf je redenering uit.
-
-FASE 2: GESTRUCTUREERDE EXTRACTIE
-Genereer daarna het JSON object.
-
-OUTPUT FORMAAT:
-[Jouw Redenering hier...]
-
-\`\`\`json
-{
-  ...
-}
-\`\`\`
+Vul de JSON structuur in. Begin ALTIJD met de 'chain_of_thought' veld om je analyse te structureren.
 
 OUTPUT JSON STRUCTUUR (gebruik ALTIJD exact deze velden en volgorde):
 {
+  "chain_of_thought": string (Jouw volledige analyse, redenering en vergelijking van velden HIER invullen),
   "title": string (exacte titel zoals weergegeven, anders null),
   "description": string|null (ALLEEN letterlijke korte beschrijving/introductie als die direct onder de titel staat, anders null),
   "introduction": string|null (ALLEEN letterlijke langere inleidende tekst vóór ingrediënten of bereiding, stop bij eerste kopje als "Ingrediënten" of "Bereiding", anders null),
@@ -399,13 +384,11 @@ serve(async (req: Request) => {
 
             const recipe = safeJsonParse(text)
 
-            // Extract reasoning trace (everything before the first '{')
-            const jsonStartIndex = text.indexOf('{');
-            const reasoningTrace = jsonStartIndex > 0 ? text.substring(0, jsonStartIndex).trim() : null;
-
-            if (reasoningTrace) {
+            // Map chain_of_thought to extra_data
+            if (recipe.chain_of_thought) {
                 if (!recipe.extra_data) recipe.extra_data = {};
-                recipe.extra_data.ai_reasoning_trace = reasoningTrace;
+                recipe.extra_data.ai_reasoning_trace = recipe.chain_of_thought;
+                delete recipe.chain_of_thought; // Clean up root
             }
 
             // Remove raw_text from recipe object if present
@@ -435,13 +418,11 @@ serve(async (req: Request) => {
 
             const recipe = safeJsonParse(text)
 
-            // Extract reasoning trace
-            const jsonStartIndex = text.indexOf('{');
-            const reasoningTrace = jsonStartIndex > 0 ? text.substring(0, jsonStartIndex).trim() : null;
-
-            if (reasoningTrace) {
+            // Map chain_of_thought to extra_data
+            if (recipe.chain_of_thought) {
                 if (!recipe.extra_data) recipe.extra_data = {};
-                recipe.extra_data.ai_reasoning_trace = reasoningTrace;
+                recipe.extra_data.ai_reasoning_trace = recipe.chain_of_thought;
+                delete recipe.chain_of_thought;
             }
 
             const rawText = recipe.raw_text || text
