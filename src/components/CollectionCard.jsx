@@ -65,7 +65,7 @@ export default function CollectionCard({ collection, onClick, recipeCount = 0 })
     return (
         <div
             onClick={onClick}
-            className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl active:scale-[0.98] transition-transform duration-200"
+            className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[2px] md:rounded lg:rounded-lg active:scale-[0.98] transition-transform duration-200"
         >
             {/* Image Grid Container */}
             <div className="absolute inset-0 bg-zinc-900 border border-white/5">
