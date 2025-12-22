@@ -20,7 +20,7 @@ import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link 
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 
-function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, searchResults, instantFilteredRecipes, scrolled, isSearching }) {
+function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, loading, searchResults, instantFilteredRecipes, scrolled, isSearching }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -198,7 +198,7 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, loading, sear
                   </span>
                 </motion.h3>
               )}
-              <RecipeList recipes={searchQuery ? displayRecipes : recipes.slice(1)} />
+              <RecipeList recipes={searchQuery ? displayRecipes : recipes.slice(1)} collections={!searchQuery ? collections : []} />
             </>
           )}
         </div>
@@ -346,6 +346,7 @@ function AuthenticatedApp() {
 
   // Lifted state from Home
   const [recipes, setRecipes] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -429,8 +430,22 @@ function AuthenticatedApp() {
         .select('*')
         .order('created_at', { ascending: false });
 
+      const { data: colsData, error: colsError } = await supabase
+        .from('collections')
+        .select(`
+          *,
+          recipe_collections (count)
+        `)
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
+      if (colsError) throw colsError;
+
       setRecipes(data || []);
+      setCollections(colsData?.map(c => ({
+        ...c,
+        recipe_count: c.recipe_collections?.[0]?.count || 0
+      })) || []);
     } catch (error) {
       console.error('Error fetching recipes:', error.message);
     } finally {
@@ -830,6 +845,7 @@ function AuthenticatedApp() {
           setActiveTasks={setActiveTasks}
           searchQuery={searchQuery}
           recipes={recipes}
+          collections={collections}
           loading={loading}
           searchResults={searchResults}
           instantFilteredRecipes={instantFilteredRecipes}

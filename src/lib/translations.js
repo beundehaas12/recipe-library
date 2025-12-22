@@ -75,4 +75,9 @@ export const translations = {
     languageES: "Spaans",
     languageIT: "Italiaans",
     languageUnknown: "Onbekend",
+
+    // Collections
+    collection: "Collectie",
+    backToAll: "Terug naar alle recepten",
+    noRecipesInCollection: "Geen recepten in deze collectie",
 };

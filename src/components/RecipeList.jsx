@@ -1,12 +1,101 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, CookingPot, Camera, Link as LinkIcon, ChevronRight, ChevronLeft } from 'lucide-react';
 import { translations as t } from '../lib/translations';
 import RecipeThumbnail from './RecipeThumbnail';
+import CollectionCard from './CollectionCard';
+import { supabase } from '../lib/supabase';
 
-export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQuery }) {
-    // No recipes yet state
-    if (isEmptyState) {
+export default function RecipeList({ recipes, collections = [], isEmptyState, isNoResults, searchQuery }) {
+    const [activeCollectionId, setActiveCollectionId] = useState(null);
+    const [collectionRecipes, setCollectionRecipes] = useState([]);
+    const [isLoadingCollection, setIsLoadingCollection] = useState(false);
+
+    // Filter recipes for active collection
+    useEffect(() => {
+        if (activeCollectionId) {
+            fetchCollectionRecipes();
+        }
+    }, [activeCollectionId]);
+
+    const fetchCollectionRecipes = async () => {
+        setIsLoadingCollection(true);
+        try {
+            // First get the recipe IDs in this collection
+            const { data: relations, error } = await supabase
+                .from('recipe_collections')
+                .select('recipe_id')
+                .eq('collection_id', activeCollectionId);
+
+            if (error) throw error;
+
+            const recipeIds = relations.map(r => r.recipe_id);
+            // We use the passed 'recipes' prop as the source of truth for recipe objects
+            // This assumes all recipes are already loaded in the parent. 
+            // If pagination is used later, we might need a direct DB fetch here.
+            // For now, filtering the client-side list is efficient enough.
+            const filtered = recipes.filter(r => recipeIds.includes(r.id));
+            setCollectionRecipes(filtered);
+        } catch (err) {
+            console.error('Error fetching collection recipes:', err);
+        } finally {
+            setIsLoadingCollection(false);
+        }
+    };
+
+    // Derived state for display
+    const activeCollection = activeCollectionId ? collections.find(c => c.id === activeCollectionId) : null;
+
+    // Mix collections and recipes for the main view
+    const itemsToDisplay = activeCollectionId
+        ? collectionRecipes.map(r => ({ ...r, type: 'recipe' }))
+        : [
+            ...collections.map(c => ({ ...c, type: 'collection' })),
+            ...recipes.map(r => ({ ...r, type: 'recipe' }))
+        ];
+
+    // -------------------------------------------------------------------------
+    // VIEW: ACTIVE COLLECTION
+    // -------------------------------------------------------------------------
+    if (activeCollectionId) {
+        return (
+            <div className="relative pt-4 pb-12">
+                <div className="px-0 md:px-4 lg:px-20 mb-4 md:mb-8">
+                    <button
+                        onClick={() => setActiveCollectionId(null)}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-white mb-4 transition-colors font-medium "
+                    >
+                        <ChevronLeft size={20} />
+                        {t.backToAll}
+                    </button>
+                    <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                        <span className="opacity-50 font-normal">{t.collection}:</span> {activeCollection?.name}
+                        <span className="text-sm font-bold text-muted-foreground/60 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                            {collectionRecipes.length}
+                        </span>
+                    </h2>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-0.5 md:gap-1 lg:gap-2 px-0 md:px-4 lg:px-20">
+                    {itemsToDisplay.map(recipe => (
+                        <div key={recipe.id} className="w-full">
+                            <RecipeThumbnail recipe={recipe} t={t} />
+                        </div>
+                    ))}
+                    {itemsToDisplay.length === 0 && !isLoadingCollection && (
+                        <div className="col-span-full py-20 text-center text-muted-foreground">
+                            {t.noRecipesInCollection}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: EMPTY STATE (No recipes and No collections)
+    // -------------------------------------------------------------------------
+    if (isEmptyState && collections.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
                 <div className="w-32 h-32 bg-secondary/30 rounded-full flex items-center justify-center mb-8 border border-white/5 shadow-2xl animate-pulse">
@@ -29,7 +118,9 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
         );
     }
 
-    // No search results state
+    // -------------------------------------------------------------------------
+    // VIEW: NO SEARCH RESULTS
+    // -------------------------------------------------------------------------
     if (isNoResults) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[40vh] text-center p-8">
@@ -42,6 +133,9 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
         );
     }
 
+    // -------------------------------------------------------------------------
+    // VIEW: MAIN GRID (Recipes + Collections)
+    // -------------------------------------------------------------------------
     return (
         <div className="relative pt-4 pb-12">
             {/* Header - Aligned with Grid */}
@@ -58,12 +152,20 @@ export default function RecipeList({ recipes, isEmptyState, isNoResults, searchQ
 
             {/* Grid Container - Edge-to-edge on mobile, padded on larger screens */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-0.5 md:gap-1 lg:gap-2 px-0 md:px-4 lg:px-20">
-                {recipes.map((recipe) => (
+                {itemsToDisplay.map((item) => (
                     <div
-                        key={recipe.id}
+                        key={item.id}
                         className="w-full"
                     >
-                        <RecipeThumbnail recipe={recipe} t={t} />
+                        {item.type === 'collection' ? (
+                            <CollectionCard
+                                collection={item}
+                                recipeCount={item.recipe_count}
+                                onClick={() => setActiveCollectionId(item.id)}
+                            />
+                        ) : (
+                            <RecipeThumbnail recipe={item} t={t} />
+                        )}
                     </div>
                 ))}
             </div>
