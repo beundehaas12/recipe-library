@@ -49,14 +49,20 @@ export default function DashboardPage() {
                 setDbRecipes(data.map(r => ({
                     ...r,
                     status: 'completed',
-                    // Map normalized ingredients to a simple array format for display
-                    ingredients: r.recipe_ingredients?.sort((a, b) => a.order_index - b.order_index).map(ing =>
-                        `${ing.quantity || ''} ${ing.unit || ''} ${ing.name}${ing.notes ? ` (${ing.notes})` : ''}`.trim()
-                    ) || [],
-                    // Map normalized steps to a simple array format for display
-                    instructions: r.recipe_steps?.sort((a, b) => a.step_number - b.step_number).map(step =>
-                        step.description
-                    ) || []
+                    // Keep ingredient objects with all properties
+                    ingredients: r.recipe_ingredients?.sort((a, b) => a.order_index - b.order_index).map(ing => ({
+                        amount: ing.quantity,
+                        unit: ing.unit,
+                        name: ing.name,
+                        group_name: ing.group_name,
+                        notes: ing.notes
+                    })) || [],
+                    // Keep instruction objects with all properties
+                    instructions: r.recipe_steps?.sort((a, b) => a.step_number - b.step_number).map(step => ({
+                        step_number: step.step_number,
+                        description: step.description,
+                        extra: step.extra
+                    })) || []
                 })));
             }
         }
