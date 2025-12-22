@@ -409,6 +409,25 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                 Extraction Metadata
                             </h3>
 
+                            {/* Mistral OCR Raw Text Section */}
+                            {(rawData.ocr_extraction || rawData.raw_text) && (
+                                <div className="bg-zinc-950/50 rounded-xl border border-white/10 overflow-hidden">
+                                    <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase">
+                                            <FileText size={14} /> Mistral OCR Extraction
+                                        </div>
+                                        <div className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
+                                            Raw Text
+                                        </div>
+                                    </div>
+                                    <div className="p-4 overflow-x-auto max-h-60 overflow-y-auto">
+                                        <pre className="text-xs font-mono text-zinc-300 leading-relaxed whitespace-pre-wrap break-words">
+                                            {rawData.ocr_extraction || rawData.raw_text}
+                                        </pre>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-zinc-950 border border-white/10 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase mb-2">
