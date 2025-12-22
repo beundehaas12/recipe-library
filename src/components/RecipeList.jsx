@@ -59,21 +59,39 @@ export default function RecipeList({ recipes, collections = [], isEmptyState, is
     // -------------------------------------------------------------------------
     if (activeCollectionId) {
         return (
-            <div className="relative pt-4 pb-12">
-                <div className="px-0 md:px-4 lg:px-20 mb-4 md:mb-8">
-                    <button
-                        onClick={() => setActiveCollectionId(null)}
-                        className="flex items-center gap-2 text-muted-foreground hover:text-white mb-4 transition-colors font-medium "
+            <div className="relative min-h-screen pb-20">
+                {/* Floating Header (Like RecipeCard) */}
+                <header className="fixed top-20 left-0 right-0 z-40 pointer-events-none px-4 lg:px-20 py-4">
+                    <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
+                        <button
+                            onClick={() => setActiveCollectionId(null)}
+                            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+                    </div>
+                </header>
+
+                {/* Hero Title Section */}
+                <div className="px-0 md:px-4 lg:px-20 pt-12 mb-12">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-4xl space-y-4"
                     >
-                        <ChevronLeft size={20} />
-                        {t.backToAll}
-                    </button>
-                    <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                        <span className="opacity-50 font-normal">{t.collection}:</span> {activeCollection?.name}
-                        <span className="text-sm font-bold text-muted-foreground/60 bg-white/5 px-2 py-1 rounded-md border border-white/5">
-                            {collectionRecipes.length}
-                        </span>
-                    </h2>
+                        <div className="flex items-center gap-3">
+                            <span className="px-3 py-1 bg-white/10 backdrop-blur-md text-white/90 text-[10px] font-bold uppercase tracking-widest rounded-md border border-white/10">
+                                {t.collection}
+                            </span>
+                            <span className="px-3 py-1 bg-white/5 backdrop-blur-md text-white/70 text-[10px] font-bold uppercase tracking-widest rounded-md border border-white/5">
+                                {collectionRecipes.length} recept{collectionRecipes.length !== 1 ? 'en' : ''}
+                            </span>
+                        </div>
+
+                        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.85] drop-shadow-2xl font-display uppercase">
+                            {activeCollection?.name}
+                        </h1>
+                    </motion.div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-0.5 md:gap-1 lg:gap-2 px-0 md:px-4 lg:px-20">
