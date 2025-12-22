@@ -161,30 +161,6 @@ Output format:
 Do not alter the original text content. Keep notes concise but informative. Place notes immediately before or after the relevant text section.`;
 
 // =============================================================================
-// HELPER: Fetch and encode image
-// =============================================================================
-async function fetchAndEncodeImage(signedUrl: string): Promise<{ base64: string; mimeType: string }> {
-    const imageResponse = await fetch(signedUrl)
-    if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`)
-    const imageBuffer = await imageResponse.arrayBuffer()
-
-    // Convert to base64 in chunks to avoid stack overflow
-    const u8 = new Uint8Array(imageBuffer);
-    const CHUNK_SIZE = 0x8000;
-    let index = 0;
-    let binaryString = '';
-    while (index < u8.length) {
-        const slice = u8.subarray(index, Math.min(index + CHUNK_SIZE, u8.length));
-        binaryString += String.fromCharCode(...slice);
-        index += CHUNK_SIZE;
-    }
-    const base64 = btoa(binaryString);
-    const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
-
-    return { base64, mimeType }
-}
-
-// =============================================================================
 // HELPER: Safe JSON parse with cleanup
 // =============================================================================
 function safeJsonParse(text: string): any {
@@ -208,100 +184,67 @@ function safeJsonParse(text: string): any {
     }
 
     // Fix common JSON issues from LLMs
-    // 1. Remove trailing commas before ] or }
-    cleaned = cleaned.replace(/,(\s*[\}\]])/g, '$1');
+    cleaned = cleaned.replace(/,(\s*[\}\]])/g, '$1'); // Trailing commas
+    cleaned = cleaned.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3'); // Unquoted props
+    cleaned = cleaned.replace(/'([^'\\]*)'/g, '"$1"'); // Single quotes
 
-    // 2. Fix unquoted property names (simple cases)
-    cleaned = cleaned.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3');
-
-    // 3. Fix single quotes used instead of double quotes for strings
-    // This is tricky - only do for property names and simple string values
-    cleaned = cleaned.replace(/'([^'\\]*)'/g, '"$1"');
-
-    // 4. Remove any control characters that might break parsing
+    // Remove control chars
     cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (char) => {
         if (char === '\n' || char === '\r' || char === '\t') return char;
         return '';
     });
 
-    // 5. Fix missing commas between array elements (common LLM issue)
-    // Look for patterns like: }\n{ or ]\n[ or "value"\n"next"
-    cleaned = cleaned.replace(/\}(\s*)\{/g, '},$1{');
-    cleaned = cleaned.replace(/\](\s*)\[/g, '],$1[');
-    cleaned = cleaned.replace(/"(\s*)\n(\s*)"/g, '",$1\n$2"');
-
     try {
         return JSON.parse(cleaned);
     } catch (firstError) {
-        // Second attempt: try to fix more aggressively
         console.log("First parse failed, attempting repair...");
-
         try {
-            // Try removing all newlines within strings (sometimes LLMs break mid-string)
             let repaired = cleaned.replace(/:\s*"([^"]*)\n([^"]*)"/g, ': "$1 $2"');
             return JSON.parse(repaired);
         } catch (secondError) {
-            console.error("JSON parse failed after repair, raw text:", text.substring(0, 1000));
+            console.error("JSON parse failed after repair");
+            // Return null or throw, but here we throw to show error
             throw new Error(`Invalid JSON from AI: ${(firstError as Error).message}`);
         }
     }
 }
 
 // =============================================================================
-// HELPER: Call Mistral OCR 3 API (for raw image extraction)
-// Uses /v1/ocr endpoint with mistral-ocr-2512 model (supports layout instructions)
+// HELPER: Call Mistral OCR API (updated for Dec 2025 API)
 // =============================================================================
 async function callMistralOCR(imageUrl: string, apiKey: string): Promise<{ rawText: string; usage: any }> {
-    // Fetch the image and convert to base64
-    const imageResponse = await fetch(imageUrl)
-    if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${imageResponse.status}`)
-    const imageBuffer = await imageResponse.arrayBuffer()
-
-    // Convert to base64 in chunks to avoid stack overflow
-    const u8 = new Uint8Array(imageBuffer);
-    const CHUNK_SIZE = 0x8000;
-    let index = 0;
-    let binaryString = '';
-    while (index < u8.length) {
-        const slice = u8.subarray(index, Math.min(index + CHUNK_SIZE, u8.length));
-        binaryString += String.fromCharCode(...slice);
-        index += CHUNK_SIZE;
+    // Direct public URL using mistral-ocr-latest
+    const body = {
+        model: "mistral-ocr-latest",
+        document: {
+            type: "image_url",
+            image_url: imageUrl
+        },
+        table_format: "html"
     }
-    const base64 = btoa(binaryString);
-    const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
-    const dataUrl = `data:${mimeType};base64,${base64}`
 
-    // Call Mistral OCR endpoint
     const response = await fetch('https://api.mistral.ai/v1/ocr', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-            model: 'mistral-ocr-2512',
-            document: {
-                type: 'image_url',
-                image_url: dataUrl
-            }
-        })
+        body: JSON.stringify(body)
     })
 
     if (!response.ok) {
         const err = await response.text()
-        throw new Error(`Mistral OCR API Error: ${err}`)
+        throw new Error(`Mistral OCR API Error: ${response.status} - ${err}`)
     }
 
     const ocrData = await response.json()
 
-    // OCR returns pages with markdown content - extract all text
-    const rawText = ocrData.pages?.map((p: any) => p.markdown || '').join('\n') || ''
+    // Extract markdown from all pages
+    const rawText = ocrData.pages?.map((p: any) => p.markdown || '').join('\n\n') || ''
 
     const usage = {
-        total_tokens: ocrData.usage_info?.pages_processed || 1,
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        model: 'mistral-ocr-latest'
+        pages_processed: ocrData.usage_info?.pages_processed || 1,
+        model: ocrData.model || 'mistral-ocr-latest'
     }
 
     return { rawText, usage }
@@ -311,8 +254,8 @@ async function callMistralOCR(imageUrl: string, apiKey: string): Promise<{ rawTe
 // HELPER: Call Grok API (xAI)
 // =============================================================================
 async function callGrok(prompt: string, model: string, apiKey: string, imageUrl?: string): Promise<{ text: string; usage: any }> {
-    // Use the selected model directly, fallback to fast-non-reasoning
-    const modelId = model.startsWith('grok-') ? model : 'grok-4-1-fast-non-reasoning'
+    // Use the selected model directly, fallback to fast-reasoning
+    const modelId = model.startsWith('grok-') ? model : 'grok-4-1-fast-reasoning'
 
     const messages: any[] = [{
         role: 'user',
@@ -368,38 +311,27 @@ async function callLLM(
     if (imageUrl) {
         // Step 1: Use Mistral OCR 3 to extract raw content from image (100% fidelity)
         if (!mistralKey) throw new Error('MISTRAL_API_KEY not configured')
-        // if (!xaiKey) throw new Error('XAI_API_KEY not configured') // Not needed if disabling Grok
+        if (!xaiKey) throw new Error('XAI_API_KEY not configured')
 
         console.log('Step 1: Extracting raw content with Mistral OCR 3...')
         const ocrResult = await callMistralOCR(imageUrl, mistralKey)
 
-        // Step 2: Grok disabled by user request. Returning raw OCR data.
-        console.log('Step 2: Grok analysis disabled. Returning raw OCR content.')
+        // Step 2: Use Grok 4.1 to structure the data using the OCR text
+        console.log('Step 2: Structuring with Grok 4.1...')
+        const extractionPrompt = EXTRACTION_PROMPT + "\n\nExtraheer het recept uit deze OCR markdown tekst:\n\n" + ocrResult.rawText
+        const grokResult = await callGrok(extractionPrompt, 'grok-4-1-fast-reasoning', xaiKey)
 
-        // Wrap raw text in a minimal valid JSON structure for the frontend
-        const rawJson = JSON.stringify({
-            title: "OCR Scan (Unprocessed)",
-            description: "Raw text extracted from Mistral OCR 3:\n\n" + ocrResult.rawText,
-            introduction: null,
-            ingredients: [],
-            instructions: [],
-            prep_time: null,
-            cook_time: null,
-            servings: null,
-            cuisine: null,
-            ai_tags: ["ocr-raw"],
-            raw_text: ocrResult.rawText
-        }, null, 2);
+        const combinedUsage = {
+            total_tokens: ocrResult.usage.pages_processed + grokResult.usage.total_tokens, // Mixed units (pages vs tokens) but stored as sum
+            prompt_tokens: grokResult.usage.prompt_tokens,
+            completion_tokens: grokResult.usage.completion_tokens,
+            ocr_pages: ocrResult.usage.pages_processed
+        }
 
         return {
-            text: rawJson,
-            usage: {
-                total_tokens: ocrResult.usage.total_tokens, // Pages
-                ocr_pages: ocrResult.usage.total_tokens,
-                prompt_tokens: 0,
-                completion_tokens: 0
-            },
-            model: 'mistral-ocr-latest-only',
+            text: grokResult.text,
+            usage: combinedUsage,
+            model: `mistral-ocr-2512 + grok-4-1-fast-reasoning`,
             rawExtraction: ocrResult.rawText
         }
     } else {
