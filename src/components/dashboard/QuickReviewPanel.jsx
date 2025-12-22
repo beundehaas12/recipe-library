@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle, onApprove }) {
     const [dragActive, setDragActive] = useState(false);
+    const [activeTab, setActiveTab] = useState('recipe');
 
     // Handle drag events
     const handleDrag = (e) => {
