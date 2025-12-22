@@ -121,50 +121,53 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
 
     return (
         <div className="flex-1 bg-zinc-950 flex flex-col min-w-0 overflow-y-auto">
-            {/* Top Action Bar */}
-            <div className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="bg-white/10 px-2 py-0.5 rounded text-xs font-mono text-white">ID: {selectedRecipe.id.slice(0, 8)}</span>
-                    <span>•</span>
-                    <span className={`uppercase font-bold text-xs ${selectedRecipe.status === 'completed' ? 'text-green-500' : 'text-amber-500'}`}>
-                        {selectedRecipe.status}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => onDelete(selectedRecipe.id)}
-                        className="p-2 hover:bg-red-500/10 hover:text-red-500 text-muted-foreground rounded-lg transition-colors"
-                        title="Delete"
-                    >
-                        <Trash2 size={18} />
-                    </button>
-                    <div className="w-px h-6 bg-white/10 mx-2" />
-                    {selectedRecipe.id.toString().startsWith('temp-') && (
+            {/* Sticky Header containing action bar and tabs */}
+            <div className="sticky top-0 z-10 bg-zinc-950">
+                {/* Top Action Bar */}
+                <div className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-zinc-950/80 backdrop-blur-md">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="bg-white/10 px-2 py-0.5 rounded text-xs font-mono text-white">ID: {selectedRecipe.id.slice(0, 8)}</span>
+                        <span>•</span>
+                        <span className={`uppercase font-bold text-xs ${selectedRecipe.status === 'completed' ? 'text-green-500' : 'text-amber-500'}`}>
+                            {selectedRecipe.status}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
                         <button
-                            onClick={() => onApprove && onApprove(selectedRecipe.id)}
-                            className="btn-primary px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                            onClick={() => onDelete(selectedRecipe.id)}
+                            className="p-2 hover:bg-red-500/10 hover:text-red-500 text-muted-foreground rounded-lg transition-colors"
+                            title="Delete"
                         >
-                            <Check size={14} />
-                            Approve
+                            <Trash2 size={18} />
                         </button>
-                    )}
+                        <div className="w-px h-6 bg-white/10 mx-2" />
+                        {selectedRecipe.id.toString().startsWith('temp-') && (
+                            <button
+                                onClick={() => onApprove && onApprove(selectedRecipe.id)}
+                                className="btn-primary px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                            >
+                                <Check size={14} />
+                                Approve
+                            </button>
+                        )}
+                    </div>
                 </div>
-            </div>
 
-            {/* Tabs */}
-            <div className="flex border-b border-white/10 px-6 gap-6 bg-zinc-950/50 backdrop-blur-sm sticky top-14 z-10">
-                <button
-                    onClick={() => setActiveTab('recipe')}
-                    className={`py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'recipe' ? 'border-primary text-white' : 'border-transparent text-muted-foreground hover:text-white'}`}
-                >
-                    <FileText size={16} /> Recipe
-                </button>
-                <button
-                    onClick={() => setActiveTab('log')}
-                    className={`py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'log' ? 'border-primary text-white' : 'border-transparent text-muted-foreground hover:text-white'}`}
-                >
-                    <Code size={16} /> AI Log
-                </button>
+                {/* Tabs */}
+                <div className="flex border-b border-white/10 px-6 gap-6 bg-zinc-950/50 backdrop-blur-sm">
+                    <button
+                        onClick={() => setActiveTab('recipe')}
+                        className={`py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'recipe' ? 'border-primary text-white' : 'border-transparent text-muted-foreground hover:text-white'}`}
+                    >
+                        <FileText size={16} /> Recipe
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('log')}
+                        className={`py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'log' ? 'border-primary text-white' : 'border-transparent text-muted-foreground hover:text-white'}`}
+                    >
+                        <Code size={16} /> AI Log
+                    </button>
+                </div>
             </div>
 
             <div className="p-6 pt-4 max-w-4xl mx-auto w-full">
