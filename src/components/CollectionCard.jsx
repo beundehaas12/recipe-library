@@ -1,7 +1,8 @@
 import React from 'react';
 import { Folder, ChefHat } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-export default function CollectionCard({ collection, onClick, recipeCount = 0 }) {
+export default function CollectionCard({ collection, recipeCount = 0 }) {
     const images = collection.preview_images || [];
     const displayImages = images.slice(0, 4);
 
@@ -61,10 +62,9 @@ export default function CollectionCard({ collection, onClick, recipeCount = 0 })
     };
 
     return (
-        <div
-            onClick={onClick}
-            // Aligned container classes with RecipeThumbnail
-            className="group relative aspect-[2/3] cursor-pointer rounded-[2px] md:rounded lg:rounded-lg overflow-hidden shadow-lg md:shadow-xl lg:shadow-2xl active:scale-[0.98] transition-transform duration-200 isolate"
+        <Link
+            to={`/collection/${collection.id}`}
+            className="block group relative aspect-[2/3] rounded-[2px] md:rounded lg:rounded-lg overflow-hidden shadow-lg md:shadow-xl lg:shadow-2xl active:scale-[0.98] transition-transform duration-200 isolate"
         >
             {/* Image Grid Container */}
             <div className="absolute inset-0 bg-zinc-900 overflow-hidden">
@@ -108,6 +108,6 @@ export default function CollectionCard({ collection, onClick, recipeCount = 0 })
                     </div>
                 </div>
             </div>
-        </div>
+        </Link>
     );
 }

@@ -9,6 +9,7 @@ import { uploadExternalImage } from '../lib/supabase';
 
 import { RecipeReviewModal } from './RecipeReviewModal';
 import AddToPlanModal from './AddToPlanModal';
+import BackButton from './BackButton';
 import { useAuth } from '../context/AuthContext';
 import { toggleFavorite, checkIsFavorite } from '../lib/plannerService';
 
@@ -393,18 +394,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                 {/* Cinematic Floating Header - Completely transparent background version */}
                 <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
                     <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
-                        <button
-                            onClick={() => {
-                                if (location.key !== "default") {
-                                    navigate(-1);
-                                } else {
-                                    navigate('/');
-                                }
-                            }}
-                            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto"
-                        >
-                            <ArrowLeft size={20} />
-                        </button>
+                        <BackButton />
 
                         <div className="flex gap-3 pointer-events-auto">
                             {isEditing ? (

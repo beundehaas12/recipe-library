@@ -12,6 +12,7 @@ import PlanningPage from './components/PlanningPage';
 import ShoppingListPage from './components/ShoppingListPage';
 import FavoritesPage from './components/FavoritesPage';
 import DashboardPage from './components/dashboard/DashboardPage';
+import CollectionPage from './components/CollectionPage';
 import FloatingMenu from './components/FloatingMenu';
 import AppHeader from './components/AppHeader';
 import InviteModal from './components/InviteModal';
@@ -34,9 +35,6 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, 
     if (searchResults && searchResults.length > 0) return searchResults;
     return [];
   }, [searchQuery, instantFilteredRecipes, searchResults, recipes]);
-
-  // Collection State (Lifted from RecipeList to control Hero visibility)
-  const [activeCollectionId, setActiveCollectionId] = useState(null);
 
   const heroRecipe = !searchQuery && recipes.length > 0 ? recipes[0] : null;
   const isEmptyState = !loading && recipes.length === 0 && searchResults === null;
@@ -63,8 +61,8 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, 
       </AnimatePresence>
 
       <main className="relative min-h-screen">
-        {/* Hide Hero when searching OR viewing a collection */}
-        {!searchQuery && !activeCollectionId && (
+        {/* Hide Hero when searching */}
+        {!searchQuery && (
           <div className="relative w-full h-[75vh] md:h-[85vh] overflow-hidden">
             {/* Background */}
             <motion.div
@@ -205,8 +203,6 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, 
               <RecipeList
                 recipes={searchQuery ? displayRecipes : recipes.slice(1)}
                 collections={!searchQuery ? collections : []}
-                activeCollectionId={activeCollectionId}
-                onActiveCollectionChange={setActiveCollectionId}
               />
             </>
           )}
@@ -879,6 +875,7 @@ function AuthenticatedApp() {
           isSearching={isSearching}
         />} />
         <Route path="/recipe/:id" element={<RecipePage activeTasks={activeTasks} setActiveTasks={setActiveTasks} />} />
+        <Route path="/collection/:id" element={<CollectionPage />} />
         <Route path="/planning" element={<PlanningPage />} />
         <Route path="/shopping" element={<ShoppingListPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
