@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle, onApprove }) {
     const [dragActive, setDragActive] = useState(false);
     const [activeTab, setActiveTab] = useState('recipe');
+    const [showRawGrok, setShowRawGrok] = useState(false);
 
     // Handle drag events
     const handleDrag = (e) => {
@@ -513,7 +514,15 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                                         <Code size={14} /> Grok Response
                                     </label>
-                                    <span className="text-xs text-muted-foreground">Step 2: Structured JSON</span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setShowRawGrok(!showRawGrok)}
+                                            className="text-[10px] bg-white/5 hover:bg-white/10 text-zinc-400 px-2 py-1 rounded border border-white/10 transition-colors"
+                                        >
+                                            {showRawGrok ? 'Show Formatted' : 'Show JSON'}
+                                        </button>
+                                        <span className="text-xs text-muted-foreground">Step 2: Structured JSON</span>
+                                    </div>
                                 </div>
                                 <div className="bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden">
                                     <div className="p-2 border-b border-white/5 bg-white/5 flex gap-2">
@@ -521,11 +530,56 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                         <div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50" />
                                         <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
                                     </div>
-                                    <div className="p-4 overflow-x-auto">
-                                        <pre className="text-xs font-mono text-zinc-400 leading-relaxed whitespace-pre-wrap break-all">
-                                            {JSON.stringify(rawData, null, 2) || JSON.stringify(selectedRecipe, null, 2)}
-                                        </pre>
-                                    </div>
+
+                                    {showRawGrok ? (
+                                        <div className="p-4 overflow-x-auto">
+                                            <pre className="text-xs font-mono text-zinc-400 leading-relaxed whitespace-pre-wrap break-all">
+                                                {/* Filter out large OCR text from display if possible */}
+                                                {(() => {
+                                                    const displayData = { ...rawData };
+                                                    delete displayData.ocr_extraction; // Hide huge text
+                                                    delete displayData.raw_text;
+                                                    // Use selectedRecipe if rawData is empty or just generic
+                                                    const dataToShow = Object.keys(displayData).length > 2 ? displayData : selectedRecipe;
+                                                    return JSON.stringify(dataToShow, null, 2);
+                                                })()}
+                                            </pre>
+                                        </div>
+                                    ) : (
+                                        <div className="p-6 space-y-4">
+                                            {/* Human Readable Preview */}
+                                            <div>
+                                                <h4 className="text-lg font-serif text-white mb-1">{selectedRecipe.title || 'Untitled Recipe'}</h4>
+                                                <p className="text-sm text-zinc-400 italic line-clamp-2">{selectedRecipe.description || 'No description available.'}</p>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 gap-2 py-3 border-y border-white/5">
+                                                <div className="text-center">
+                                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Prep</div>
+                                                    <div className="text-sm font-mono text-zinc-300">{selectedRecipe.prep_time || '-'}</div>
+                                                </div>
+                                                <div className="text-center border-l border-white/5">
+                                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Cook</div>
+                                                    <div className="text-sm font-mono text-zinc-300">{selectedRecipe.cook_time || '-'}</div>
+                                                </div>
+                                                <div className="text-center border-l border-white/5">
+                                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Servings</div>
+                                                    <div className="text-sm font-mono text-zinc-300">{selectedRecipe.servings || '-'}</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-4 text-xs text-zinc-500">
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                    {Array.isArray(selectedRecipe.ingredients) ? selectedRecipe.ingredients.length : 0} Ingredients
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                    {Array.isArray(selectedRecipe.instructions) ? selectedRecipe.instructions.length : 0} Steps
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
