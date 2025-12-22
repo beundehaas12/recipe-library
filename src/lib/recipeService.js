@@ -11,6 +11,7 @@
  */
 
 import { supabase } from './supabase';
+import { logActivity } from './activityService';
 
 /**
  * @typedef {Object} Ingredient
@@ -235,6 +236,9 @@ export async function saveRecipe(userId, recipeData, sourceInfo = {}, extraction
             // Don't fail the whole operation for tools
         }
     }
+
+    // Log Activity
+    await logActivity(userId, 'create_recipe', `Nieuw recept aangemaakt: ${normalized.title}`, { recipeId });
 
     // Return the full recipe object using the fetch logic to ensure consistent structure
     // We could construct it manually but fetching ensures we return exactly what fetchRecipeWithDetails returns

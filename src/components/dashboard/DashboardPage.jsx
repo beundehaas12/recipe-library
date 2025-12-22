@@ -116,8 +116,14 @@ export default function DashboardPage() {
             updateQueueItem(id, updates);
         } else {
             setDbRecipes(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
-            const { error } = await supabase.from('recipes').update(updates).eq('id', id);
-            if (error) console.error("Failed to update recipe:", error);
+            try {
+                // Determine if we should use the service (for logging + complex updates) or direct (simple)
+                // Using service safely for partial updates as verified
+                const { updateRecipe } = await import('../../lib/recipeService');
+                await updateRecipe(id, updates);
+            } catch (error) {
+                console.error("Failed to update recipe:", error);
+            }
         }
     };
 
@@ -131,12 +137,10 @@ export default function DashboardPage() {
             // Optimistic delete
             setDbRecipes(prev => prev.filter(r => r.id !== id));
 
-            const { error } = await supabase
-                .from('recipes')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
+            try {
+                const { deleteRecipe } = await import('../../lib/recipeService');
+                await deleteRecipe(id);
+            } catch (error) {
                 console.error("Failed to delete recipe:", error);
             }
         }
@@ -183,6 +187,11 @@ export default function DashboardPage() {
                 });
                 // Manually add to local object for UI update
                 recipe.recipe_collections = [{ collection_id: item.context.collectionId }];
+
+                // Log collection add
+                const { logActivity } = await import('../../lib/activityService');
+                const collectionName = collections.find(c => c.id === item.context.collectionId)?.name || 'Collectie';
+                await logActivity(user.id, 'add_to_collection', `Recept in '${collectionName}' geplaatst`, { recipeId: recipe.id, collectionId: item.context.collectionId });
             }
 
             // Cleanup and Update UI
@@ -228,6 +237,8 @@ export default function DashboardPage() {
         if (!recipe) return; // Only DB recipes supported for now
 
         const exists = recipe.recipe_collections?.some(rc => rc.collection_id === collectionId);
+        const { logActivity } = await import('../../lib/activityService');
+        const collectionName = collections.find(c => c.id === collectionId)?.name || 'Collectie';
 
         // Optimistic Update
         setDbRecipes(prev => prev.map(r => {
@@ -246,9 +257,13 @@ export default function DashboardPage() {
                 await supabase.from('recipe_collections')
                     .delete()
                     .match({ recipe_id: recipeId, collection_id: collectionId });
+                // Log removal? Maybe too noisy. User said "created, removed collections etc". 
+                // Adding/removing from collection is a key action.
+                logActivity(user.id, 'add_to_collection', `Verwijderd uit '${collectionName}'`, { recipeId, collectionId });
             } else {
                 await supabase.from('recipe_collections')
                     .insert({ recipe_id: recipeId, collection_id: collectionId });
+                logActivity(user.id, 'add_to_collection', `Toegevoegd aan '${collectionName}'`, { recipeId, collectionId });
             }
         } catch (error) {
             console.error("Error toggling collection:", error);
@@ -266,6 +281,9 @@ export default function DashboardPage() {
         if (data) {
             setCollections(prev => [...prev, data]);
             setIsCollectionModalOpen(false);
+
+            const { logActivity } = await import('../../lib/activityService');
+            await logActivity(user.id, 'create_collection', `Nieuwe collectie: ${name}`, { collectionId: data.id });
         }
         if (error) console.error('Error creating collection:', error);
     };

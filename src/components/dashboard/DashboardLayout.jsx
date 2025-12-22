@@ -1,11 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChefHat, Search, Upload, Bell, ChevronLeft, Plus, Settings, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import ActivityPanel from './ActivityPanel';
+import { getUnreadCount } from '../../lib/activityService';
+import { supabase } from '../../lib/supabase';
 
 export default function DashboardLayout({ children, user, signOut, activeFilter, onFilterChange, collections = [], onCreateCollection }) {
+    const [showActivities, setShowActivities] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Fetch initial count and subscribe to changes
+    useEffect(() => {
+        if (!user) return;
+
+        const updateCount = async () => {
+            const count = await getUnreadCount(user.id);
+            setUnreadCount(count);
+        };
+
+        updateCount();
+
+        // Subscribe to new activities for badge update
+        const channel = supabase
+            .channel('dashboard-activities')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'user_activities', filter: `user_id=eq.${user.id}` },
+                () => {
+                    setUnreadCount(prev => prev + 1);
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'user_activities', filter: `user_id=eq.${user.id}` },
+                () => updateCount() // Refresh on read status change
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user]);
+
     return (
-        <div className="h-screen bg-black text-foreground flex flex-col overflow-hidden">
+        <div className="h-screen bg-black text-foreground flex flex-col overflow-hidden relative">
             {/* Dashboard Toolbar (Finder-style) */}
             <div className="h-14 bg-zinc-950 border-b border-white/10 flex items-center justify-between px-4 shrink-0">
                 <div className="flex items-center gap-4">
@@ -26,15 +65,22 @@ export default function DashboardLayout({ children, user, signOut, activeFilter,
                         <input
                             type="text"
                             placeholder="Search recipes..."
-                            className="w-full bg-zinc-900 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                            className="w-full bg-zinc-900 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-display"
                         />
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors relative">
+                    <button
+                        onClick={() => setShowActivities(!showActivities)}
+                        className={`p-2 rounded-lg transition-colors relative ${showActivities ? 'bg-primary/20 text-primary' : 'hover:bg-white/10 text-muted-foreground hover:text-white'}`}
+                    >
                         <Bell size={20} />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-sm ring-2 ring-black">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
                     </button>
                     <button className="flex items-center gap-2 px-3 py-2 bg-primary text-black rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-primary/90 transition-colors">
                         <Upload size={16} />
@@ -54,7 +100,7 @@ export default function DashboardLayout({ children, user, signOut, activeFilter,
             </div>
 
             {/* Main Workspace Area (Finder Layout) */}
-            <div className="flex-1 flex overflow-hidden min-h-0">
+            <div className="flex-1 flex overflow-hidden min-h-0 relative">
                 <Sidebar
                     activeFilter={activeFilter}
                     onFilterChange={onFilterChange}
@@ -63,9 +109,16 @@ export default function DashboardLayout({ children, user, signOut, activeFilter,
                 />
 
                 {/* Content Area (List + Preview) */}
-                <div className="flex-1 flex min-w-0 bg-background relative min-h-0">
+                <div className="flex-1 flex min-w-0 bg-background relative min-h-0 z-0">
                     {children}
                 </div>
+
+                {/* Activity Log Panel Overlay */}
+                <ActivityPanel
+                    isOpen={showActivities}
+                    onClose={() => setShowActivities(false)}
+                    userId={user?.id}
+                />
             </div>
         </div>
     );
