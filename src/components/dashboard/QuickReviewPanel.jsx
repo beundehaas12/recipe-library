@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus } from 'lucide-react';
+import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle, onApprove }) {
@@ -82,6 +82,64 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                         onChange={(e) => e.target.files && onUpload(e.target.files)}
                     />
                 </div>
+            </div>
+        );
+    }
+
+    // If processing, show Thinking UI
+    if (selectedRecipe && selectedRecipe.status === 'processing') {
+        return (
+            <div className="flex-1 bg-zinc-950 flex flex-col items-center justify-center p-8 min-h-0">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className="max-w-md w-full bg-zinc-900 border border-white/10 rounded-2xl p-8 text-center relative overflow-hidden shadow-2xl"
+                >
+                    {/* Animated Glow Background */}
+                    <div className="absolute inset-0 bg-primary/5 animate-pulse pointer-events-none" />
+
+                    <div className="relative z-10 flex flex-col items-center gap-6">
+                        <div className="relative">
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                className="w-16 h-16 rounded-full border-4 border-primary/20 border-t-primary flex items-center justify-center"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-2xl">⚡️</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h3 className="text-xl font-bold text-white">Analyseren...</h3>
+                            <p className="text-muted-foreground text-sm">
+                                De AI leest je foto en haalt de ingrediënten en stappen eruit.
+                            </p>
+                        </div>
+
+                        {/* Fake Progress Steps */}
+                        <div className="w-full space-y-3 pt-4 border-t border-white/5 text-left">
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
+                                className="flex items-center gap-3 text-sm text-primary"
+                            >
+                                <CheckCircle2 size={16} /> Image uploaden gereed
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.5 }}
+                                className="flex items-center gap-3 text-sm text-zinc-300"
+                            >
+                                <Loader2 size={16} className="animate-spin text-primary" /> Tekst herkennen...
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 3 }}
+                                className="flex items-center gap-3 text-sm text-zinc-500"
+                            >
+                                <div className="w-4 h-4 rounded-full border border-white/10" /> Structureren van data
+                            </motion.div>
+                        </div>
+                    </div>
+                </motion.div>
             </div>
         );
     }

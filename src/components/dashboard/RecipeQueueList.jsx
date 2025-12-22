@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, CheckCircle2, AlertCircle, FileText, Image as ImageIcon, Upload } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, FileText, Image as ImageIcon, Upload, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function RecipeQueueList({ recipes, selectedId, onSelect, onUpload }) {
@@ -9,7 +9,7 @@ export default function RecipeQueueList({ recipes, selectedId, onSelect, onUploa
     const getStatusIcon = (status) => {
         switch (status) {
             case 'completed': return <CheckCircle2 size={16} className="text-green-500" />;
-            case 'processing': return <Clock size={16} className="text-amber-500 animate-pulse" />;
+            case 'processing': return <Loader2 size={16} className="text-primary animate-spin" />;
             case 'error': return <AlertCircle size={16} className="text-red-500" />;
             default: return <FileText size={16} className="text-muted-foreground" />;
         }
