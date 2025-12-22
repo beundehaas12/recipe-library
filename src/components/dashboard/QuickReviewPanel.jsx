@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus, Loader2, CheckCircle2, Cpu, Hash, Code, Database, BrainCircuit } from 'lucide-react';
+import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus, Loader2, CheckCircle2, Cpu, Hash, Code, Database, BrainCircuit, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle, onApprove }) {
     const [dragActive, setDragActive] = useState(false);
     const [activeTab, setActiveTab] = useState('recipe');
     const [showRawGrok, setShowRawGrok] = useState(false);
+    const [expandedFields, setExpandedFields] = useState({});
 
     // Handle drag events
     const handleDrag = (e) => {
@@ -629,25 +630,56 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                             { key: 'source_url', label: 'Source URL' },
                                             { key: 'source_language', label: 'Language' },
                                             { key: 'ai_tags', label: 'Tags', formatter: v => Array.isArray(v) ? v.join(', ') : (v || '-') },
-                                            { key: 'ingredients', label: 'Ingredients', formatter: v => Array.isArray(v) ? `${v.length} items` : '0 items' },
-                                            { key: 'instructions', label: 'Instructions', formatter: v => Array.isArray(v) ? `${v.length} steps` : '0 steps' },
+                                            { key: 'ingredients', label: 'Ingredients', expandable: true, formatter: v => Array.isArray(v) ? `${v.length} items` : '0 items' },
+                                            { key: 'instructions', label: 'Instructions', expandable: true, formatter: v => Array.isArray(v) ? `${v.length} steps` : '0 steps' },
                                         ].map((field) => {
                                             const value = field.getter ? field.getter(selectedRecipe) : selectedRecipe[field.key];
                                             const hasValue = Array.isArray(value) ? value.length > 0 : !!value;
                                             const displayValue = field.formatter ? field.formatter(value) : (value || '-');
+                                            const isExpanded = expandedFields[field.key];
 
                                             // Get reasoning from extra_data.reasoning
                                             const reasoning = selectedRecipe.extra_data?.reasoning?.[field.key];
 
                                             return (
-                                                <div key={field.key} className="grid grid-cols-[120px_1fr_1fr] items-center gap-4 p-3 text-sm hover:bg-white/5 transition-colors">
-                                                    <span className="text-zinc-500 font-medium truncate" title={field.label}>{field.label}</span>
-                                                    <span className={`font-mono truncate ${hasValue ? 'text-green-400' : 'text-zinc-600'}`}>
-                                                        {typeof displayValue === 'string' ? displayValue : JSON.stringify(displayValue)}
-                                                    </span>
-                                                    <span className="text-xs text-zinc-500 italic truncate" title={reasoning || ''}>
-                                                        {reasoning ? `"${reasoning}"` : ''}
-                                                    </span>
+                                                <div key={field.key}>
+                                                    <div
+                                                        className={`grid grid-cols-[120px_1fr_1fr] items-center gap-4 p-3 text-sm hover:bg-white/5 transition-colors ${field.expandable ? 'cursor-pointer' : ''}`}
+                                                        onClick={() => field.expandable && setExpandedFields(prev => ({ ...prev, [field.key]: !prev[field.key] }))}
+                                                    >
+                                                        <span className="text-zinc-500 font-medium truncate flex items-center gap-1" title={field.label}>
+                                                            {field.expandable && (
+                                                                <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                                            )}
+                                                            {field.label}
+                                                        </span>
+                                                        <span className={`font-mono truncate ${hasValue ? 'text-green-400' : 'text-zinc-600'}`}>
+                                                            {typeof displayValue === 'string' ? displayValue : JSON.stringify(displayValue)}
+                                                        </span>
+                                                        <span className="text-xs text-zinc-500 italic truncate" title={reasoning || ''}>
+                                                            {reasoning ? `"${reasoning}"` : ''}
+                                                        </span>
+                                                    </div>
+                                                    {/* Expanded content for ingredients/instructions */}
+                                                    {field.expandable && isExpanded && Array.isArray(value) && value.length > 0 && (
+                                                        <div className="bg-black/30 border-t border-white/5 p-3 text-xs space-y-1">
+                                                            {field.key === 'ingredients' && value.map((ing, i) => (
+                                                                <div key={i} className="text-zinc-400 font-mono">
+                                                                    {ing.amount && <span className="text-green-400">{ing.amount}</span>}
+                                                                    {ing.unit && <span className="text-blue-400 ml-1">{ing.unit}</span>}
+                                                                    <span className="text-white ml-1">{ing.name || ing.item}</span>
+                                                                    {ing.preparation && <span className="text-yellow-400 ml-1">({ing.preparation})</span>}
+                                                                    {ing.notes && <span className="text-zinc-500 ml-1">- {ing.notes}</span>}
+                                                                </div>
+                                                            ))}
+                                                            {field.key === 'instructions' && value.map((step, i) => (
+                                                                <div key={i} className="text-zinc-400 font-mono flex gap-2">
+                                                                    <span className="text-primary font-bold">{step.step_number || i + 1}.</span>
+                                                                    <span className="text-white/80">{step.description}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })}
