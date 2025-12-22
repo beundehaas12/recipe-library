@@ -180,46 +180,39 @@ Do not alter the original text content. Keep notes concise but informative. Plac
 // HELPER: Safe JSON parse with cleanup
 // =============================================================================
 function safeJsonParse(text: string): any {
-    let cleaned = text.trim();
+    let toParse = text.trim();
 
-    // Remove markdown code fences if present
-    if (cleaned.startsWith('```json')) {
-        cleaned = cleaned.slice(7);
-    } else if (cleaned.startsWith('```')) {
-        cleaned = cleaned.slice(3);
-    }
-    if (cleaned.endsWith('```')) {
-        cleaned = cleaned.slice(0, -3);
-    }
-    cleaned = cleaned.trim();
-
-    // Try to extract JSON object if there's extra content
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-        cleaned = jsonMatch[0];
+    // Strategy 1: Look for markdown code fence
+    const codeBlockMatch = toParse.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (codeBlockMatch) {
+        toParse = codeBlockMatch[1].trim();
+    } else {
+        // Strategy 2: Extract between first { and last }
+        const start = toParse.indexOf('{');
+        const end = toParse.lastIndexOf('}');
+        if (start !== -1 && end !== -1 && end > start) {
+            toParse = toParse.substring(start, end + 1);
+        }
     }
 
-    // Fix common JSON issues from LLMs
-    cleaned = cleaned.replace(/,(\s*[\}\]])/g, '$1'); // Trailing commas
-    cleaned = cleaned.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3'); // Unquoted props
-    cleaned = cleaned.replace(/'([^'\\]*)'/g, '"$1"'); // Single quotes
-
-    // Remove control chars
-    cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (char) => {
-        if (char === '\n' || char === '\r' || char === '\t') return char;
-        return '';
-    });
+    // Cleaning common LLM JSON errors
+    toParse = toParse
+        .replace(/,(\s*[\}\]])/g, '$1') // Trailing commas
+        .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3') // Unquoted props
+        .replace(/'([^'\\]*)'/g, '"$1"') // Single quotes
+        .replace(/[\x00-\x1F\x7F]/g, c => (['\n', '\r', '\t'].includes(c) ? c : '')); // Control chars
 
     try {
-        return JSON.parse(cleaned);
+        return JSON.parse(toParse);
     } catch (firstError) {
-        console.log("First parse failed, attempting repair...");
+        console.log("JSON parse failed, attempting regex repair...", (firstError as Error).message.slice(0, 50));
+        // Try to handle unescaped quotes in reasoning fields if specifically there
+        // This is generic repair for simple key: "value with "quote" inside"
         try {
-            let repaired = cleaned.replace(/:\s*"([^"]*)\n([^"]*)"/g, ': "$1 $2"');
+            let repaired = toParse.replace(/:\s*"([^"]*)\n([^"]*)"/g, ': "$1 $2"');
             return JSON.parse(repaired);
         } catch (secondError) {
-            console.error("JSON parse failed after repair");
-            // Return null or throw, but here we throw to show error
+            console.error("JSON Parse Fatal Error. Text snippet:", toParse.slice(0, 100));
             throw new Error(`Invalid JSON from AI: ${(firstError as Error).message}`);
         }
     }
