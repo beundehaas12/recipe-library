@@ -330,8 +330,7 @@ async function callLLM(
         // Incorporate LAYOUT_ANALYSIS_PROMPT to guide Grok in interpreting the OCR data
         // We append the raw markdown at the end
         const extractionPrompt = EXTRACTION_PROMPT +
-            "\n\nLAYOUT ANALYSIS GUIDELINES:\n" + LAYOUT_ANALYSIS_PROMPT +
-            "\n\nSOURCE OCR MARKDOWN:\n" + ocrResult.rawText
+            "\n\nSOURCE OCR MARKDOWN (from Mistral OCR):\n" + ocrResult.rawText
 
         const grokResult = await callGrok(extractionPrompt, 'grok-4-1-fast-reasoning', xaiKey)
 
