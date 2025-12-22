@@ -82,8 +82,8 @@ export default function CollectionPage() {
                 </div>
             </header>
 
-            {/* Hero Title Section */}
-            <div className="px-4 md:px-4 lg:px-20 pt-32 mb-12">
+            {/* Hero Title Section - Same container structure as RecipeCard */}
+            <div className="max-w-[1600px] mx-auto px-4 lg:px-20 pt-32 mb-12">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -104,19 +104,21 @@ export default function CollectionPage() {
                 </motion.div>
             </div>
 
-            {/* Recipe Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-0.5 md:gap-1 lg:gap-2 px-0 md:px-4 lg:px-20">
-                {recipes.map(recipe => (
-                    <div key={recipe.id} className="w-full">
-                        <RecipeThumbnail recipe={recipe} t={t} />
-                    </div>
-                ))}
-                {recipes.length === 0 && (
-                    <div className="col-span-full py-20 text-center text-muted-foreground flex flex-col items-center gap-4">
-                        <ChefHat size={48} className="text-white/10" />
-                        <p>{t.noRecipesInCollection || "Geen recepten in deze collectie"}</p>
-                    </div>
-                )}
+            {/* Recipe Grid - Same container structure as RecipeCard */}
+            <div className="max-w-[1600px] mx-auto px-0 md:px-4 lg:px-20">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-0.5 md:gap-1 lg:gap-2">
+                    {recipes.map(recipe => (
+                        <div key={recipe.id} className="w-full">
+                            <RecipeThumbnail recipe={recipe} t={t} />
+                        </div>
+                    ))}
+                    {recipes.length === 0 && (
+                        <div className="col-span-full py-20 text-center text-muted-foreground flex flex-col items-center gap-4">
+                            <ChefHat size={48} className="text-white/10" />
+                            <p>{t.noRecipesInCollection || "Geen recepten in deze collectie"}</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
