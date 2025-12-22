@@ -102,25 +102,38 @@ export function normalizeRecipeData(rawRecipe) {
         return { name: tool.name || '', notes: tool.notes || null };
     });
 
+    // Helper to find value by multiple keys
+    const getVal = (keys) => {
+        for (const k of keys) {
+            if (rawRecipe[k] !== undefined && rawRecipe[k] !== null) return rawRecipe[k];
+        }
+        return null;
+    };
+
+    const extraData = rawRecipe.extra_data || {};
+    // Map total_time to extra_data if caught
+    const totalTime = getVal(['total_time', 'totalTime', 'total_duration']);
+    if (totalTime) extraData.total_time = totalTime;
+
     return {
-        title: rawRecipe.title || 'Untitled Recipe',
-        subtitle: rawRecipe.subtitle || null,
-        introduction: rawRecipe.introduction || null,
-        description: rawRecipe.description || '',
+        title: getVal(['title', 'name']) || 'Untitled Recipe',
+        subtitle: getVal(['subtitle', 'sub_title']) || null,
+        introduction: getVal(['introduction', 'intro']) || null,
+        description: getVal(['description', 'desc', 'summary']) || '',
         ingredients,
         instructions,
         tools,
-        servings: rawRecipe.servings || null,
-        prep_time: rawRecipe.prep_time || null,
-        cook_time: rawRecipe.cook_time || null,
-        difficulty: rawRecipe.difficulty || null,
-        cuisine: rawRecipe.cuisine || null,
-        author: rawRecipe.author || null,
-        cookbook_name: rawRecipe.cookbook_name || null,
-        isbn: rawRecipe.isbn || null,
-        source_language: rawRecipe.source_language || 'en',
-        ai_tags: rawRecipe.ai_tags || [],
-        extra_data: rawRecipe.extra_data || {}
+        servings: getVal(['servings', 'portions', 'yield']) || null,
+        prep_time: getVal(['prep_time', 'prepTime', 'preparation_time']) || null,
+        cook_time: getVal(['cook_time', 'cookTime', 'cooking_time']) || null,
+        difficulty: getVal(['difficulty', 'level', 'skill_level']) || null,
+        cuisine: getVal(['cuisine', 'category', 'type']) || null,
+        author: getVal(['author', 'chef', 'creator', 'by']) || null,
+        cookbook_name: getVal(['cookbook_name', 'cookbook', 'book', 'source_book']) || null,
+        isbn: getVal(['isbn', 'ISBN']) || null,
+        source_language: getVal(['source_language', 'language', 'lang']) || 'en',
+        ai_tags: getVal(['ai_tags', 'tags', 'keywords']) || [],
+        extra_data: extraData
     };
 }
 

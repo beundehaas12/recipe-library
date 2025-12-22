@@ -600,15 +600,20 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                             { key: 'description', label: 'Description' },
                                             { key: 'prep_time', label: 'Prep Time' },
                                             { key: 'cook_time', label: 'Cook Time' },
+                                            { key: 'total_time', label: 'Total Time', getter: (r) => r.total_time || r.extra_data?.total_time },
                                             { key: 'servings', label: 'Servings' },
                                             { key: 'cuisine', label: 'Cuisine' },
                                             { key: 'difficulty', label: 'Difficulty' },
                                             { key: 'author', label: 'Author' },
                                             { key: 'cookbook_name', label: 'Cookbook' },
+                                            { key: 'isbn', label: 'ISBN' },
+                                            { key: 'source_url', label: 'Source URL' },
+                                            { key: 'source_language', label: 'Language' },
+                                            { key: 'ai_tags', label: 'Tags', formatter: v => Array.isArray(v) ? v.join(', ') : (v || '-') },
                                             { key: 'ingredients', label: 'Ingredients', formatter: v => Array.isArray(v) ? `${v.length} items` : '0 items' },
                                             { key: 'instructions', label: 'Instructions', formatter: v => Array.isArray(v) ? `${v.length} steps` : '0 steps' },
                                         ].map((field) => {
-                                            const value = selectedRecipe[field.key];
+                                            const value = field.getter ? field.getter(selectedRecipe) : selectedRecipe[field.key];
                                             const hasValue = Array.isArray(value) ? value.length > 0 : !!value;
                                             const displayValue = field.formatter ? field.formatter(value) : (value || '-');
 
