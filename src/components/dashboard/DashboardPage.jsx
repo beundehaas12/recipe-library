@@ -181,7 +181,7 @@ export default function DashboardPage() {
 
             const extractionHistory = {
                 ...aiResult.usage,
-                ai_model: aiResult.ai_model || 'gemini-3-flash-preview',
+                ai_model: aiResult.ai_model || 'Mistral OCR 3 + Grok 4',
                 processing_time_ms: aiResult.processing_time_ms
             };
 

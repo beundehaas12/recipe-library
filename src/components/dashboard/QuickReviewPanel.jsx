@@ -462,7 +462,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                     <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
                                 </div>
                                 <div className="p-4 overflow-x-auto">
-                                    <pre className="text-xs font-mono text-zinc-400 leading-relaxed">
+                                    <pre className="text-xs font-mono text-zinc-400 leading-relaxed whitespace-pre-wrap break-all">
                                         {JSON.stringify(rawData, null, 2) || JSON.stringify(selectedRecipe, null, 2)}
                                     </pre>
                                 </div>
