@@ -241,8 +241,14 @@ async function callMistralOCR(imageUrl: string, apiKey: string): Promise<{ rawTe
 
     const ocrData = await response.json()
 
-    // Extract markdown from all pages
-    const rawText = ocrData.pages?.map((p: any) => p.markdown || '').join('\n\n') || ''
+    // Extract markdown from all pages (concatenate header/footer if extracted separately)
+    const rawText = ocrData.pages?.map((p: any) => {
+        return [
+            p.header || '',
+            p.markdown || '',
+            p.footer || ''
+        ].filter(Boolean).join('\n\n')
+    }).join('\n\n') || ''
 
     const usage = {
         pages_processed: ocrData.usage_info?.pages_processed || 1,
