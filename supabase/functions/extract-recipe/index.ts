@@ -14,19 +14,30 @@ const corsHeaders = {
 // PROMPTS
 // =============================================================================
 
-const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. Analyseer de input grondig en extraheer alle informatie.
+const EXTRACTION_PROMPT = `Je bent een EXPERT recept-extractor met diep begrip van culinaire teksten.
 
-BELANGRIJK: Output ALLEEN valide JSON. Geen tekst ervoor of erna. Geen markdown code blocks.
-BELANGRIJK: Gebruik GEEN letterlijke newlines in strings. Vervang nieuwe regels door een spatie.
+=== DENKPROCES (VERPLICHT) ===
+Voordat je extraheert, DENK DIEP NA over de volgende vragen in je "reasoning" veld:
+- Wat zie ik precies in deze bron? Welke secties herken ik?
+- Waar staat de titel? Is er een subtitel die erbij hoort?
+- Zie ik tijden/porties in een infoblok, of moet ik ze uit de tekst halen?
+- Welke ingrediënten horen bij welke groep? Zijn er subkoppen?
+- Hoe zijn de bereidingsstappen gestructureerd? Doorlopend of genummerd?
+- Welke acties kan ik splitsen in aparte stappen voor meer duidelijkheid?
+- Wat hoort bij tips/variaties vs. de hoofdbereiding?
+- Mis ik iets? Staat er info in kleine lettertjes of voetnoten?
 
-JSON STRUCTUUR:
+=== OUTPUT FORMAAT ===
+ALLEEN valide JSON. Geen markdown, geen tekst ervoor of erna.
+Gebruik GEEN letterlijke newlines in strings - vervang door spaties.
+
 {
-  "reasoning": string (Leg hier kort uit wat je ziet en welke keuzes je maakt bij het extraheren),
-  "title": string (exacte titel, of null),
-  "description": string|null (korte beschrijving onder titel),
-  "introduction": string|null (langere inleidende tekst),
+  "reasoning": string (UITGEBREIDE analyse: beschrijf wat je ziet, welke keuzes je maakt, waarom je iets in een bepaald veld plaatst, wat lastig was, wat je hebt gesplitst en waarom),
+  "title": string (exacte titel),
+  "description": string|null (korte intro direct onder titel),
+  "introduction": string|null (langere inleidende tekst voor ingrediënten),
   "servings": number|null,
-  "prep_time": string|null (exact zoals in bron),
+  "prep_time": string|null (exact uit bron),
   "cook_time": string|null,
   "total_time": string|null,
   "difficulty": string|null,
@@ -36,14 +47,14 @@ JSON STRUCTUUR:
     "amount": number|null,
     "unit": string|null,
     "name": string,
-    "preparation": string|null,
-    "note": string|null,
+    "preparation": string|null (bijv. fijngesneden),
+    "note": string|null (bijv. naar smaak),
     "optional": boolean,
-    "group_name": string|null
+    "group_name": string|null (bijv. Voor de saus)
   }],
   "instructions": [{
     "step_number": number,
-    "description": string
+    "description": string (volledige staptekst met alle details)
   }],
   "tips": string[]|null,
   "variations": string[]|null,
@@ -52,36 +63,31 @@ JSON STRUCTUUR:
   "source_url": string|null
 }
 
-REGELS VOOR METADATA (tijden, porties, etc.):
-1. Zoek prep_time, cook_time, total_time, servings en difficulty eerst in duidelijke infoblokken, icoontjes of kopjes.
-2. Als die ontbreken, scan dan zorgvuldig de inleidende tekst en eventuele voetnoten.
-3. Neem exact de tekst over uit de bron. Zet null als echt afwezig.
+=== EXTRACTIE REGELS ===
 
-REGELS VOOR INGREDIËNTEN:
-1. Splits hoeveelheden correct: "500g bloem" → amount: 500, unit: "g", name: "bloem".
-2. Plaats bereidingsinstructies bij ingrediënt (bijv. "in ringen", "fijngesneden") in "preparation".
-3. Plaats extra opmerkingen (bijv. "naar smaak", "+ extra om te bakken") in "note" en zet "optional: true" waar van toepassing.
-4. Behoud ingrediëntgroepen exact: gebruik "group_name" voor kopjes als "Voor de saus".
+INGREDIËNTEN:
+- Split "500g bloem" → amount: 500, unit: "g", name: "bloem"
+- "fijngesneden ui" → name: "ui", preparation: "fijngesneden"
+- "zout naar smaak" → name: "zout", note: "naar smaak", optional: true
+- Bewaar groepskoppen in group_name
 
-REGELS VOOR BEREIDINGSINSTRUCTIES:
-1. Zoek ALLE bereidingsstappen - genummerd, opsommingstekens of doorlopende tekst.
-2. ELKE duidelijke actie of werkwoordgroep is een aparte stap. Splits altijd bij nieuw werkwoord of overgang (bijv. "snipper de ui" en "fruit de ui" = 2 stappen).
-3. Combineer alleen als acties letterlijk in één zin staan en onlosmakelijk verbonden zijn (bijv. "voeg toe en meng goed").
-4. Bij twijfel: altijd splitsen.
-5. Splits lange paragrafen in logische stappen op basis van werkwoorden (verhit, snijd, voeg toe, roer, bak, laat rusten, etc.).
-6. Herken verborgen stappen: "laat 30 minuten rusten", "afkoelen tot kamertemperatuur" of "voorverwarmen oven" zijn aparte stappen.
-7. Behoud ALLE details: temperaturen, tijden, technieken, pannen, etc.
-8. Serveersuggesties, garnituren en presentatietips aan het einde zijn GEEN stappen → naar "serving_suggestion".
-9. Tips en variaties aan het einde zijn GEEN stappen → naar "tips" of "variations".
-10. Alternatieve methodes (bijv. "in oven of airfryer") → ofwel opsplitsen in stappen met noot, of naar "variations".
-11. Nummer stappen doorlopend vanaf 1, ook als bron dat niet doet.
-12. Minimaal 4-6 stappen voor normale recepten, tot 15+ voor complexe.
+BEREIDINGSSTAPPEN - SPLITS RIJK:
+- ELKE actie/werkwoord = aparte stap
+- "Snipper de ui en fruit in boter" = 2 stappen: 1) snipperen, 2) fruiten
+- "Laat 30 min rusten" = aparte stap
+- "Verwarm oven voor op 180°C" = aparte stap
+- Minimaal 6-10 stappen voor simpele recepten, 15+ voor complexe
+- Behoud ALLE details: temperaturen, tijden, technieken
 
-ALGEMENE REGELS:
-1. Wees 100% trouw aan de bron. Verzin, samenvat of parafraseer NIETS.
-2. Lees ALLE tekst grondig, inclusief kleine lettertjes, voetnoten, tips en variaties.
-3. Alle informatie is even belangrijk en moet met maximale nauwkeurigheid worden geëxtraheerd.
-4. Include altijd "raw_text" met de volledige inputtekst exact.
+METADATA:
+- Zoek eerst in infoblokken/icoontjes
+- Dan in inleidende tekst en voetnoten
+- Neem exact over uit bron
+
+ALGEMEEN:
+- Wees 100% trouw aan de bron
+- Verzin NIETS, parafraseer niet
+- Lees ALLES: kleine lettertjes, voetnoten, tips
 `
 
 const ENRICHMENT_PROMPT = `Je bent een culinaire AI-assistent. Verrijk dit recept met waardevolle extra informatie.
