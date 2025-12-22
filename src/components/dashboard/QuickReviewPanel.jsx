@@ -784,13 +784,16 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                                                             <div className="text-purple-400 font-bold mb-1 uppercase text-[10px] tracking-wider">{groupName}</div>
                                                                         )}
                                                                         {ings.map((ing, i) => {
-                                                                            const amount = ing.amount || ing.quantity;
-                                                                            const name = ing.name || ing.item || ing.ingredient;
+                                                                            // Try all possible field names
+                                                                            const amount = ing.amount ?? ing.quantity ?? ing.qty ?? '';
+                                                                            const unit = ing.unit ?? '';
+                                                                            const name = ing.name ?? ing.item ?? ing.ingredient ?? ing.text ?? '';
+                                                                            const displayText = name || JSON.stringify(ing);
                                                                             return (
                                                                                 <div key={i} className="text-zinc-400 font-mono pl-2">
                                                                                     {amount && <span className="text-green-400">{amount}</span>}
-                                                                                    {ing.unit && <span className="text-blue-400 ml-1">{ing.unit}</span>}
-                                                                                    <span className="text-white ml-1">{name}</span>
+                                                                                    {unit && <span className="text-blue-400 ml-1">{unit}</span>}
+                                                                                    <span className="text-white ml-1">{displayText}</span>
                                                                                     {ing.preparation && <span className="text-yellow-400 ml-1">({ing.preparation})</span>}
                                                                                     {ing.notes && <span className="text-zinc-500 ml-1">- {ing.notes}</span>}
                                                                                 </div>
