@@ -783,24 +783,31 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                                                         {Object.keys(groups).length > 1 && (
                                                                             <div className="text-purple-400 font-bold mb-1 uppercase text-[10px] tracking-wider">{groupName}</div>
                                                                         )}
-                                                                        {ings.map((ing, i) => (
-                                                                            <div key={i} className="text-zinc-400 font-mono pl-2">
-                                                                                {ing.amount && <span className="text-green-400">{ing.amount}</span>}
-                                                                                {ing.unit && <span className="text-blue-400 ml-1">{ing.unit}</span>}
-                                                                                <span className="text-white ml-1">{ing.name || ing.item}</span>
-                                                                                {ing.preparation && <span className="text-yellow-400 ml-1">({ing.preparation})</span>}
-                                                                                {ing.notes && <span className="text-zinc-500 ml-1">- {ing.notes}</span>}
-                                                                            </div>
-                                                                        ))}
+                                                                        {ings.map((ing, i) => {
+                                                                            const amount = ing.amount || ing.quantity;
+                                                                            const name = ing.name || ing.item || ing.ingredient;
+                                                                            return (
+                                                                                <div key={i} className="text-zinc-400 font-mono pl-2">
+                                                                                    {amount && <span className="text-green-400">{amount}</span>}
+                                                                                    {ing.unit && <span className="text-blue-400 ml-1">{ing.unit}</span>}
+                                                                                    <span className="text-white ml-1">{name}</span>
+                                                                                    {ing.preparation && <span className="text-yellow-400 ml-1">({ing.preparation})</span>}
+                                                                                    {ing.notes && <span className="text-zinc-500 ml-1">- {ing.notes}</span>}
+                                                                                </div>
+                                                                            );
+                                                                        })}
                                                                     </div>
                                                                 ));
                                                             })()}
-                                                            {field.key === 'instructions' && value.map((step, i) => (
-                                                                <div key={i} className="text-zinc-400 font-mono flex gap-2">
-                                                                    <span className="text-primary font-bold">{step.step_number || i + 1}.</span>
-                                                                    <span className="text-white/80">{step.description}</span>
-                                                                </div>
-                                                            ))}
+                                                            {field.key === 'instructions' && value.map((step, i) => {
+                                                                const description = step.description || step.text || step.instruction || step.content || (typeof step === 'string' ? step : '');
+                                                                return (
+                                                                    <div key={i} className="text-zinc-400 font-mono flex gap-2">
+                                                                        <span className="text-primary font-bold">{step.step_number || i + 1}.</span>
+                                                                        <span className="text-white/80">{description}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     )}
                                                 </div>
