@@ -14,67 +14,61 @@ const corsHeaders = {
 // PROMPTS
 // =============================================================================
 
-const EXTRACTION_PROMPT = `Je bent een ervaren culinair expert en receptredacteur. Je helpt mij recepten nauwkeurig te digitaliseren.
+const EXTRACTION_PROMPT = `Je bent een zeer ervaren receptredacteur en culinair archivaris die al jaren recepten uit kookboeken, tijdschriften en handgeschreven kaarten digitaliseert. Je hebt een uitstekend oog voor layout, iconen, typografie en visuele hiërarchie.
 
-## Jouw Bronnen
-1. **De afbeelding** (PRIMARY SOURCE) - dit is de waarheid. Kijk goed naar layout, iconen, secties.
-2. **OCR tekst** (hieronder) - een ruwe transcriptie die FOUTEN kan bevatten. Corrigeer spelling, rare tekens, en ontbrekende woorden door naar de afbeelding te kijken.
+Je krijgt een foto van een receptpagina + een ruwe OCR-tekst.
 
-## Wat ik van je vraag
+Regel 1: De afbeelding is altijd de primaire bron. Gebruik je ogen. Corrigeer OCR-fouten, interpreteer iconen, volg de visuele volgorde en structuur.
+Regel 2: Je doel is een schoon, accuraat en bruikbaar digitaal recept dat 100% trouw is aan wat er op de foto staat, maar logisch en leesbaar georganiseerd.
+Regel 3: Wees kritisch en gebruik je culinaire kennis. Als iets niet klopt in de OCR, fix het. Als de layout iets duidelijk scheidt (groepen, kaders, iconen), weerspiegel dat in je structuur.
 
-**Stap 1: Korte Analyse** (voor mijn debugging)
-Schrijf in 2-4 zinnen wat je ziet:
-- Welke secties herken je? (titel, intro, ingrediënten, bereiding, tips?)
-- Zie je tijden/porties ergens? (infoblok, icoontjes, of in tekst verborgen?)
-- Zijn er OCR-fouten die je corrigeert?
+Stap 1 – Korte visuele analyse (3-6 zinnen, voor mijn debugging)
+Beschrijf kort:
+- Hoofdstructuur en secties die je ziet (titel, infoblok, intro, ingrediënten-groepen, bereiding, tips, tools, etc.)
+- Belangrijke metadata uit iconen/blokken (porties, tijden, moeilijkheid, keuken)
+- Duidelijke OCR-fouten of visuele details die de OCR mist
+- Lastige of ambigue delen en hoe jij ze oplost
 
-**Stap 2: Gestructureerde Extractie**
-Geef daarna een JSON object in een markdown code block.
+Stap 2 – Gestructureerde extractie
+Geef daarna precies één markdown code block met valide JSON volgens onderstaand schema.
+Gebruik je gezond verstand bij het invullen van velden – forceer niets als het niet duidelijk in de bron staat.
 
-## Richtlijnen
-
-**Ingrediënten:**
-- Splits hoeveelheid en eenheid netjes: "250 g bloem" → amount: 250, unit: "g", name: "bloem"
-- Bereidingsinfo bij ingrediënt (bijv. "fijngesneden") → preparation veld
-- Notities (bijv. "of meer naar smaak") → note veld, optional: true
-
-**Bereidingsstappen:**
-- Splits op een **logische, leesbare** manier - niet mechanisch elke zin
-- Combineer kleine acties die samen horen: "Doe de boter in de pan en laat smelten" mag 1 stap zijn
-- Maak aparte stappen voor duidelijke overgangen: "Laat 30 min rusten", "Verwarm de oven", etc.
-- Doel: leesbare stappen die iemand makkelijk kan volgen
-
-**Metadata:**
-- Kijk naar infoblokken, icoontjes, headers voor tijden/porties
-- Als het nergens expliciet staat, laat null
-- Corrigeer OCR-fouten (bijv. "5O min" → "50 min")
-
-**Velden:**
-- title: exacte receptnaam
-- description: korte intro als die er is
-- introduction: langere inleidende tekst (voor ingrediëntenlijst)
-- servings: aantal porties als getal
-- prep_time, cook_time, total_time: als strings ("30 min", "1 uur")
-- difficulty: als vermeld ("Makkelijk", "Gemiddeld", etc.)
-- cuisine: als vermeld ("Italiaans", "Aziatisch", etc.)
-- author: als vermeld
-- ingredients: array met amount, unit, name, preparation, note, optional, group_name
-- instructions: array met step_number en description
-- tips: losse tips (niet onderdeel van bereiding)
-- variations: alternatieve bereidingen/variaties
-- serving_suggestion: serveertips, garnering
-- ai_tags: tags die je uit de bron haalt of logisch kunt afleiden (conservatief)
-
-## Output Formaat
-
-Eerst je korte analyse, dan:
-
-\`\`\`json
 {
-  "title": "...",
-  ...
+  "title": string,
+  "subtitle": string | null,
+  "description": string | null,
+  "introduction": string | null,
+  "servings": number | null,
+  "prep_time": string | null,
+  "cook_time": string | null,
+  "total_time": string | null,
+  "difficulty": string | null,
+  "cuisine": string | null,
+  "author": string | null,
+  "ingredients": [{
+    "amount": number | null,
+    "unit": string | null,
+    "name": string,
+    "preparation": string | null,
+    "note": string | null,
+    "optional": boolean,
+    "group_name": string | null
+  }],
+  "instructions": [{
+    "step_number": number,
+    "description": string
+  }],
+  "tips": string[] | null,
+  "variations": string[] | null,
+  "serving_suggestion": string | null,
+  "tools": string[] | null,
+  "ai_tags": string[],
+  "source_url": string | null
 }
-\`\`\`
+
+Zorg dat er geen tekst staat na de closing \`\`\`
+
+SOURCE OCR MARKDOWN (ter referentie only):
 `
 
 const ENRICHMENT_PROMPT = `Je bent een culinaire AI-assistent. Verrijk dit recept met waardevolle extra informatie.
@@ -313,9 +307,8 @@ async function callLLM(
         console.log('Step 2: Structuring with Grok 4.1 (OCR + Vision)...')
 
         // Grok gets BOTH the OCR text AND the original image for deeper visual understanding
-        const extractionPrompt = EXTRACTION_PROMPT +
-            "\n\nSOURCE OCR MARKDOWN (from Mistral OCR):\n" + ocrResult.rawText +
-            "\n\nJe hebt ook toegang tot de originele afbeelding. Gebruik deze voor visuele context en om details te verrijken die de OCR mogelijk heeft gemist."
+        // The prompt already explains the image is primary, OCR is reference
+        const extractionPrompt = EXTRACTION_PROMPT + ocrResult.rawText
 
         // Pass image URL so Grok can see the actual image
         const grokResult = await callGrok(extractionPrompt, 'grok-4-1-fast-reasoning', xaiKey, imageUrl)
