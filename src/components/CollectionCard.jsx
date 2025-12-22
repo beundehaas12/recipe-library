@@ -28,9 +28,7 @@ export default function CollectionCard({ collection, onClick, recipeCount = 0 })
             );
         }
 
-        // 2 Images: Split horizontal (Top/Bottom) for vertical card looks better? 
-        // Or Side-by-Side (Tall strips). User ref shows squares.
-        // Let's do horizontal split (Top/Bottom) to keep them close to 4:3 or square orientation
+        // 2 Images: Split horizontal
         if (displayImages.length === 2) {
             return (
                 <div className="grid grid-rows-2 h-full gap-0.5">
@@ -41,7 +39,7 @@ export default function CollectionCard({ collection, onClick, recipeCount = 0 })
             );
         }
 
-        // 3 Images: 1 Big Top (2/3 height? or 1/2), 2 Small Bottom
+        // 3 Images: 1 Big top, 2 small bottom
         if (displayImages.length === 3) {
             return (
                 <div className="grid grid-cols-2 grid-rows-2 h-full gap-0.5">
@@ -65,43 +63,49 @@ export default function CollectionCard({ collection, onClick, recipeCount = 0 })
     return (
         <div
             onClick={onClick}
-            className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-[2px] md:rounded lg:rounded-lg active:scale-[0.98] transition-transform duration-200 isolate"
-            style={{
-                WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-                transform: 'translateZ(0)',
-                WebkitTransform: 'translateZ(0)'
-            }}
+            // Aligned container classes with RecipeThumbnail
+            className="group relative aspect-[2/3] cursor-pointer rounded-[2px] md:rounded lg:rounded-lg overflow-hidden shadow-lg md:shadow-xl lg:shadow-2xl active:scale-[0.98] transition-transform duration-200 isolate"
         >
             {/* Image Grid Container */}
-            <div className="absolute inset-0 bg-zinc-900">
-                {renderGrid()}
+            <div className="absolute inset-0 bg-zinc-900 overflow-hidden">
+                {/* Hover Scale Effect matching RecipeThumbnail */}
+                <div className="w-full h-full transition-transform duration-700 group-hover:scale-105" style={{ willChange: 'transform' }}>
+                    {renderGrid()}
+                </div>
+
+                {/* Cinematic Overlay - Pure black bottom for perfect blending */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
             </div>
 
-            {/* Gradient Overlay for Text Readability - Stronger at bottom */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 transition-opacity duration-300 group-hover:via-black/50" />
-
             {/* Content Overlay */}
-            <div className="absolute inset-0 p-5 flex flex-col justify-between">
-                <div className="flex justify-start">
+            <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col justify-end h-full z-20">
+                {/* Badge/Icon moved to top-left to mimic 'floating' feel inside card if desired, 
+                     but RecipeThumbnail puts everything at bottom. 
+                     Let's keep the Collection Identifier distinct but subtle. */}
+                <div className="flex justify-start mb-auto">
                     <span className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-lg">
                         <Folder size={14} className="text-white" />
                     </span>
                 </div>
 
-                <div className="transform transition-transform duration-300 group-hover:-translate-y-1">
-                    <div className="flex items-center gap-2 mb-2">
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
                             Collection
                         </span>
                     </div>
 
-                    <h3 className="text-2xl font-black text-white leading-none mb-2 drop-shadow-lg line-clamp-2 uppercase font-display">
+                    {/* Title with Primary Color Hover */}
+                    <h3 className="text-white font-bold text-lg md:text-xl leading-tight line-clamp-2 drop-shadow-lg group-hover:text-primary transition-colors">
                         {collection.name}
                     </h3>
 
-                    <p className="text-xs font-medium text-white/60 flex items-center gap-2">
-                        {recipeCount} {recipeCount === 1 ? 'recept' : 'recepten'}
-                    </p>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-white/70 font-semibold">
+                        <span className="flex items-center gap-1.5">
+                            <ChefHat size={12} className="text-white/40" />
+                            {recipeCount} {recipeCount === 1 ? 'recept' : 'recepten'}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
