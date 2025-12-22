@@ -620,6 +620,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                             { key: 'description', label: 'Description' },
                                             { key: 'prep_time', label: 'Prep Time' },
                                             { key: 'cook_time', label: 'Cook Time' },
+                                            { key: 'passive_time', label: 'Passive Time' },
                                             { key: 'total_time', label: 'Total Time', getter: (r) => r.total_time || r.extra_data?.total_time },
                                             { key: 'servings', label: 'Servings' },
                                             { key: 'cuisine', label: 'Cuisine' },
@@ -663,15 +664,31 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                                     {/* Expanded content for ingredients/instructions */}
                                                     {field.expandable && isExpanded && Array.isArray(value) && value.length > 0 && (
                                                         <div className="bg-black/30 border-t border-white/5 p-3 text-xs space-y-1">
-                                                            {field.key === 'ingredients' && value.map((ing, i) => (
-                                                                <div key={i} className="text-zinc-400 font-mono">
-                                                                    {ing.amount && <span className="text-green-400">{ing.amount}</span>}
-                                                                    {ing.unit && <span className="text-blue-400 ml-1">{ing.unit}</span>}
-                                                                    <span className="text-white ml-1">{ing.name || ing.item}</span>
-                                                                    {ing.preparation && <span className="text-yellow-400 ml-1">({ing.preparation})</span>}
-                                                                    {ing.notes && <span className="text-zinc-500 ml-1">- {ing.notes}</span>}
-                                                                </div>
-                                                            ))}
+                                                            {field.key === 'ingredients' && (() => {
+                                                                // Group ingredients by group_name
+                                                                const groups = {};
+                                                                value.forEach(ing => {
+                                                                    const groupName = ing.group_name || 'Ingrediënten';
+                                                                    if (!groups[groupName]) groups[groupName] = [];
+                                                                    groups[groupName].push(ing);
+                                                                });
+                                                                return Object.entries(groups).map(([groupName, ings]) => (
+                                                                    <div key={groupName} className="mb-2">
+                                                                        {Object.keys(groups).length > 1 && (
+                                                                            <div className="text-purple-400 font-bold mb-1 uppercase text-[10px] tracking-wider">{groupName}</div>
+                                                                        )}
+                                                                        {ings.map((ing, i) => (
+                                                                            <div key={i} className="text-zinc-400 font-mono pl-2">
+                                                                                {ing.amount && <span className="text-green-400">{ing.amount}</span>}
+                                                                                {ing.unit && <span className="text-blue-400 ml-1">{ing.unit}</span>}
+                                                                                <span className="text-white ml-1">{ing.name || ing.item}</span>
+                                                                                {ing.preparation && <span className="text-yellow-400 ml-1">({ing.preparation})</span>}
+                                                                                {ing.notes && <span className="text-zinc-500 ml-1">- {ing.notes}</span>}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                ));
+                                                            })()}
                                                             {field.key === 'instructions' && value.map((step, i) => (
                                                                 <div key={i} className="text-zinc-400 font-mono flex gap-2">
                                                                     <span className="text-primary font-bold">{step.step_number || i + 1}.</span>
