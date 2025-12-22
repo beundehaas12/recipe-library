@@ -14,56 +14,40 @@ const corsHeaders = {
 // PROMPTS
 // =============================================================================
 
-const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. 
-INSTRUCTIE:
-FASE 1: ANALYSE (XML)
-Schrijf eerst je volledige redenering in een <analysis> tag. Gebruik dit om de input te doorgronden.
+const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. Analyseer de input grondig en extraheer alle informatie.
 
-FASE 2: EXTRACTIE (JSON)
-Genereer daarna de JSON in een markdown code block.
+BELANGRIJK: Output ALLEEN valide JSON. Geen tekst ervoor of erna. Geen markdown code blocks.
 
-OUTPUT FORMAAT:
-<analysis>
-...jouw redenering...
-</analysis>
-
-\`\`\`json
+JSON STRUCTUUR:
 {
-  ...
-}
-\`\`\`
-
-OUTPUT JSON STRUCTUUR (gebruik ALTIJD exact deze velden en volgorde):
-{
-  "title": string (exacte titel zoals weergegeven, anders null),
-  "description": string|null (ALLEEN letterlijke korte beschrijving/introductie als die direct onder de titel staat, anders null),
-  "introduction": string|null (ALLEEN letterlijke langere inleidende tekst vóór ingrediënten of bereiding, stop bij eerste kopje als "Ingrediënten" of "Bereiding", anders null),
-  "servings": { "value": number|null, "reasoning": string|null (waarom/waar gevonden?) },
-  "prep_time": { "value": string|null, "reasoning": string|null },
-  "cook_time": { "value": string|null, "reasoning": string|null },
-  "total_time": { "value": string|null, "reasoning": string|null },
-  "difficulty": { "value": string|null, "reasoning": string|null },
-  "cuisine": { "value": string|null, "reasoning": string|null },
-  "author": { "value": string|null, "reasoning": string|null },
+  "title": string (exacte titel, of null),
+  "description": string|null (korte beschrijving onder titel),
+  "introduction": string|null (langere inleidende tekst),
+  "servings": number|null,
+  "prep_time": string|null (exact zoals in bron),
+  "cook_time": string|null,
+  "total_time": string|null,
+  "difficulty": string|null,
+  "cuisine": string|null,
+  "author": string|null,
   "ingredients": [{
     "amount": number|null,
     "unit": string|null,
     "name": string,
-    "preparation": string|null (bijv. "fijngesneden", "in ringen", "koud"),
-    "note": string|null (bijv. "naar smaak", "+ extra om in te vetten"),
-    "optional": boolean (true als "naar smaak", tussen haakjes of expliciet optioneel),
-    "group_name": string|null (bijv. "Voor de saus", "Voor de marinade", "Garnering")
+    "preparation": string|null,
+    "note": string|null,
+    "optional": boolean,
+    "group_name": string|null
   }],
   "instructions": [{
-    "step_number": number (doorlopend vanaf 1),
-    "description": string (volledige staptekst, exact en niet afkorten)
+    "step_number": number,
+    "description": string
   }],
-  "tips": string[]|null (losse tips, niet als stap),
-  "variations": string[]|null (variaties en alternatieven),
-  "serving_suggestion": string|null (serveertips, garnering, presentatie - niet als stap),
-  "ai_tags": string[] (ALLEEN tags die letterlijk in de bron staan of direct afleidbaar zonder interpretatie, bijv. "vegetarisch" als expliciet vermeld - wees extreem conservatief),
-  "source_url": string|null (indien bekend of in input),
-  "raw_text": string (ALLE zichtbare tekst uit de input exact overnemen, voor auditabiliteit)
+  "tips": string[]|null,
+  "variations": string[]|null,
+  "serving_suggestion": string|null,
+  "ai_tags": string[],
+  "source_url": string|null
 }
 
 REGELS VOOR METADATA (tijden, porties, etc.):
@@ -194,26 +178,24 @@ function safeJsonParse(text: string): any {
         }
     }
 
-    // Cleaning common LLM JSON errors
-    toParse = toParse
-        .replace(/,(\s*[\}\]])/g, '$1') // Trailing commas
-        .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3') // Unquoted props
-        .replace(/'([^'\\]*)'/g, '"$1"') // Single quotes
-        .replace(/[\x00-\x1F\x7F]/g, c => (['\n', '\r', '\t'].includes(c) ? c : '')); // Control chars
+    // FIX: Escape literal newlines inside JSON strings
+    // This regex finds strings and replaces newlines within them
+    toParse = toParse.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
+        return match
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t');
+    });
+
+    // Fix trailing commas
+    toParse = toParse.replace(/,(\s*[\}\]])/g, '$1');
 
     try {
         return JSON.parse(toParse);
-    } catch (firstError) {
-        console.log("JSON parse failed, attempting regex repair...", (firstError as Error).message.slice(0, 50));
-        // Try to handle unescaped quotes in reasoning fields if specifically there
-        // This is generic repair for simple key: "value with "quote" inside"
-        try {
-            let repaired = toParse.replace(/:\s*"([^"]*)\n([^"]*)"/g, ': "$1 $2"');
-            return JSON.parse(repaired);
-        } catch (secondError) {
-            console.error("JSON Parse Fatal Error. Text snippet:", toParse.slice(0, 100));
-            throw new Error(`Invalid JSON from AI: ${(firstError as Error).message}`);
-        }
+    } catch (e) {
+        console.error("JSON Parse Error:", (e as Error).message.slice(0, 80));
+        console.error("Snippet:", toParse.slice(0, 200));
+        throw new Error(`Invalid JSON from AI: ${(e as Error).message}`);
     }
 }
 
@@ -396,24 +378,11 @@ serve(async (req: Request) => {
             console.log('Calling Mistral OCR 3 + Grok 4.1 for image extraction...')
             const { text, usage, rawExtraction, model } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!, signedUrl)
 
-            // Extract Analysis Log (XML)
-            const analysisMatch = text.match(/<analysis>([\s\S]*?)<\/analysis>/i);
-            const analysisLog = analysisMatch ? analysisMatch[1].trim() : null;
-
             const recipe = safeJsonParse(text)
-
-            // Attach analysis log
-            if (analysisLog) {
-                if (!recipe.extra_data) recipe.extra_data = {};
-                recipe.extra_data.ai_reasoning_trace = analysisLog;
-            }
-
-            // Remove raw_text from recipe object if present
             delete recipe.raw_text
 
             result = {
                 recipe,
-                // Store Mistral OCR 3's raw extraction (100% fidelity, immutable)
                 raw_extracted_data: {
                     ocr_extraction: rawExtraction,
                     grok_response: text,
@@ -433,18 +402,7 @@ serve(async (req: Request) => {
             console.log('Calling Grok for text extraction...')
             const { text, usage } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!)
 
-            // Extract Analysis Log (XML)
-            const analysisMatch = text.match(/<analysis>([\s\S]*?)<\/analysis>/i);
-            const analysisLog = analysisMatch ? analysisMatch[1].trim() : null;
-
             const recipe = safeJsonParse(text)
-
-            // Attach analysis log
-            if (analysisLog) {
-                if (!recipe.extra_data) recipe.extra_data = {};
-                recipe.extra_data.ai_reasoning_trace = analysisLog;
-            }
-
             const rawText = recipe.raw_text || text
             delete recipe.raw_text
 
