@@ -283,8 +283,7 @@ async function callMistralOCR(imageUrl: string, apiKey: string): Promise<{ rawTe
             document: {
                 type: 'image_url',
                 image_url: dataUrl
-            },
-            prompt: LAYOUT_ANALYSIS_PROMPT // Pass layout instructions
+            }
         })
     })
 
