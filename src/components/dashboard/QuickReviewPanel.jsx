@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus, Loader2, CheckCircle2, Cpu, Hash, Code } from 'lucide-react';
+import { Upload, X, Check, Trash2, Globe, Clock, Users, ChefHat, UtensilsCrossed, Timer, FileText, Camera, ExternalLink, FolderPlus, Loader2, CheckCircle2, Cpu, Hash, Code, Database } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, onUpload, collections, onCollectionToggle, onApprove }) {
@@ -508,22 +508,66 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                                    <Code size={14} /> Grok Response
-                                </label>
-                                <span className="text-xs text-muted-foreground">Step 2: Structured JSON</span>
-                            </div>
-                            <div className="bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden">
-                                <div className="p-2 border-b border-white/5 bg-white/5 flex gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
-                                    <div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50" />
-                                    <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                        <Code size={14} /> Grok Response
+                                    </label>
+                                    <span className="text-xs text-muted-foreground">Step 2: Structured JSON</span>
                                 </div>
-                                <div className="p-4 overflow-x-auto">
-                                    <pre className="text-xs font-mono text-zinc-400 leading-relaxed whitespace-pre-wrap break-all">
-                                        {JSON.stringify(rawData, null, 2) || JSON.stringify(selectedRecipe, null, 2)}
-                                    </pre>
+                                <div className="bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden">
+                                    <div className="p-2 border-b border-white/5 bg-white/5 flex gap-2">
+                                        <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
+                                        <div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50" />
+                                        <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+                                    </div>
+                                    <div className="p-4 overflow-x-auto">
+                                        <pre className="text-xs font-mono text-zinc-400 leading-relaxed whitespace-pre-wrap break-all">
+                                            {JSON.stringify(rawData, null, 2) || JSON.stringify(selectedRecipe, null, 2)}
+                                        </pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Database Population Log */}
+                            <div className="space-y-4 pt-4 border-t border-white/10">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                        <Database size={14} /> Database Fields
+                                    </label>
+                                    <span className="text-xs text-muted-foreground">Step 3: Populated Record</span>
+                                </div>
+                                <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
+                                    <div className="grid grid-cols-1 divide-y divide-white/5">
+                                        {[
+                                            { key: 'title', label: 'Title' },
+                                            { key: 'subtitle', label: 'Subtitle' },
+                                            { key: 'introduction', label: 'Intro' },
+                                            { key: 'description', label: 'Description' },
+                                            { key: 'prep_time', label: 'Prep Time' },
+                                            { key: 'cook_time', label: 'Cook Time' },
+                                            { key: 'servings', label: 'Servings' },
+                                            { key: 'cuisine', label: 'Cuisine' },
+                                            { key: 'difficulty', label: 'Difficulty' },
+                                            { key: 'author', label: 'Author' },
+                                            { key: 'cookbook_name', label: 'Cookbook' },
+                                            { key: 'ingredients', label: 'Ingredients', formatter: v => Array.isArray(v) ? `${v.length} items` : '0 items' },
+                                            { key: 'instructions', label: 'Instructions', formatter: v => Array.isArray(v) ? `${v.length} steps` : '0 steps' },
+                                        ].map((field) => {
+                                            const value = selectedRecipe[field.key];
+                                            const hasValue = Array.isArray(value) ? value.length > 0 : !!value;
+                                            const displayValue = field.formatter ? field.formatter(value) : (value || '-');
+
+                                            return (
+                                                <div key={field.key} className="flex items-center justify-between p-3 text-sm hover:bg-white/5 transition-colors">
+                                                    <span className="text-zinc-500 font-medium">{field.label}</span>
+                                                    <span className={`font-mono text-right truncate max-w-[200px] ${hasValue ? 'text-green-400' : 'text-zinc-600'}`}>
+                                                        {typeof displayValue === 'string' ? displayValue : JSON.stringify(displayValue)}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         </div>
