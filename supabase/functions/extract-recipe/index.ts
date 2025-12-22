@@ -331,28 +331,38 @@ async function callLLM(
     if (imageUrl) {
         // Step 1: Use Mistral OCR 3 to extract raw content from image (100% fidelity)
         if (!mistralKey) throw new Error('MISTRAL_API_KEY not configured')
-        if (!xaiKey) throw new Error('XAI_API_KEY not configured')
+        // if (!xaiKey) throw new Error('XAI_API_KEY not configured') // Not needed if disabling Grok
 
         console.log('Step 1: Extracting raw content with Mistral OCR 3...')
         const ocrResult = await callMistralOCR(imageUrl, mistralKey)
 
-        // Step 2: Use Grok 4.1 Fast Reasoning to structure the extracted text into recipe JSON
-        console.log('Step 2: Structuring with Grok 4.1 Fast Reasoning...')
-        const structuredPrompt = prompt + `\n\nHier is de geëxtraheerde tekst uit de afbeelding:\n${ocrResult.rawText}`
-        const grokResult = await callGrok(structuredPrompt, 'grok-4-1-fast-reasoning', xaiKey)
+        // Step 2: Grok disabled by user request. Returning raw OCR data.
+        console.log('Step 2: Grok analysis disabled. Returning raw OCR content.')
 
-        // Combine usage
-        const combinedUsage = {
-            total_tokens: ocrResult.usage.total_tokens + grokResult.usage.total_tokens,
-            prompt_tokens: grokResult.usage.prompt_tokens,
-            completion_tokens: grokResult.usage.completion_tokens,
-            ocr_pages: ocrResult.usage.total_tokens
-        }
+        // Wrap raw text in a minimal valid JSON structure for the frontend
+        const rawJson = JSON.stringify({
+            title: "OCR Scan (Unprocessed)",
+            description: "Raw text extracted from Mistral OCR 3:\n\n" + ocrResult.rawText,
+            introduction: null,
+            ingredients: [],
+            instructions: [],
+            prep_time: null,
+            cook_time: null,
+            servings: null,
+            cuisine: null,
+            ai_tags: ["ocr-raw"],
+            raw_text: ocrResult.rawText
+        }, null, 2);
 
         return {
-            text: grokResult.text,
-            usage: combinedUsage,
-            model: 'mistral-ocr-latest + grok-4-1-fast-reasoning',
+            text: rawJson,
+            usage: {
+                total_tokens: ocrResult.usage.total_tokens, // Pages
+                ocr_pages: ocrResult.usage.total_tokens,
+                prompt_tokens: 0,
+                completion_tokens: 0
+            },
+            model: 'mistral-ocr-latest-only',
             rawExtraction: ocrResult.rawText
         }
     } else {
@@ -393,7 +403,7 @@ serve(async (req: Request) => {
             const prompt = EXTRACTION_PROMPT + "\n\nExtraheer het recept uit deze afbeelding:";
 
             console.log('Calling Mistral OCR 3 + Grok 4.1 for image extraction...')
-            const { text, usage, rawExtraction } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!, signedUrl)
+            const { text, usage, rawExtraction, model } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!, signedUrl)
 
             const recipe = safeJsonParse(text)
 
@@ -406,7 +416,7 @@ serve(async (req: Request) => {
                 raw_extracted_data: {
                     ocr_extraction: rawExtraction,
                     grok_response: text,
-                    models_used: 'mistral-ocr-latest + grok-4-1-fast-reasoning',
+                    models_used: model || 'mistral-ocr-latest + grok-4-1-fast-reasoning',
                     extracted_at: new Date().toISOString()
                 },
                 usage
