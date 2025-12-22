@@ -488,7 +488,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                             <div key={i} className="flex items-start gap-2 border-b border-white/5 last:border-0 pb-2 last:pb-0">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
                                                 <span>
-                                                    {typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.item || ''}`}
+                                                    {typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.name || ''}`.trim()}
                                                 </span>
                                             </div>
                                         ))
@@ -502,7 +502,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Instructions</label>
                                 <textarea
                                     value={Array.isArray(selectedRecipe.instructions)
-                                        ? selectedRecipe.instructions.join('\n\n')
+                                        ? selectedRecipe.instructions.map(step => typeof step === 'string' ? step : step.description || '').join('\n\n')
                                         : selectedRecipe.instructions || ''}
                                     onChange={(e) => onUpdate(selectedRecipe.id, { instructions: e.target.value })}
                                     className="w-full h-64 bg-zinc-900 border border-white/10 rounded-lg p-4 text-white focus:outline-none focus:border-primary/50 transition-all resize-none leading-relaxed"
