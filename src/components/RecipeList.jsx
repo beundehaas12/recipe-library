@@ -6,8 +6,16 @@ import RecipeThumbnail from './RecipeThumbnail';
 import CollectionCard from './CollectionCard';
 import { supabase } from '../lib/supabase';
 
-export default function RecipeList({ recipes, collections = [], isEmptyState, isNoResults, searchQuery }) {
-    const [activeCollectionId, setActiveCollectionId] = useState(null);
+export default function RecipeList({
+    recipes,
+    collections = [],
+    isEmptyState,
+    isNoResults,
+    searchQuery,
+    activeCollectionId, // Lifted state
+    onActiveCollectionChange // Lifted setter
+}) {
+    // const [activeCollectionId, setActiveCollectionId] = useState(null); // REMOVED
     const [collectionRecipes, setCollectionRecipes] = useState([]);
     const [isLoadingCollection, setIsLoadingCollection] = useState(false);
 
@@ -64,7 +72,7 @@ export default function RecipeList({ recipes, collections = [], isEmptyState, is
                 <header className="fixed top-20 left-0 right-0 z-40 pointer-events-none px-4 lg:px-20 py-4">
                     <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
                         <button
-                            onClick={() => setActiveCollectionId(null)}
+                            onClick={() => onActiveCollectionChange(null)}
                             className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-colors pointer-events-auto"
                         >
                             <ChevronLeft size={20} />
@@ -179,7 +187,7 @@ export default function RecipeList({ recipes, collections = [], isEmptyState, is
                             <CollectionCard
                                 collection={item}
                                 recipeCount={item.recipe_count}
-                                onClick={() => setActiveCollectionId(item.id)}
+                                onClick={() => onActiveCollectionChange(item.id)}
                             />
                         ) : (
                             <RecipeThumbnail recipe={item} t={t} />

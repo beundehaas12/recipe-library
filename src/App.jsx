@@ -35,6 +35,9 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, 
     return [];
   }, [searchQuery, instantFilteredRecipes, searchResults, recipes]);
 
+  // Collection State (Lifted from RecipeList to control Hero visibility)
+  const [activeCollectionId, setActiveCollectionId] = useState(null);
+
   const heroRecipe = !searchQuery && recipes.length > 0 ? recipes[0] : null;
   const isEmptyState = !loading && recipes.length === 0 && searchResults === null;
   const isNoResults = searchQuery && displayRecipes.length === 0;
@@ -60,7 +63,8 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, 
       </AnimatePresence>
 
       <main className="relative min-h-screen">
-        {!searchQuery && (
+        {/* Hide Hero when searching OR viewing a collection */}
+        {!searchQuery && !activeCollectionId && (
           <div className="relative w-full h-[75vh] md:h-[85vh] overflow-hidden">
             {/* Background */}
             <motion.div
@@ -154,7 +158,7 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, 
         )}
 
         {/* Content Area - No negative margins for better mobile stability */}
-        <div className={`relative z-20 space-y-12 pb-24 bg-background max-w-[1600px] mx-auto ${searchQuery ? 'pt-32' : 'pt-6'}`}>
+        <div className={`relative z-20 space-y-12 pb-24 bg-background max-w-[1600px] mx-auto ${searchQuery || activeCollectionId ? 'pt-32' : 'pt-6'}`}>
           {isEmptyState ? (
             <motion.div
               initial={{ opacity: 0 }}
@@ -198,7 +202,12 @@ function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, 
                   </span>
                 </motion.h3>
               )}
-              <RecipeList recipes={searchQuery ? displayRecipes : recipes.slice(1)} collections={!searchQuery ? collections : []} />
+              <RecipeList
+                recipes={searchQuery ? displayRecipes : recipes.slice(1)}
+                collections={!searchQuery ? collections : []}
+                activeCollectionId={activeCollectionId}
+                onActiveCollectionChange={setActiveCollectionId}
+              />
             </>
           )}
         </div>
