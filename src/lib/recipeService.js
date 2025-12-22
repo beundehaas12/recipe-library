@@ -102,37 +102,49 @@ export function normalizeRecipeData(rawRecipe) {
         return { name: tool.name || '', notes: tool.notes || null };
     });
 
-    // Helper to find value by multiple keys
-    const getVal = (keys) => {
+    // Helper to extract value and reasoning
+    const reasoning = {};
+    const extract = (keys) => {
         for (const k of keys) {
-            if (rawRecipe[k] !== undefined && rawRecipe[k] !== null) return rawRecipe[k];
+            const val = rawRecipe[k];
+            if (val !== undefined && val !== null) {
+                // If object with value/reasoning
+                if (typeof val === 'object' && val.value !== undefined) {
+                    if (val.reasoning) reasoning[keys[0]] = val.reasoning; // Store reasoning by primary key
+                    return val.value;
+                }
+                return val; // Simple value
+            }
         }
         return null;
     };
 
     const extraData = rawRecipe.extra_data || {};
     // Map total_time to extra_data if caught
-    const totalTime = getVal(['total_time', 'totalTime', 'total_duration']);
+    const totalTime = extract(['total_time', 'totalTime', 'total_duration']);
     if (totalTime) extraData.total_time = totalTime;
 
+    // Merge extracted reasoning into extra_data
+    extraData.reasoning = { ...(extraData.reasoning || {}), ...reasoning };
+
     return {
-        title: getVal(['title', 'name']) || 'Untitled Recipe',
-        subtitle: getVal(['subtitle', 'sub_title']) || null,
-        introduction: getVal(['introduction', 'intro']) || null,
-        description: getVal(['description', 'desc', 'summary']) || '',
+        title: extract(['title', 'name']) || 'Untitled Recipe',
+        subtitle: extract(['subtitle', 'sub_title']) || null,
+        introduction: extract(['introduction', 'intro']) || null,
+        description: extract(['description', 'desc', 'summary']) || '',
         ingredients,
         instructions,
         tools,
-        servings: getVal(['servings', 'portions', 'yield']) || null,
-        prep_time: getVal(['prep_time', 'prepTime', 'preparation_time']) || null,
-        cook_time: getVal(['cook_time', 'cookTime', 'cooking_time']) || null,
-        difficulty: getVal(['difficulty', 'level', 'skill_level']) || null,
-        cuisine: getVal(['cuisine', 'category', 'type']) || null,
-        author: getVal(['author', 'chef', 'creator', 'by']) || null,
-        cookbook_name: getVal(['cookbook_name', 'cookbook', 'book', 'source_book']) || null,
-        isbn: getVal(['isbn', 'ISBN']) || null,
-        source_language: getVal(['source_language', 'language', 'lang']) || 'en',
-        ai_tags: getVal(['ai_tags', 'tags', 'keywords']) || [],
+        servings: extract(['servings', 'portions', 'yield']) || null,
+        prep_time: extract(['prep_time', 'prepTime', 'preparation_time']) || null,
+        cook_time: extract(['cook_time', 'cookTime', 'cooking_time']) || null,
+        difficulty: extract(['difficulty', 'level', 'skill_level']) || null,
+        cuisine: extract(['cuisine', 'category', 'type']) || null,
+        author: extract(['author', 'chef', 'creator', 'by']) || null,
+        cookbook_name: extract(['cookbook_name', 'cookbook', 'book', 'source_book']) || null,
+        isbn: extract(['isbn', 'ISBN']) || null,
+        source_language: extract(['source_language', 'language', 'lang']) || 'en',
+        ai_tags: extract(['ai_tags', 'tags', 'keywords']) || [],
         extra_data: extraData
     };
 }

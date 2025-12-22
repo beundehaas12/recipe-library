@@ -617,11 +617,17 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                             const hasValue = Array.isArray(value) ? value.length > 0 : !!value;
                                             const displayValue = field.formatter ? field.formatter(value) : (value || '-');
 
+                                            // Get reasoning from extra_data.reasoning
+                                            const reasoning = selectedRecipe.extra_data?.reasoning?.[field.key];
+
                                             return (
-                                                <div key={field.key} className="flex items-center justify-between p-3 text-sm hover:bg-white/5 transition-colors">
-                                                    <span className="text-zinc-500 font-medium">{field.label}</span>
-                                                    <span className={`font-mono text-right truncate max-w-[200px] ${hasValue ? 'text-green-400' : 'text-zinc-600'}`}>
+                                                <div key={field.key} className="grid grid-cols-[120px_1fr_1fr] items-center gap-4 p-3 text-sm hover:bg-white/5 transition-colors">
+                                                    <span className="text-zinc-500 font-medium truncate" title={field.label}>{field.label}</span>
+                                                    <span className={`font-mono truncate ${hasValue ? 'text-green-400' : 'text-zinc-600'}`}>
                                                         {typeof displayValue === 'string' ? displayValue : JSON.stringify(displayValue)}
+                                                    </span>
+                                                    <span className="text-xs text-zinc-500 italic truncate" title={reasoning || ''}>
+                                                        {reasoning ? `"${reasoning}"` : ''}
                                                     </span>
                                                 </div>
                                             );
