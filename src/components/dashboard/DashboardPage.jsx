@@ -148,74 +148,62 @@ export default function DashboardPage() {
         const item = queue.find(q => q.id === tempId);
         if (!item) return;
 
-        // Insert into DB
-        const { data: recipe, error } = await supabase.from('recipes').insert([
-            {
-                user_id: user.id,
+        try {
+            // Import dynamically to ensure latest version
+            const { saveRecipe } = await import('../../lib/recipeService');
+
+            // Construct recipe data from queue item (which might be edited)
+            const recipeData = {
                 title: item.title || 'Untitled',
                 description: item.description || '',
-                source_type: 'image',
-                status: 'completed',
-                original_image_url: item.original_image_url || '',  // Save source image path
-                image_url: item.original_image_url || '',           // Use source as main image for now
-                source_url: item.source_url || '',
-                cook_time: item.cook_time || '',
-                prep_time: item.prep_time || '',
                 servings: item.servings,
+                prep_time: item.prep_time,
+                cook_time: item.cook_time,
                 cuisine: item.cuisine,
-                intro: item.intro || ''
-            }
-        ]).select().single();
+                intro: item.intro,
+                ingredients: item.ingredients,
+                instructions: item.instructions,
+                ai_tags: item.ai_data?.ai_tags || ['📷 foto', 'batch-upload']
+            };
 
-        if (error) {
-            console.error("Save error", error);
-            return;
-        }
+            const sourceInfo = {
+                type: 'image',
+                original_image_url: item.original_image_url,
+                raw_extracted_data: item.ai_data
+            };
 
-        // Insert Ingredients
-        if (item.ingredients && item.ingredients.length > 0) {
-            const ingredientsToInsert = item.ingredients.map((ing, index) => {
-                // Handle string vs object ingredients
-                const isObj = typeof ing === 'object';
-                return {
+            // Use shared service to save (ensures identical logic to main app)
+            const recipe = await saveRecipe(user.id, recipeData, sourceInfo);
+
+            // Link Collection if context exists
+            if (item.context && item.context.collectionId) {
+                await supabase.from('recipe_collections').insert({
                     recipe_id: recipe.id,
-                    order_index: index,
-                    name: isObj ? ing.item || ing.name : ing,
-                    amount: isObj ? ing.amount : null,
-                    unit: isObj ? ing.unit : null,
-                    notes: isObj ? ing.notes : null
-                };
-            });
-            await supabase.from('recipe_ingredients').insert(ingredientsToInsert);
+                    collection_id: item.context.collectionId
+                });
+                // Manually add to local object for UI update
+                recipe.recipe_collections = [{ collection_id: item.context.collectionId }];
+            }
+
+            // Cleanup and Update UI
+            setDbRecipes(prev => [recipe, ...prev]);
+            deleteQueueItem(tempId);
+            setSelectedId(recipe.id);
+
+            // Update image URL if needed (saveRecipe might not set the main image_url if only original is passed)
+            // But saveRecipe -> normalize -> insert uses image_url: null.
+            // We want image_url to be the original_image_url for now.
+            if (item.original_image_url) {
+                await supabase.from('recipes')
+                    .update({ image_url: item.original_image_url })
+                    .eq('id', recipe.id);
+                recipe.image_url = item.original_image_url;
+            }
+
+        } catch (error) {
+            console.error("Approve failed:", error);
+            alert("Failed to approve recipe: " + error.message);
         }
-
-        // Insert Steps
-        if (item.instructions && item.instructions.length > 0) {
-            const stepsToInsert = item.instructions.map((step, index) => ({
-                recipe_id: recipe.id,
-                step_number: index + 1,
-                description: typeof step === 'string' ? step : (step.text || step.description)
-            }));
-            await supabase.from('recipe_steps').insert(stepsToInsert);
-        }
-
-        // Link Collection if context exists
-        if (item.context && item.context.collectionId) {
-            await supabase.from('recipe_collections').insert({
-                recipe_id: recipe.id,
-                collection_id: item.context.collectionId
-            });
-            recipe.recipe_collections = [{ collection_id: item.context.collectionId }];
-        }
-
-        // Attach parsed data to local state for immediate display
-        recipe.ingredients = item.ingredients?.map(ing => typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.item || ''}`.trim()) || [];
-        recipe.instructions = item.instructions?.map(s => typeof s === 'string' ? s : s.description) || [];
-
-        // Cleanup and Update UI
-        setDbRecipes(prev => [recipe, ...prev]);
-        deleteQueueItem(tempId);
-        setSelectedId(recipe.id);
     };
 
     const handleUpload = (files) => {
