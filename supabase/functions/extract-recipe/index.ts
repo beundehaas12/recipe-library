@@ -16,11 +16,25 @@ const corsHeaders = {
 
 const EXTRACTION_PROMPT = `Je bent een expert recept-extractor. 
 INSTRUCTIE:
-Vul de JSON structuur in. Begin ALTIJD met de 'chain_of_thought' veld om je analyse te structureren.
+FASE 1: ANALYSE (XML)
+Schrijf eerst je volledige redenering in een <analysis> tag. Gebruik dit om de input te doorgronden.
+
+FASE 2: EXTRACTIE (JSON)
+Genereer daarna de JSON in een markdown code block.
+
+OUTPUT FORMAAT:
+<analysis>
+...jouw redenering...
+</analysis>
+
+\`\`\`json
+{
+  ...
+}
+\`\`\`
 
 OUTPUT JSON STRUCTUUR (gebruik ALTIJD exact deze velden en volgorde):
 {
-  "chain_of_thought": string (Jouw volledige analyse, redenering en vergelijking van velden HIER invullen),
   "title": string (exacte titel zoals weergegeven, anders null),
   "description": string|null (ALLEEN letterlijke korte beschrijving/introductie als die direct onder de titel staat, anders null),
   "introduction": string|null (ALLEEN letterlijke langere inleidende tekst vóór ingrediënten of bereiding, stop bij eerste kopje als "Ingrediënten" of "Bereiding", anders null),
@@ -382,13 +396,16 @@ serve(async (req: Request) => {
             console.log('Calling Mistral OCR 3 + Grok 4.1 for image extraction...')
             const { text, usage, rawExtraction, model } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!, signedUrl)
 
+            // Extract Analysis Log (XML)
+            const analysisMatch = text.match(/<analysis>([\s\S]*?)<\/analysis>/i);
+            const analysisLog = analysisMatch ? analysisMatch[1].trim() : null;
+
             const recipe = safeJsonParse(text)
 
-            // Map chain_of_thought to extra_data
-            if (recipe.chain_of_thought) {
+            // Attach analysis log
+            if (analysisLog) {
                 if (!recipe.extra_data) recipe.extra_data = {};
-                recipe.extra_data.ai_reasoning_trace = recipe.chain_of_thought;
-                delete recipe.chain_of_thought; // Clean up root
+                recipe.extra_data.ai_reasoning_trace = analysisLog;
             }
 
             // Remove raw_text from recipe object if present
@@ -416,13 +433,16 @@ serve(async (req: Request) => {
             console.log('Calling Grok for text extraction...')
             const { text, usage } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!)
 
+            // Extract Analysis Log (XML)
+            const analysisMatch = text.match(/<analysis>([\s\S]*?)<\/analysis>/i);
+            const analysisLog = analysisMatch ? analysisMatch[1].trim() : null;
+
             const recipe = safeJsonParse(text)
 
-            // Map chain_of_thought to extra_data
-            if (recipe.chain_of_thought) {
+            // Attach analysis log
+            if (analysisLog) {
                 if (!recipe.extra_data) recipe.extra_data = {};
-                recipe.extra_data.ai_reasoning_trace = recipe.chain_of_thought;
-                delete recipe.chain_of_thought;
+                recipe.extra_data.ai_reasoning_trace = analysisLog;
             }
 
             const rawText = recipe.raw_text || text
