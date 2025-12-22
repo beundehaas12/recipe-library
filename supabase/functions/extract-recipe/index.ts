@@ -141,6 +141,25 @@ REGELS:
 5. Tips moeten echt nuttig zijn, geen open deuren.
 `
 
+const LAYOUT_ANALYSIS_PROMPT = `First, carefully analyze the document's layout, hierarchy, and structure:
+- Identify columns (e.g., single-column, two-column, newspaper-style).
+- Note reading order for multi-column or complex flows.
+- Detect hierarchy: main title, sections, subsections, headers/footers.
+- Observe positioning of text blocks, images, tables relative to each other.
+- Note any unusual layouts (e.g., sidebars, footnotes, interleaved images).
+
+Then, extract the full text while preserving the original content accurately.
+
+Output format:
+- Primary: The extracted text in clean markdown (use # for headings, bullet lists, bold/italics where appropriate, HTML tables for complex tables).
+- Interspersed or as inline notes: Add descriptive notes in [BRACKETS] or <!-- COMMENTS --> for layout details, e.g.:
+  [Layout note: This paragraph is in the right column, continuing from left column above.]
+  [Hierarchy note: This is a level 2 subsection under the main title.]
+  [Column note: Document switches to two-column layout here.]
+  [Position note: Image placed beside this text block.]
+
+Do not alter the original text content. Keep notes concise but informative. Place notes immediately before or after the relevant text section.`;
+
 // =============================================================================
 // HELPER: Fetch and encode image
 // =============================================================================
@@ -230,7 +249,7 @@ function safeJsonParse(text: string): any {
 
 // =============================================================================
 // HELPER: Call Mistral OCR 3 API (for raw image extraction)
-// Uses /v1/ocr endpoint with mistral-ocr-latest model
+// Uses /v1/ocr endpoint with mistral-ocr-2512 model (supports layout instructions)
 // =============================================================================
 async function callMistralOCR(imageUrl: string, apiKey: string): Promise<{ rawText: string; usage: any }> {
     // Fetch the image and convert to base64
@@ -260,11 +279,12 @@ async function callMistralOCR(imageUrl: string, apiKey: string): Promise<{ rawTe
             'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-            model: 'mistral-ocr-latest',
+            model: 'mistral-ocr-2512',
             document: {
                 type: 'image_url',
                 image_url: dataUrl
-            }
+            },
+            prompt: LAYOUT_ANALYSIS_PROMPT // Pass layout instructions
         })
     })
 
