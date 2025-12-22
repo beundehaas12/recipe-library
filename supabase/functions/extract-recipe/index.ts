@@ -14,80 +14,67 @@ const corsHeaders = {
 // PROMPTS
 // =============================================================================
 
-const EXTRACTION_PROMPT = `Je bent een EXPERT recept-extractor met diep begrip van culinaire teksten.
+const EXTRACTION_PROMPT = `Je bent een ervaren culinair expert en receptredacteur. Je helpt mij recepten nauwkeurig te digitaliseren.
 
-=== DENKPROCES (VERPLICHT) ===
-Voordat je extraheert, DENK DIEP NA over de volgende vragen in je "reasoning" veld:
-- Wat zie ik precies in deze bron? Welke secties herken ik?
-- Waar staat de titel? Is er een subtitel die erbij hoort?
-- Zie ik tijden/porties in een infoblok, of moet ik ze uit de tekst halen?
-- Welke ingrediënten horen bij welke groep? Zijn er subkoppen?
-- Hoe zijn de bereidingsstappen gestructureerd? Doorlopend of genummerd?
-- Welke acties kan ik splitsen in aparte stappen voor meer duidelijkheid?
-- Wat hoort bij tips/variaties vs. de hoofdbereiding?
-- Mis ik iets? Staat er info in kleine lettertjes of voetnoten?
+## Jouw Bronnen
+1. **De afbeelding** (PRIMARY SOURCE) - dit is de waarheid. Kijk goed naar layout, iconen, secties.
+2. **OCR tekst** (hieronder) - een ruwe transcriptie die FOUTEN kan bevatten. Corrigeer spelling, rare tekens, en ontbrekende woorden door naar de afbeelding te kijken.
 
-=== OUTPUT FORMAAT ===
-ALLEEN valide JSON. Geen markdown, geen tekst ervoor of erna.
-Gebruik GEEN letterlijke newlines in strings - vervang door spaties.
+## Wat ik van je vraag
 
+**Stap 1: Korte Analyse** (voor mijn debugging)
+Schrijf in 2-4 zinnen wat je ziet:
+- Welke secties herken je? (titel, intro, ingrediënten, bereiding, tips?)
+- Zie je tijden/porties ergens? (infoblok, icoontjes, of in tekst verborgen?)
+- Zijn er OCR-fouten die je corrigeert?
+
+**Stap 2: Gestructureerde Extractie**
+Geef daarna een JSON object in een markdown code block.
+
+## Richtlijnen
+
+**Ingrediënten:**
+- Splits hoeveelheid en eenheid netjes: "250 g bloem" → amount: 250, unit: "g", name: "bloem"
+- Bereidingsinfo bij ingrediënt (bijv. "fijngesneden") → preparation veld
+- Notities (bijv. "of meer naar smaak") → note veld, optional: true
+
+**Bereidingsstappen:**
+- Splits op een **logische, leesbare** manier - niet mechanisch elke zin
+- Combineer kleine acties die samen horen: "Doe de boter in de pan en laat smelten" mag 1 stap zijn
+- Maak aparte stappen voor duidelijke overgangen: "Laat 30 min rusten", "Verwarm de oven", etc.
+- Doel: leesbare stappen die iemand makkelijk kan volgen
+
+**Metadata:**
+- Kijk naar infoblokken, icoontjes, headers voor tijden/porties
+- Als het nergens expliciet staat, laat null
+- Corrigeer OCR-fouten (bijv. "5O min" → "50 min")
+
+**Velden:**
+- title: exacte receptnaam
+- description: korte intro als die er is
+- introduction: langere inleidende tekst (voor ingrediëntenlijst)
+- servings: aantal porties als getal
+- prep_time, cook_time, total_time: als strings ("30 min", "1 uur")
+- difficulty: als vermeld ("Makkelijk", "Gemiddeld", etc.)
+- cuisine: als vermeld ("Italiaans", "Aziatisch", etc.)
+- author: als vermeld
+- ingredients: array met amount, unit, name, preparation, note, optional, group_name
+- instructions: array met step_number en description
+- tips: losse tips (niet onderdeel van bereiding)
+- variations: alternatieve bereidingen/variaties
+- serving_suggestion: serveertips, garnering
+- ai_tags: tags die je uit de bron haalt of logisch kunt afleiden (conservatief)
+
+## Output Formaat
+
+Eerst je korte analyse, dan:
+
+\`\`\`json
 {
-  "reasoning": string (UITGEBREIDE analyse: beschrijf wat je ziet, welke keuzes je maakt, waarom je iets in een bepaald veld plaatst, wat lastig was, wat je hebt gesplitst en waarom),
-  "title": string (exacte titel),
-  "description": string|null (korte intro direct onder titel),
-  "introduction": string|null (langere inleidende tekst voor ingrediënten),
-  "servings": number|null,
-  "prep_time": string|null (exact uit bron),
-  "cook_time": string|null,
-  "total_time": string|null,
-  "difficulty": string|null,
-  "cuisine": string|null,
-  "author": string|null,
-  "ingredients": [{
-    "amount": number|null,
-    "unit": string|null,
-    "name": string,
-    "preparation": string|null (bijv. fijngesneden),
-    "note": string|null (bijv. naar smaak),
-    "optional": boolean,
-    "group_name": string|null (bijv. Voor de saus)
-  }],
-  "instructions": [{
-    "step_number": number,
-    "description": string (volledige staptekst met alle details)
-  }],
-  "tips": string[]|null,
-  "variations": string[]|null,
-  "serving_suggestion": string|null,
-  "ai_tags": string[],
-  "source_url": string|null
+  "title": "...",
+  ...
 }
-
-=== EXTRACTIE REGELS ===
-
-INGREDIËNTEN:
-- Split "500g bloem" → amount: 500, unit: "g", name: "bloem"
-- "fijngesneden ui" → name: "ui", preparation: "fijngesneden"
-- "zout naar smaak" → name: "zout", note: "naar smaak", optional: true
-- Bewaar groepskoppen in group_name
-
-BEREIDINGSSTAPPEN - SPLITS RIJK:
-- ELKE actie/werkwoord = aparte stap
-- "Snipper de ui en fruit in boter" = 2 stappen: 1) snipperen, 2) fruiten
-- "Laat 30 min rusten" = aparte stap
-- "Verwarm oven voor op 180°C" = aparte stap
-- Minimaal 6-10 stappen voor simpele recepten, 15+ voor complexe
-- Behoud ALLE details: temperaturen, tijden, technieken
-
-METADATA:
-- Zoek eerst in infoblokken/icoontjes
-- Dan in inleidende tekst en voetnoten
-- Neem exact over uit bron
-
-ALGEMEEN:
-- Wees 100% trouw aan de bron
-- Verzin NIETS, parafraseer niet
-- Lees ALLES: kleine lettertjes, voetnoten, tips
+\`\`\`
 `
 
 const ENRICHMENT_PROMPT = `Je bent een culinaire AI-assistent. Verrijk dit recept met waardevolle extra informatie.
@@ -282,9 +269,9 @@ async function callGrok(prompt: string, model: string, apiKey: string, imageUrl?
         body: JSON.stringify({
             model: modelId,
             messages,
-            temperature: 0.1,
-            max_tokens: 16384,
-            response_format: { type: 'json_object' }
+            temperature: 0.2,
+            max_tokens: 16384
+            // No response_format - allow natural output with JSON code block
         })
     })
 
@@ -387,12 +374,19 @@ serve(async (req: Request) => {
             console.log('Calling Mistral OCR 3 + Grok 4.1 for image extraction...')
             const { text, usage, rawExtraction, model } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!, signedUrl)
 
+            // Extract analysis text (everything before ```json)
+            const jsonBlockStart = text.indexOf('```');
+            const analysisText = jsonBlockStart > 0 ? text.substring(0, jsonBlockStart).trim() : null;
+
             const recipe = safeJsonParse(text)
 
-            // Store reasoning in extra_data for UI visibility
+            // Store analysis in extra_data for UI visibility
+            if (!recipe.extra_data) recipe.extra_data = {};
+            if (analysisText) {
+                recipe.extra_data.ai_reasoning_trace = analysisText;
+            }
             if (recipe.reasoning) {
-                if (!recipe.extra_data) recipe.extra_data = {};
-                recipe.extra_data.ai_reasoning_trace = recipe.reasoning;
+                recipe.extra_data.ai_reasoning_trace = (recipe.extra_data.ai_reasoning_trace || '') + '\n\n' + recipe.reasoning;
                 delete recipe.reasoning;
             }
             delete recipe.raw_text
@@ -418,12 +412,19 @@ serve(async (req: Request) => {
             console.log('Calling Grok for text extraction...')
             const { text, usage } = await callLLM(prompt, MISTRAL_API_KEY!, XAI_API_KEY!)
 
+            // Extract analysis text (everything before ```json)
+            const jsonBlockStart = text.indexOf('```');
+            const analysisText = jsonBlockStart > 0 ? text.substring(0, jsonBlockStart).trim() : null;
+
             const recipe = safeJsonParse(text)
 
-            // Store reasoning in extra_data for UI visibility
+            // Store analysis in extra_data for UI visibility
+            if (!recipe.extra_data) recipe.extra_data = {};
+            if (analysisText) {
+                recipe.extra_data.ai_reasoning_trace = analysisText;
+            }
             if (recipe.reasoning) {
-                if (!recipe.extra_data) recipe.extra_data = {};
-                recipe.extra_data.ai_reasoning_trace = recipe.reasoning;
+                recipe.extra_data.ai_reasoning_trace = (recipe.extra_data.ai_reasoning_trace || '') + '\n\n' + recipe.reasoning;
                 delete recipe.reasoning;
             }
             const rawText = recipe.raw_text || text
