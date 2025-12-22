@@ -423,7 +423,7 @@ export default function QuickReviewPanel({ selectedRecipe, onUpdate, onDelete, o
                                         <Hash size={14} /> Tokens Used
                                     </div>
                                     <div className="text-xl font-mono text-white">
-                                        {extractionHistory.usage?.total_tokens || extractionHistory.tokens || 0}
+                                        {extractionHistory.usage?.total_tokens || extractionHistory.total_tokens || (typeof extractionHistory.tokens === 'number' ? extractionHistory.tokens : extractionHistory.tokens?.total_tokens) || 0}
                                     </div>
                                 </div>
                                 <div className="bg-zinc-950 border border-white/10 rounded-xl p-4">
