@@ -434,7 +434,13 @@ function AuthenticatedApp() {
         .from('collections')
         .select(`
           *,
-          recipe_collections (count)
+          recipe_collections (
+            count,
+            recipe:recipes (
+              id,
+              image_url
+            )
+          )
         `)
         .order('created_at', { ascending: false });
 
@@ -444,7 +450,13 @@ function AuthenticatedApp() {
       setRecipes(data || []);
       setCollections(colsData?.map(c => ({
         ...c,
-        recipe_count: c.recipe_collections?.[0]?.count || 0
+        recipe_count: c.recipe_collections?.[0]?.count || 0,
+        // Extract images from nested relation for bento grid
+        // Limit to 4 images for the grid
+        preview_images: c.recipe_collections
+          ?.map(rc => rc.recipe?.image_url)
+          .filter(url => url)
+          .slice(0, 4) || []
       })) || []);
     } catch (error) {
       console.error('Error fetching recipes:', error.message);

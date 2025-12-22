@@ -1,100 +1,104 @@
-import React, { useMemo } from 'react';
-import { Folder } from 'lucide-react';
+import React from 'react';
+import { Folder, ChefHat } from 'lucide-react';
 
 export default function CollectionCard({ collection, onClick, recipeCount = 0 }) {
-    // Generate a consistent color based on the collection name/id if no color provided
-    const accentColor = useMemo(() => {
-        if (collection.color) return collection.color;
-        const colors = ['from-blue-600 to-blue-900', 'from-purple-600 to-purple-900', 'from-emerald-600 to-emerald-900', 'from-amber-600 to-amber-900', 'from-rose-600 to-rose-900'];
-        const hash = collection.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        return colors[hash % colors.length];
-    }, [collection.id, collection.color]);
+    const images = collection.preview_images || [];
+    const displayImages = images.slice(0, 4);
 
-    const CoverContent = () => (
-        <div className={`w-full h-full relative overflow-hidden flex flex-col justify-between p-4 ${collection.image_url ? '' : `bg-gradient-to-br ${accentColor}`}`}>
-            {/* If image exists, map it to cover */}
-            {collection.image_url && (
-                <>
-                    <img
-                        src={collection.image_url}
-                        alt={collection.name}
-                        className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/20" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-                </>
-            )}
-
-            {/* Branding / Title Text */}
-            <div className="relative z-10 mt-2">
-                <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 mb-3 shadow-lg">
-                    <Folder size={14} className="text-white" />
+    // Render the grid of images based on count
+    // Card is aspect-[2/3] (Vertical rectangle)
+    const renderGrid = () => {
+        if (displayImages.length === 0) {
+            // Empty state pattern
+            return (
+                <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
+                    <ChefHat className="text-white/10" size={48} />
                 </div>
-                <p className="text-[8px] font-bold tracking-[0.2em] text-white/60 uppercase mb-0.5">COLLECTION</p>
-                <h3 className="text-xl font-black text-white leading-none uppercase font-display drop-shadow-lg break-words line-clamp-4">
-                    {collection.name}
-                </h3>
-            </div>
+            );
+        }
 
-            <div className="relative z-10">
-                <p className="text-[10px] font-medium text-white/50 tracking-wider border-t border-white/20 pt-3">
-                    {recipeCount} {recipeCount === 1 ? 'RECIPE' : 'RECIPES'}
-                </p>
+        // 1 Image: Full fill
+        if (displayImages.length === 1) {
+            return (
+                <img
+                    src={displayImages[0]}
+                    alt="Recipe"
+                    className="w-full h-full object-cover"
+                />
+            );
+        }
+
+        // 2 Images: Split horizontal (Top/Bottom) for vertical card looks better? 
+        // Or Side-by-Side (Tall strips). User ref shows squares.
+        // Let's do horizontal split (Top/Bottom) to keep them close to 4:3 or square orientation
+        if (displayImages.length === 2) {
+            return (
+                <div className="grid grid-rows-2 h-full gap-0.5">
+                    {displayImages.map((img, i) => (
+                        <img key={i} src={img} alt="" className="w-full h-full object-cover" />
+                    ))}
+                </div>
+            );
+        }
+
+        // 3 Images: 1 Big Top (2/3 height? or 1/2), 2 Small Bottom
+        if (displayImages.length === 3) {
+            return (
+                <div className="grid grid-cols-2 grid-rows-2 h-full gap-0.5">
+                    <img src={displayImages[0]} alt="" className="w-full h-full object-cover col-span-2" />
+                    <img src={displayImages[1]} alt="" className="w-full h-full object-cover" />
+                    <img src={displayImages[2]} alt="" className="w-full h-full object-cover" />
+                </div>
+            );
+        }
+
+        // 4+ Images: 2x2 Grid
+        return (
+            <div className="grid grid-cols-2 grid-rows-2 h-full gap-0.5">
+                {displayImages.map((img, i) => (
+                    <img key={i} src={img} alt="" className="w-full h-full object-cover" />
+                ))}
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div
             onClick={onClick}
-            className="group relative aspect-[2/3] cursor-pointer bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden"
+            className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl active:scale-[0.98] transition-transform duration-200"
         >
-            {/* Background Ambient Effect for the Card */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${accentColor} opacity-10 group-hover:opacity-20 transition-opacity duration-500`} />
+            {/* Image Grid Container */}
+            <div className="absolute inset-0 bg-zinc-900 border border-white/5">
+                {renderGrid()}
+            </div>
 
-            {/* Center the book within the card */}
-            <div className="absolute inset-0 flex items-center justify-center perspective-[800px] pt-8">
+            {/* Gradient Overlay for Text Readability - Stronger at bottom */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 transition-opacity duration-300 group-hover:via-black/50" />
 
-                {/* The 3D Book Object - Scaled Down */}
-                <div className="relative w-[70%] h-[75%] transition-transform duration-500 ease-out [transform-style:preserve-3d] group-hover:[transform:rotateY(-25deg)_rotateX(5deg)_translateZ(30px)_translateY(-10px)]">
+            {/* Content Overlay */}
+            <div className="absolute inset-0 p-5 flex flex-col justify-between">
+                <div className="flex justify-start">
+                    <span className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-lg">
+                        <Folder size={14} className="text-white" />
+                    </span>
+                </div>
 
-                    {/* 1. FRONT COVER */}
-                    <div className="absolute inset-0 [transform:translateZ(15px)] rounded-r-[2px] shadow-2xl bg-zinc-900 border-l border-white/10 overflow-hidden">
-                        <CoverContent />
-                        {/* Lighting sheen */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
-                    </div>
-
-                    {/* 2. SPINE (Left Side) */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-[30px] [transform:rotateY(-90deg)_translateZ(15px)] origin-left bg-gradient-to-r ${accentColor} brightness-75 flex items-center justify-center overflow-hidden border-r border-white/10`}>
-                        {/* Spine Text */}
-                        <span className="text-white/40 font-bold text-[8px] tracking-[0.2em] uppercase whitespace-nowrap [writing-mode:vertical-rl] rotate-180">
-                            {collection.name.substring(0, 20)}
+                <div className="transform transition-transform duration-300 group-hover:-translate-y-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                            Collection
                         </span>
                     </div>
 
-                    {/* 3. BACK COVER */}
-                    <div className="absolute inset-0 [transform:translateZ(-15px)] bg-zinc-900/90 rounded-r-[2px]"></div>
+                    <h3 className="text-2xl font-black text-white leading-none mb-2 drop-shadow-lg line-clamp-2 uppercase font-display">
+                        {collection.name}
+                    </h3>
 
-                    {/* 4. PAGES (Right Side) */}
-                    <div className="absolute right-0 top-[2px] bottom-[2px] w-[28px] [transform:rotateY(90deg)_translateZ(calc(100%_-_15px))] origin-right bg-white flex flex-col justify-center gap-px px-px border-l border-zinc-200">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                            <div key={i} className="w-full h-px bg-zinc-300" />
-                        ))}
-                    </div>
-
-                    {/* 5. TOP */}
-                    <div className="absolute top-0 right-0 left-0 h-[30px] [transform:rotateX(90deg)_translateZ(15px)] origin-top bg-zinc-100"></div>
-
-                    {/* 6. BOTTOM */}
-                    <div className="absolute bottom-0 right-0 left-0 h-[30px] [transform:rotateX(-90deg)_translateZ(calc(100%_-_15px))] origin-bottom bg-zinc-100 shadow-inner"></div>
+                    <p className="text-xs font-medium text-white/60 flex items-center gap-2">
+                        {recipeCount} {recipeCount === 1 ? 'recept' : 'recepten'}
+                    </p>
                 </div>
-
-                {/* FLOOR / SHADOW PLATFORM underneath the book */}
-                <div className="absolute bottom-8 w-[60%] h-4 bg-black/60 blur-lg rounded-[100%] transition-all duration-500 group-hover:scale-125 group-hover:opacity-40 group-hover:translate-y-2 pointer-events-none translate-y-3" />
             </div>
-
-            <div className="absolute inset-0 border border-white/5 rounded-2xl pointer-events-none" />
         </div>
     );
 }
