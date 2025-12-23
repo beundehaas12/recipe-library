@@ -820,11 +820,32 @@ function AuthenticatedApp() {
 }
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
-  // Check for account completion token
+  // Check for account completion token (our custom flow)
   const urlParams = new URLSearchParams(window.location.search);
   const completeToken = urlParams.get('complete');
+
+  // Check for Supabase invite/recovery flow (in URL hash)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && (hash.includes('type=invite') || hash.includes('type=recovery'))) {
+      // User came from invite or recovery link
+      setShowProfileSetup(true);
+    }
+  }, []);
+
+  // Check if logged in user needs to complete profile
+  useEffect(() => {
+    if (user && profile) {
+      // Check if profile is incomplete (no first/last name set)
+      const isIncomplete = !profile.first_name && !profile.last_name;
+      if (isIncomplete) {
+        setShowProfileSetup(true);
+      }
+    }
+  }, [user, profile]);
 
   if (loading) {
     return (
@@ -834,15 +855,29 @@ export default function App() {
     );
   }
 
-  // Show account completion screen if token present (even if not logged in)
+  // Show account completion screen if token present (our custom flow)
   if (completeToken) {
     return (
       <CompleteAccountScreen
         token={completeToken}
         onComplete={() => {
-          // Clear URL params and reload
           window.history.replaceState({}, document.title, window.location.pathname);
           window.location.reload();
+        }}
+      />
+    );
+  }
+
+  // Show profile setup for invited users
+  if (user && showProfileSetup) {
+    return (
+      <CompleteAccountScreen
+        isInvitedUser={true}
+        userEmail={user.email}
+        onComplete={() => {
+          // Clear hash and reload
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setShowProfileSetup(false);
         }}
       />
     );
@@ -854,3 +889,4 @@ export default function App() {
 
   return <AuthenticatedApp />;
 }
+

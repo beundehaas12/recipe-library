@@ -4,10 +4,10 @@ import { ChefHat, User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckC
 import { supabase } from '../lib/supabase';
 import { validateInvitationToken, completeEarlyAccess } from '../lib/roleService';
 
-export default function CompleteAccountScreen({ token, onComplete }) {
-    const [loading, setLoading] = useState(true);
-    const [validating, setValidating] = useState(true);
-    const [tokenData, setTokenData] = useState(null);
+export default function CompleteAccountScreen({ token, isInvitedUser, userEmail, onComplete }) {
+    const [loading, setLoading] = useState(!isInvitedUser); // Skip loading for invited users
+    const [validating, setValidating] = useState(!isInvitedUser);
+    const [tokenData, setTokenData] = useState(isInvitedUser ? { email: userEmail } : null);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
 
@@ -19,8 +19,15 @@ export default function CompleteAccountScreen({ token, onComplete }) {
     const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    // Validate token on mount
+    // Validate token on mount (only for token-based flow)
     useEffect(() => {
+        if (isInvitedUser) {
+            // Skip token validation for invited users - they're already authenticated
+            setLoading(false);
+            setValidating(false);
+            return;
+        }
+
         const validateToken = async () => {
             if (!token) {
                 setError('Geen geldige uitnodigingslink.');
@@ -46,7 +53,8 @@ export default function CompleteAccountScreen({ token, onComplete }) {
         };
 
         validateToken();
-    }, [token]);
+    }, [token, isInvitedUser]);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -71,55 +79,106 @@ export default function CompleteAccountScreen({ token, onComplete }) {
         setSubmitting(true);
 
         try {
-            // 1. Create auth user with Supabase
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: tokenData.email,
-                password: password,
-                options: {
-                    data: {
-                        first_name: firstName.trim(),
-                        last_name: lastName.trim()
+            if (isInvitedUser) {
+                // === INVITED USER FLOW ===
+                // User is already authenticated via Supabase invite link
+                // Just need to update their password and profile
+
+                // 1. Update password
+                const { error: passwordError } = await supabase.auth.updateUser({
+                    password: password
+                });
+
+                if (passwordError) {
+                    throw new Error(passwordError.message);
+                }
+
+                // 2. Get current user
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (user) {
+                    // 3. Update user profile with names
+                    const { error: profileError } = await supabase
+                        .from('user_profiles')
+                        .update({
+                            first_name: firstName.trim(),
+                            last_name: lastName.trim(),
+                            display_name: `${firstName.trim()} ${lastName.trim()}`
+                        })
+                        .eq('user_id', user.id);
+
+                    if (profileError) {
+                        console.error('Profile update error:', profileError);
+                    }
+
+                    // 4. Also update user metadata
+                    await supabase.auth.updateUser({
+                        data: {
+                            first_name: firstName.trim(),
+                            last_name: lastName.trim()
+                        }
+                    });
+                }
+
+                // 5. Show success and redirect
+                setSuccess(true);
+                setTimeout(() => {
+                    if (onComplete) {
+                        onComplete();
+                    }
+                }, 2000);
+
+            } else {
+                // === TOKEN-BASED FLOW ===
+                // Old custom early access flow with our own tokens
+
+                // 1. Create auth user with Supabase
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: tokenData.email,
+                    password: password,
+                    options: {
+                        data: {
+                            first_name: firstName.trim(),
+                            last_name: lastName.trim()
+                        }
+                    }
+                });
+
+                if (authError) {
+                    throw new Error(authError.message);
+                }
+
+                // 2. Wait for user to be created, then update profile
+                if (authData.user) {
+                    const { error: profileError } = await supabase
+                        .from('user_profiles')
+                        .update({
+                            first_name: firstName.trim(),
+                            last_name: lastName.trim(),
+                            display_name: `${firstName.trim()} ${lastName.trim()}`
+                        })
+                        .eq('user_id', authData.user.id);
+
+                    if (profileError) {
+                        console.error('Profile update error:', profileError);
                     }
                 }
-            });
 
-            if (authError) {
-                throw new Error(authError.message);
+                // 3. Mark early access as completed
+                await completeEarlyAccess(token);
+
+                // 4. Show success
+                setSuccess(true);
+
+                // 5. Redirect to login after a moment
+                setTimeout(() => {
+                    if (onComplete) {
+                        onComplete();
+                    } else {
+                        window.location.href = '/';
+                    }
+                }, 3000);
             }
-
-            // 2. Wait for user to be created, then update profile
-            if (authData.user) {
-                // Update user profile with names
-                const { error: profileError } = await supabase
-                    .from('user_profiles')
-                    .update({
-                        first_name: firstName.trim(),
-                        last_name: lastName.trim(),
-                        display_name: `${firstName.trim()} ${lastName.trim()}`
-                    })
-                    .eq('user_id', authData.user.id);
-
-                if (profileError) {
-                    console.error('Profile update error:', profileError);
-                    // Continue anyway, profile can be updated later
-                }
-            }
-
-            // 3. Mark early access as completed
-            await completeEarlyAccess(token);
-
-            // 4. Show success
-            setSuccess(true);
-
-            // 5. Redirect to login after a moment
-            setTimeout(() => {
-                if (onComplete) {
-                    onComplete();
-                } else {
-                    // Reload to go to login
-                    window.location.href = '/';
-                }
-            }, 3000);
 
         } catch (err) {
             console.error('Account creation error:', err);
@@ -218,8 +277,12 @@ export default function CompleteAccountScreen({ token, onComplete }) {
                             <CheckCircle size={18} className="text-white" />
                         </div>
                         <div>
-                            <p className="text-emerald-700 font-bold text-xs uppercase tracking-tight">Gefeliciteerd! 🎉</p>
-                            <p className="text-emerald-600 text-[11px]">Je hebt early access gekregen.</p>
+                            <p className="text-emerald-700 font-bold text-xs uppercase tracking-tight">
+                                {isInvitedUser ? 'Welkom! 👋' : 'Gefeliciteerd! 🎉'}
+                            </p>
+                            <p className="text-emerald-600 text-[11px]">
+                                {isInvitedUser ? 'Je bent uitgenodigd.' : 'Je hebt early access gekregen.'}
+                            </p>
                         </div>
                     </div>
 
