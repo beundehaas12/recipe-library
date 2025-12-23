@@ -125,10 +125,10 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
         addLog('Starting process...');
 
-        // REDUCED TO 5s timeout
-        const withTimeout = (promise, ms = 5000) => Promise.race([
+        // Increased to 15s timeout
+        const withTimeout = (promise, ms = 15000) => Promise.race([
             promise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_5S: Request took too long')), ms))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_15S: Request took too long')), ms))
         ]);
 
         try {
@@ -146,16 +146,22 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
 
                 // 2. Metadata Update (Check connectivity)
-                console.info('[CompleteAccount] Updating metadata...');
-                const { error: metaError } = await withTimeout(
-                    supabase.auth.updateUser({
-                        data: {
-                            first_name: firstName.trim(),
-                            last_name: lastName.trim()
-                        }
-                    })
-                );
-                if (metaError) throw new Error(`Metadata update error: ${metaError.message}`);
+                addLog('Updating metadata...');
+                try {
+                    const { error: metaError } = await withTimeout(
+                        supabase.auth.updateUser({
+                            data: {
+                                first_name: firstName.trim(),
+                                last_name: lastName.trim()
+                            }
+                        })
+                    );
+                    if (metaError) throw metaError;
+                    addLog('Metadata updated.');
+                } catch (e) {
+                    console.warn('Metadata update skipped:', e);
+                    addLog('Metadata update skipped (non-critical)...');
+                }
 
                 // 3. Password Update
                 console.info('[CompleteAccount] Updating password...');
