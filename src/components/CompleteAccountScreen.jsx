@@ -33,11 +33,46 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         loadRecipes();
     }, []);
 
-    // Validate token on mount (only for token-based flow)
+    // Validate token on mount (only for token-based flow) OR check session for invite flow
     useEffect(() => {
         if (isInvitedUser) {
-            setLoading(false);
-            setValidating(false);
+            // Check if we actually have a session
+            const checkSession = async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                console.info('[CompleteAccount] Checking session for invited user:', user?.id);
+
+                if (user) {
+                    setTokenData({ email: user.email });
+                    setLoading(false);
+                    setValidating(false);
+                } else {
+                    // Start polling/waiting for session (Supabase might be processing hash)
+                    console.info('[CompleteAccount] No user yet, waiting for session...');
+                    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+                        console.info('[CompleteAccount] Auth state change:', event, session?.user?.id);
+                        if (session?.user) {
+                            setTokenData({ email: session.user.email });
+                            setLoading(false);
+                            setValidating(false);
+                            subscription.unsubscribe();
+                        }
+                    });
+
+                    // Fallback timeout if session never comes
+                    setTimeout(() => {
+                        setLoading((loading) => {
+                            if (loading) {
+                                console.error('[CompleteAccount] Session init timed out');
+                                setError('Sessie kon niet worden gestart. Probeer opnieuw in te loggen via de link.');
+                                setValidating(false);
+                                return false;
+                            }
+                            return loading;
+                        });
+                    }, 5000); // Wait 5s for hash processing
+                }
+            };
+            checkSession();
             return;
         }
 
