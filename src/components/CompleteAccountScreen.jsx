@@ -89,68 +89,81 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         }
 
         setSubmitting(true);
-        console.log('[CompleteAccount] Starting submission...');
+        console.info('[CompleteAccount] Starting submission...');
+
+        // Helper to timeout promises
+        const withTimeout = (promise, ms = 15000) => Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), ms))
+        ]);
 
         try {
             if (isInvitedUser) {
                 // === INVITED USER FLOW ===
-                console.log('[CompleteAccount] Updating password...');
-                const { error: passwordError } = await supabase.auth.updateUser({
-                    password: password
-                });
+                console.info('[CompleteAccount] Updating password...');
+
+                const { error: passwordError } = await withTimeout(
+                    supabase.auth.updateUser({ password: password })
+                );
 
                 if (passwordError) {
                     console.error('[CompleteAccount] Password error:', passwordError);
                     throw new Error(passwordError.message);
                 }
-                console.log('[CompleteAccount] Password updated successfully');
+                console.info('[CompleteAccount] Password updated successfully');
 
                 const { data: { user } } = await supabase.auth.getUser();
-                console.log('[CompleteAccount] Got user:', user?.id);
+                console.info('[CompleteAccount] Got user:', user?.id);
 
                 if (user) {
                     // Update profile - row should already exist from invite trigger
-                    console.log('[CompleteAccount] Updating profile...');
+                    console.info('[CompleteAccount] Updating profile...');
                     // Use select().maybeSingle() to know if the row existed and was updated
-                    const { data: updatedProfile, error: profileError } = await supabase
-                        .from('user_profiles')
-                        .update({
-                            first_name: firstName.trim(),
-                            last_name: lastName.trim()
-                        })
-                        .eq('user_id', user.id)
-                        .select()
-                        .maybeSingle();
-                    
-                    // If error or no data returned (meaning row didn't exist), try insert
-                    if (profileError || !updatedProfile) {
-                        console.log('[CompleteAccount] Profile update returned no data or error, trying insert...', profileError);
-                        
-                        const { error: insertError } = await supabase
+                    const { data: updatedProfile, error: profileError } = await withTimeout(
+                        supabase
                             .from('user_profiles')
-                            .insert({
-                                user_id: user.id,
+                            .update({
                                 first_name: firstName.trim(),
                                 last_name: lastName.trim()
-                            });
-                            
+                            })
+                            .eq('user_id', user.id)
+                            .select()
+                            .maybeSingle()
+                    );
+
+                    // If error or no data returned (meaning row didn't exist), try insert
+                    if (profileError || !updatedProfile) {
+                        console.info('[CompleteAccount] Profile update returned no data or error, trying insert...', profileError);
+
+                        const { error: insertError } = await withTimeout(
+                            supabase
+                                .from('user_profiles')
+                                .insert({
+                                    user_id: user.id,
+                                    first_name: firstName.trim(),
+                                    last_name: lastName.trim()
+                                })
+                        );
+
                         if (insertError) {
                             console.error('[CompleteAccount] Profile insert also failed:', insertError);
                         } else {
-                            console.log('[CompleteAccount] Profile inserted successfully');
+                            console.info('[CompleteAccount] Profile inserted successfully');
                         }
                     } else {
-                        console.log('[CompleteAccount] Profile updated successfully');
+                        console.info('[CompleteAccount] Profile updated successfully');
                     }
 
                     // Update preferences - try update first, then insert
-                    const { data: updatedPrefs, error: prefError } = await supabase
-                        .from('user_preferences')
-                        .update({})
-                        .eq('user_id', user.id)
-                        .select()
-                        .maybeSingle();
-                    
+                    const { data: updatedPrefs, error: prefError } = await withTimeout(
+                        supabase
+                            .from('user_preferences')
+                            .update({})
+                            .eq('user_id', user.id)
+                            .select()
+                            .maybeSingle()
+                    );
+
                     if (prefError || !updatedPrefs) {
                         await supabase
                             .from('user_preferences')
@@ -165,12 +178,11 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                             last_name: lastName.trim()
                         }
                     });
-                    console.log('[CompleteAccount] Metadata updated');
-
+                    console.info('[CompleteAccount] Metadata updated');
                 }
 
                 // Success!
-                console.log('[CompleteAccount] All done, setting success state...');
+                console.info('[CompleteAccount] All done, setting success state...');
                 setSuccess(true);
                 setTimeout(() => {
                     if (onComplete) onComplete();
