@@ -89,54 +89,56 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         }
 
         setSubmitting(true);
+        console.log('[CompleteAccount] Starting submission...');
 
         try {
             if (isInvitedUser) {
                 // === INVITED USER FLOW ===
+                console.log('[CompleteAccount] Updating password...');
                 const { error: passwordError } = await supabase.auth.updateUser({
                     password: password
                 });
 
                 if (passwordError) {
+                    console.error('[CompleteAccount] Password error:', passwordError);
                     throw new Error(passwordError.message);
                 }
+                console.log('[CompleteAccount] Password updated successfully');
 
                 const { data: { user } } = await supabase.auth.getUser();
+                console.log('[CompleteAccount] Got user:', user?.id);
 
                 if (user) {
-                    // Try to upsert profile (ignore errors - profile may already exist)
-                    try {
-                        await supabase
-                            .from('user_profiles')
-                            .upsert({
-                                user_id: user.id,
-                                first_name: firstName.trim(),
-                                last_name: lastName.trim(),
-                                display_name: `${firstName.trim()} ${lastName.trim()}`
-                            }, { onConflict: 'user_id' });
-                    } catch (e) {
-                        console.warn('Profile upsert failed (may already exist):', e);
-                    }
+                    // Fire and forget - don't wait for these to complete
+                    console.log('[CompleteAccount] Updating profile (fire and forget)...');
+                    supabase
+                        .from('user_profiles')
+                        .upsert({
+                            user_id: user.id,
+                            first_name: firstName.trim(),
+                            last_name: lastName.trim(),
+                            display_name: `${firstName.trim()} ${lastName.trim()}`
+                        }, { onConflict: 'user_id' })
+                        .then(() => console.log('[CompleteAccount] Profile upsert done'))
+                        .catch(e => console.warn('[CompleteAccount] Profile upsert failed:', e));
 
-                    // Try to upsert preferences (ignore errors)
-                    try {
-                        await supabase
-                            .from('user_preferences')
-                            .upsert({ user_id: user.id }, { onConflict: 'user_id' });
-                    } catch (e) {
-                        console.warn('Preferences upsert failed (may already exist):', e);
-                    }
+                    supabase
+                        .from('user_preferences')
+                        .upsert({ user_id: user.id }, { onConflict: 'user_id' })
+                        .then(() => console.log('[CompleteAccount] Preferences upsert done'))
+                        .catch(e => console.warn('[CompleteAccount] Preferences upsert failed:', e));
 
-                    // Update user metadata (this usually works)
-                    await supabase.auth.updateUser({
+                    // Update user metadata
+                    supabase.auth.updateUser({
                         data: {
                             first_name: firstName.trim(),
                             last_name: lastName.trim()
                         }
-                    });
+                    }).catch(e => console.warn('[CompleteAccount] Metadata update failed:', e));
                 }
 
-                // Password was updated successfully - that's the main thing
+                // Password was updated successfully - proceed immediately
+                console.log('[CompleteAccount] Setting success state...');
                 setSuccess(true);
                 setTimeout(() => {
                     if (onComplete) onComplete();
