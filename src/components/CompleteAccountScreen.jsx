@@ -137,7 +137,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
                 // 1. Force refresh session
                 addLog('Refreshing session...');
-                await supabase.auth.refreshSession();
+                await withTimeout(supabase.auth.refreshSession());
 
 
                 // 2. Metadata Update (Check connectivity)
@@ -538,6 +538,24 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                         </button>
                     </form>
                 </motion.div>
+
+                {/* Status Log - VISIBLE NOW */}
+                {statusLog.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="w-full bg-zinc-900 rounded-xl p-4 overflow-hidden mt-4"
+                    >
+                        <div className="h-32 overflow-y-auto font-mono text-[10px] space-y-1 text-zinc-400">
+                            {statusLog.map((log, i) => (
+                                <div key={i} className="border-b border-white/5 pb-0.5 last:border-0">
+                                    {log}
+                                </div>
+                            ))}
+                            <div ref={logEndRef} />
+                        </div>
+                    </motion.div>
+                )}
             </div>
 
             {/* Right Side: Recipe Slideshow (50%) */}
@@ -568,6 +586,6 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.02] blur-[100px] rounded-full -mr-64 -mt-64" />
                 <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/[0.02] blur-[100px] rounded-full -ml-64 -mb-64" />
             </div>
-        </div>
+        </div >
     );
 }
