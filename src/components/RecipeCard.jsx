@@ -392,62 +392,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                     )}
                 </AnimatePresence>
 
-                {/* Cinematic Floating Header - Completely transparent background version */}
-                <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
-                    <div className="max-w-[1600px] mx-auto w-full flex justify-end items-center px-0">
-                        <div className="flex gap-3 pointer-events-auto mr-44">
-                            {isEditing ? (
-                                <div className="flex gap-2">
-                                    <button onClick={handleSave} className="btn-primary !py-2 !px-4 text-sm !text-black">Opslaan</button>
-                                    <button onClick={handleCancel} className="btn-secondary !py-2 !px-4 text-sm">Annuleren</button>
-                                </div>
-                            ) : (
-                                <>
-                                    <button onClick={() => setIsEditing(true)} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center">
-                                        <Edit size={20} />
-                                    </button>
-                                    {/* Image edit: URL recipes get image selector, photo recipes get file upload */}
-                                    {recipe.source_url && !recipe.source_url.includes('/storage/v1/') ? (
-                                        <button
-                                            onClick={handleImageEdit}
-                                            disabled={isImageLoading}
-                                            className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center"
-                                        >
-                                            {isImageLoading ? <Loader2 size={20} className="animate-spin" /> : <Image size={20} />}
-                                        </button>
-                                    ) : (
-                                        <label className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center cursor-pointer">
-                                            <Camera size={20} />
-                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file && onImageUpdate) onImageUpdate(file); }} />
-                                        </label>
-                                    )}
-                                    <button onClick={() => setShowDeleteModal(true)} className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center !bg-red-500/10 !text-red-500 !border-red-500/20 hover:!bg-red-500/20 transition-all">
-                                        <Trash2 size={20} />
-                                    </button>
-                                </>
-                            )}
-                            {!isEditing && (
-                                <>
-                                    <div className="w-px h-6 bg-white/10 mx-1" />
-                                    <button
-                                        onClick={() => setShowPlanModal(true)}
-                                        className="btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center text-white/70 hover:text-white"
-                                        title="Inplannen"
-                                    >
-                                        <CalendarIcon size={20} /> {/* Renamed Calendar to CalendarIcon in imports if conflict, wait Calendar is imported as Calendar */}
-                                    </button>
-                                    <button
-                                        onClick={handleToggleFavorite}
-                                        className={`btn-secondary !p-0 !w-11 !h-11 !rounded-full flex items-center justify-center transition-colors ${isFavorite ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-white/70 hover:text-red-500'}`}
-                                        title={isFavorite ? 'Verwijder uit favorieten' : 'Zet in favorieten'}
-                                    >
-                                        <Heart size={20} className={isFavorite ? 'fill-current' : ''} />
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </header>
+
 
                 {/* Header Content */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col justify-end pb-12">
@@ -462,6 +407,10 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                 <div className="flex gap-4">
                                     <input className="bg-transparent border-b border-white/20 p-2 text-white/80 w-full" value={editForm.cuisine} onChange={e => setEditForm({ ...editForm, cuisine: e.target.value })} placeholder="Keuken" />
                                     <input className="bg-transparent border-b border-white/20 p-2 text-white/80 w-full" value={editForm.difficulty} onChange={e => setEditForm({ ...editForm, difficulty: e.target.value })} placeholder="Moeilijkheid" />
+                                </div>
+                                <div className="flex gap-3 pointer-events-auto mt-6">
+                                    <button onClick={handleSave} className="btn-primary !py-2 !px-4 text-sm !text-black flex items-center gap-2">Opslaan</button>
+                                    <button onClick={handleCancel} className="btn-secondary !py-2 !px-4 text-sm flex items-center gap-2">Annuleren</button>
                                 </div>
                             </div>
                         ) : (
@@ -505,6 +454,41 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         </span>
                                     </motion.div>
                                 )}
+
+                                {/* Action Toolbar - Integrated with Hero */}
+                                <div className="flex flex-wrap items-center gap-2 pointer-events-auto opacity-0 animate-in fade-in slide-in-from-bottom-4 fill-mode-forwards duration-700 delay-500">
+                                    <button onClick={() => setIsEditing(true)} className="btn-secondary !p-0 !w-10 !h-10 !rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-all" title="Bewerk recept">
+                                        <Edit size={18} />
+                                    </button>
+
+                                    {recipe.source_url && !recipe.source_url.includes('/storage/v1/') ? (
+                                        <button
+                                            onClick={handleImageEdit}
+                                            disabled={isImageLoading}
+                                            className="btn-secondary !p-0 !w-10 !h-10 !rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-all"
+                                            title="Afbeelding wijzigen"
+                                        >
+                                            {isImageLoading ? <Loader2 size={18} className="animate-spin" /> : <Image size={18} />}
+                                        </button>
+                                    ) : (
+                                        <label className="btn-secondary !p-0 !w-10 !h-10 !rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-all cursor-pointer" title="Upload foto">
+                                            <Camera size={18} />
+                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file && onImageUpdate) onImageUpdate(file); }} />
+                                        </label>
+                                    )}
+
+                                    <button onClick={() => setShowPlanModal(true)} className="btn-secondary !p-0 !w-10 !h-10 !rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-all" title="Inplannen">
+                                        <CalendarIcon size={18} />
+                                    </button>
+
+                                    <button onClick={handleToggleFavorite} className={`btn-secondary !p-0 !w-10 !h-10 !rounded-full flex items-center justify-center backdrop-blur-md border transition-all ${isFavorite ? 'bg-red-500 text-white border-red-600 hover:bg-red-600' : 'bg-white/10 border-white/10 text-white hover:bg-white/20'}`} title={isFavorite ? 'Verwijder uit favorieten' : 'Toevoegen aan favorieten'}>
+                                        <Heart size={18} className={isFavorite ? 'fill-current' : ''} />
+                                    </button>
+                                    <div className="w-px h-6 bg-white/10 mx-2" />
+                                    <button onClick={() => setShowDeleteModal(true)} className="btn-secondary !p-0 !w-10 !h-10 !rounded-full flex items-center justify-center bg-red-500/10 backdrop-blur-md border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-all" title="Verwijder recept">
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
 
                                 <div className="mb-4"></div>
 
