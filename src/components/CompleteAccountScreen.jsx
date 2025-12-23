@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ChefHat, User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { validateInvitationToken, completeEarlyAccess } from '../lib/roleService';
+import { fetchLandingPageRecipes } from '../lib/recipeService';
+import BentoRecipeCard from './BentoRecipeCard';
 
 export default function CompleteAccountScreen({ token, isInvitedUser, userEmail, onComplete }) {
-    const [loading, setLoading] = useState(!isInvitedUser); // Skip loading for invited users
+    const [loading, setLoading] = useState(!isInvitedUser);
     const [validating, setValidating] = useState(!isInvitedUser);
     const [tokenData, setTokenData] = useState(isInvitedUser ? { email: userEmail } : null);
     const [error, setError] = useState('');
@@ -19,10 +21,21 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
     const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
+    // Recipe slideshow state
+    const [recipes, setRecipes] = useState([]);
+
+    // Fetch recipes for slideshow
+    useEffect(() => {
+        const loadRecipes = async () => {
+            const data = await fetchLandingPageRecipes(15);
+            setRecipes(data);
+        };
+        loadRecipes();
+    }, []);
+
     // Validate token on mount (only for token-based flow)
     useEffect(() => {
         if (isInvitedUser) {
-            // Skip token validation for invited users - they're already authenticated
             setLoading(false);
             setValidating(false);
             return;
@@ -55,7 +68,6 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         validateToken();
     }, [token, isInvitedUser]);
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -81,10 +93,6 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         try {
             if (isInvitedUser) {
                 // === INVITED USER FLOW ===
-                // User is already authenticated via Supabase invite link
-                // Just need to update their password and profile
-
-                // 1. Update password
                 const { error: passwordError } = await supabase.auth.updateUser({
                     password: password
                 });
@@ -93,25 +101,29 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                     throw new Error(passwordError.message);
                 }
 
-                // 2. Get current user
                 const { data: { user } } = await supabase.auth.getUser();
 
                 if (user) {
-                    // 3. Update user profile with names
+                    // Upsert profile
                     const { error: profileError } = await supabase
                         .from('user_profiles')
-                        .update({
+                        .upsert({
+                            user_id: user.id,
                             first_name: firstName.trim(),
                             last_name: lastName.trim(),
                             display_name: `${firstName.trim()} ${lastName.trim()}`
-                        })
-                        .eq('user_id', user.id);
+                        }, { onConflict: 'user_id' });
 
                     if (profileError) {
-                        console.error('Profile update error:', profileError);
+                        console.error('Profile upsert error:', profileError);
                     }
 
-                    // 4. Also update user metadata
+                    // Upsert preferences
+                    await supabase
+                        .from('user_preferences')
+                        .upsert({ user_id: user.id }, { onConflict: 'user_id' });
+
+                    // Update user metadata
                     await supabase.auth.updateUser({
                         data: {
                             first_name: firstName.trim(),
@@ -120,19 +132,13 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                     });
                 }
 
-                // 5. Show success and redirect
                 setSuccess(true);
                 setTimeout(() => {
-                    if (onComplete) {
-                        onComplete();
-                    }
+                    if (onComplete) onComplete();
                 }, 2000);
 
             } else {
                 // === TOKEN-BASED FLOW ===
-                // Old custom early access flow with our own tokens
-
-                // 1. Create auth user with Supabase
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: tokenData.email,
                     password: password,
@@ -148,9 +154,8 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                     throw new Error(authError.message);
                 }
 
-                // 2. Wait for user to be created, then update profile
                 if (authData.user) {
-                    const { error: profileError } = await supabase
+                    await supabase
                         .from('user_profiles')
                         .update({
                             first_name: firstName.trim(),
@@ -158,19 +163,11 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                             display_name: `${firstName.trim()} ${lastName.trim()}`
                         })
                         .eq('user_id', authData.user.id);
-
-                    if (profileError) {
-                        console.error('Profile update error:', profileError);
-                    }
                 }
 
-                // 3. Mark early access as completed
                 await completeEarlyAccess(token);
-
-                // 4. Show success
                 setSuccess(true);
 
-                // 5. Redirect to login after a moment
                 setTimeout(() => {
                     if (onComplete) {
                         onComplete();
@@ -187,6 +184,30 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
             setSubmitting(false);
         }
     };
+
+    // Skeleton recipes for loading
+    const skeletonRecipes = useMemo(() => Array.from({ length: 12 }).map((_, i) => ({
+        id: `skeleton-${i}`,
+        title: "Laden...",
+        author_profile: null,
+        user_id: null,
+        image_url: null
+    })), []);
+
+    const displayRecipes = recipes.length > 0 ? recipes : skeletonRecipes;
+
+    // Column data for slideshow
+    const columnData = useMemo(() => {
+        return [0, 1, 2].map((col) => {
+            const durations = [180, 130, 260];
+            const offsets = [0, -40, -90];
+            return {
+                duration: durations[col],
+                offset: offsets[col] % durations[col],
+                recipes: [...displayRecipes].sort(() => Math.random() - 0.5)
+            };
+        });
+    }, [displayRecipes]);
 
     // Loading state
     if (loading) {
@@ -237,9 +258,9 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                         <CheckCircle size={32} className="text-emerald-500" />
                     </div>
                     <div className="space-y-2">
-                        <h1 className="text-2xl font-bold text-zinc-900">Account aangemaakt! 🎉</h1>
+                        <h1 className="text-2xl font-bold text-zinc-900">Welkom, {firstName}! 🎉</h1>
                         <p className="text-zinc-500">
-                            Welkom bij Kookboek, {firstName}! Je wordt doorgestuurd naar de inlogpagina...
+                            Je account is klaar. Een moment geduld...
                         </p>
                     </div>
                     <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full mx-auto" />
@@ -248,170 +269,202 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         );
     }
 
-    // Account completion form
+    // Account completion form with slideshow
     return (
-        <div className="h-screen w-screen bg-white flex flex-col items-center justify-center p-8 md:p-12 lg:p-20">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="w-full max-w-sm space-y-10"
-            >
-                {/* Brand Section */}
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
-                        <ChefHat size={24} className="text-primary-foreground" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black tracking-tighter text-zinc-900 leading-none">
-                            KOOK<span className="text-primary">BOEK</span>
-                        </h1>
-                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Culinary Assistant</p>
-                    </div>
-                </div>
-
-                {/* Welcome Message */}
-                <div className="space-y-4">
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                            <CheckCircle size={18} className="text-white" />
+        <div className="h-screen w-screen bg-white flex flex-col md:flex-row overflow-hidden fixed inset-0">
+            {/* Left Side: Form (50%) */}
+            <div className="w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 bg-white overflow-y-auto">
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="w-full max-w-sm space-y-10"
+                >
+                    {/* Brand Section */}
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
+                            <ChefHat size={24} className="text-primary-foreground" />
                         </div>
                         <div>
-                            <p className="text-emerald-700 font-bold text-xs uppercase tracking-tight">
-                                {isInvitedUser ? 'Welkom! 👋' : 'Gefeliciteerd! 🎉'}
-                            </p>
-                            <p className="text-emerald-600 text-[11px]">
-                                {isInvitedUser ? 'Je bent uitgenodigd.' : 'Je hebt early access gekregen.'}
+                            <h1 className="text-2xl font-black tracking-tighter text-zinc-900 leading-none">
+                                KOOK<span className="text-primary">BOEK</span>
+                            </h1>
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Culinary Assistant</p>
+                        </div>
+                    </div>
+
+                    {/* Welcome Message */}
+                    <div className="space-y-4">
+                        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                                <CheckCircle size={18} className="text-white" />
+                            </div>
+                            <div>
+                                <p className="text-emerald-700 font-bold text-xs uppercase tracking-tight">
+                                    {isInvitedUser ? 'Welkom! 👋' : 'Gefeliciteerd! 🎉'}
+                                </p>
+                                <p className="text-emerald-600 text-[11px]">
+                                    {isInvitedUser ? 'Je bent uitgenodigd.' : 'Je hebt early access gekregen.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <h2 className="text-3xl font-black text-zinc-900 tracking-tight">
+                                Voltooi je account
+                            </h2>
+                            <p className="text-zinc-500">
+                                Stel je profiel in voor <span className="font-medium text-zinc-700">{tokenData?.email}</span>
                             </p>
                         </div>
                     </div>
 
-                    <div className="space-y-1">
-                        <h2 className="text-3xl font-black text-zinc-900 tracking-tight">
-                            Voltooi je account
-                        </h2>
-                        <p className="text-zinc-500">
-                            Stel je profiel in voor <span className="font-medium text-zinc-700">{tokenData?.email}</span>
-                        </p>
-                    </div>
-                </div>
+                    {/* Form */}
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Name Fields */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Voornaam</label>
+                                <div className="relative group/input">
+                                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
+                                    <input
+                                        type="text"
+                                        placeholder="Voornaam"
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        required
+                                        className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Achternaam</label>
+                                <div className="relative group/input">
+                                    <input
+                                        type="text"
+                                        placeholder="Achternaam"
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        required
+                                        className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Name Fields */}
-                    <div className="grid grid-cols-2 gap-3">
+                        {/* Email (readonly) */}
                         <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Voornaam</label>
-                            <div className="relative group/input">
-                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
+                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">E-mailadres</label>
+                            <div className="relative">
+                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" />
                                 <input
-                                    type="text"
-                                    placeholder="Voornaam"
-                                    value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
+                                    type="email"
+                                    value={tokenData?.email || ''}
+                                    readOnly
+                                    className="w-full h-12 pl-11 pr-4 bg-zinc-100 border border-zinc-200 rounded-xl text-zinc-500 font-medium text-sm cursor-not-allowed"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Password */}
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Wachtwoord</label>
+                            <div className="relative group/input">
+                                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="Minimaal 6 tekens"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    minLength={6}
+                                    className="w-full h-12 pl-11 pr-11 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-500 transition-colors"
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Bevestig wachtwoord</label>
+                            <div className="relative group/input">
+                                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="Herhaal wachtwoord"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
                                     className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
                                 />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Achternaam</label>
-                            <div className="relative group/input">
-                                <input
-                                    type="text"
-                                    placeholder="Achternaam"
-                                    value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
-                                    required
-                                    className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
-                                />
+
+                        {/* Error */}
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-red-600 text-[11px] font-bold flex items-center gap-2 bg-red-50 p-4 rounded-xl border border-red-100"
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                                {error}
+                            </motion.div>
+                        )}
+
+                        {/* Submit Button */}
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="w-full h-14 bg-zinc-900 hover:bg-black text-white rounded-2xl font-bold tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-3 group disabled:opacity-70"
+                        >
+                            {submitting ? (
+                                <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <>
+                                    <span>Account voltooien</span>
+                                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
+                        </button>
+                    </form>
+                </motion.div>
+            </div>
+
+            {/* Right Side: Recipe Slideshow (50%) */}
+            <div className="hidden md:flex w-1/2 h-full relative overflow-hidden items-center justify-center bg-white">
+                <div className="w-full h-full pr-6 relative flex gap-3">
+                    {columnData.map((col, colIdx) => (
+                        <div key={colIdx} className="flex-1 h-full overflow-hidden relative">
+                            <div
+                                style={{
+                                    animationDuration: `${col.duration}s`,
+                                    WebkitAnimationDuration: `${col.duration}s`,
+                                    animationDelay: `${col.offset}s`,
+                                    WebkitAnimationDelay: `${col.offset}s`
+                                }}
+                                className="animate-scroll-up flex flex-col gap-3"
+                            >
+                                {[...col.recipes, ...col.recipes].map((recipe, idx) => (
+                                    <div key={`${colIdx}-${recipe.id}-${idx}`} className="w-full">
+                                        <BentoRecipeCard recipe={recipe} size="small" />
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    </div>
+                    ))}
+                </div>
 
-                    {/* Email (readonly) */}
-                    <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">E-mailadres</label>
-                        <div className="relative">
-                            <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" />
-                            <input
-                                type="email"
-                                value={tokenData?.email || ''}
-                                readOnly
-                                className="w-full h-12 pl-11 pr-4 bg-zinc-100 border border-zinc-200 rounded-xl text-zinc-500 font-medium text-sm cursor-not-allowed"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Password */}
-                    <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Wachtwoord</label>
-                        <div className="relative group/input">
-                            <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                placeholder="Minimaal 6 tekens"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                minLength={6}
-                                className="w-full h-12 pl-11 pr-11 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-500 transition-colors"
-                            >
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Confirm Password */}
-                    <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Bevestig wachtwoord</label>
-                        <div className="relative group/input">
-                            <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                placeholder="Herhaal wachtwoord"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                                className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Error */}
-                    {error && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-red-600 text-[11px] font-bold flex items-center gap-2 bg-red-50 p-4 rounded-xl border border-red-100"
-                        >
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-                            {error}
-                        </motion.div>
-                    )}
-
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="w-full h-14 bg-zinc-900 hover:bg-black text-white rounded-2xl font-bold tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-3 group disabled:opacity-70"
-                    >
-                        {submitting ? (
-                            <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                        ) : (
-                            <>
-                                <span>Account voltooien</span>
-                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                            </>
-                        )}
-                    </button>
-                </form>
-            </motion.div>
+                {/* Ambient Blur Glows */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.02] blur-[100px] rounded-full -mr-64 -mt-64" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/[0.02] blur-[100px] rounded-full -ml-64 -mb-64" />
+            </div>
         </div>
     );
 }
