@@ -12,8 +12,6 @@ import AddToPlanModal from './AddToPlanModal';
 import BackButton from './BackButton';
 import { useAuth } from '../context/AuthContext';
 import { toggleFavorite, checkIsFavorite } from '../lib/plannerService';
-import { startOfWeek, addDays, format, parseISO } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import { getAuthorDisplayName, getAuthorAvatarUrl } from '../lib/authorProfileService';
 
 // Language code to Dutch name mapping
