@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { supabase, uploadTempImage, uploadSourceImage, deleteImageByUrl } from './lib/supabase';
+import { supabase, uploadTempImage, uploadSourceImage, deleteImageByUrl, isInviteFlow } from './lib/supabase';
 import { analyzeRecipeImage } from './lib/xai';
 import { translations as t } from './lib/translations';
 import { useAuth } from './context/AuthContext';
@@ -822,16 +822,8 @@ function AuthenticatedApp() {
 export default function App() {
   const { user, loading } = useAuth();
 
-  // Check for Supabase invite/recovery flow (in URL hash) IMMEDIATELY on first render
-  // Must happen before Supabase client processes and clears the hash
-  const [showProfileSetup, setShowProfileSetup] = useState(() => {
-    const hash = window.location.hash;
-    const isInviteFlow = hash && (hash.includes('type=invite') || hash.includes('type=recovery') || hash.includes('type=magiclink'));
-    if (isInviteFlow) {
-      console.log('[App] Detected invite/recovery hash:', hash);
-    }
-    return isInviteFlow;
-  });
+  // Use isInviteFlow captured at module load time (before Supabase cleared the hash)
+  const [showProfileSetup, setShowProfileSetup] = useState(isInviteFlow);
 
   // Check for account completion token (our custom flow)
   const urlParams = new URLSearchParams(window.location.search);

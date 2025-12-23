@@ -4,6 +4,17 @@ import heic2any from 'heic2any'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// IMPORTANT: Capture the hash BEFORE Supabase client processes it
+// Supabase with detectSessionInUrl: true will clear the hash immediately
+export const initialUrlHash = typeof window !== 'undefined' ? window.location.hash : '';
+export const isInviteFlow = initialUrlHash.includes('type=invite') ||
+    initialUrlHash.includes('type=recovery') ||
+    initialUrlHash.includes('type=magiclink');
+
+if (isInviteFlow) {
+    console.log('[supabase.js] Captured invite hash before processing:', initialUrlHash);
+}
+
 if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('Missing Supabase credentials. Application may not function correctly.')
 }
