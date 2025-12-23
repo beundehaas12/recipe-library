@@ -52,7 +52,7 @@ export default function UserMenu() {
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        <div className="flex flex-col items-start text-left">
+                        <div className="hidden md:flex flex-col items-start text-left">
                             <span className="text-xs font-bold text-white leading-none mb-0.5">{displayName}</span>
                             <span className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider leading-none">{displayRole}</span>
                         </div>
