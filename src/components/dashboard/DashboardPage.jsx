@@ -47,7 +47,7 @@ export default function DashboardPage() {
         if (!user) return;
 
         async function fetchRecipes() {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('recipes')
                 .select(`
                     *,
@@ -56,6 +56,13 @@ export default function DashboardPage() {
                     recipe_collections (collection_id)
                 `)
                 .order('created_at', { ascending: false });
+
+            // Authors see only their own recipes; Admins see all
+            if (!isAdmin) {
+                query = query.eq('user_id', user.id);
+            }
+
+            const { data, error } = await query;
 
             if (error) {
                 console.error('Error fetching recipes:', error);

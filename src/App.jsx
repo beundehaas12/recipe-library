@@ -14,6 +14,7 @@ import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardPage from './components/dashboard/DashboardPage';
 import UserManagementPage from './components/dashboard/UserManagementPage';
 import AccountSettingsPage from './components/dashboard/AccountSettingsPage';
+import AuthorProfilePage from './components/dashboard/AuthorProfilePage';
 import CollectionPage from './components/CollectionPage';
 import FloatingMenu from './components/FloatingMenu';
 import AppHeader from './components/AppHeader';
@@ -748,6 +749,7 @@ function AuthenticatedApp() {
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/dashboard/users" element={<UserManagementPage />} />
+        <Route path="/dashboard/profile" element={<AuthorProfilePage />} />
         <Route path="/settings" element={<AccountSettingsPage />} />
       </Routes>
 

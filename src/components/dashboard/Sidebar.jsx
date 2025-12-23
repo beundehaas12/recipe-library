@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutGrid, Clock, FolderOpen, Star, PlusCircle, Users, Settings } from 'lucide-react';
+import { LayoutGrid, Clock, FolderOpen, Star, PlusCircle, Users, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Sidebar({ activeFilter, onFilterChange, collections = [], onCreateCollection, isAdmin = false }) {
@@ -70,6 +70,13 @@ export default function Sidebar({ activeFilter, onFilterChange, collections = []
             <div className="p-4 pt-0">
                 <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-3 mb-2">Account</h2>
                 <div className="space-y-1">
+                    <Link
+                        to="/dashboard/profile"
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                    >
+                        <User size={18} className="text-zinc-500" />
+                        Author Profile
+                    </Link>
                     {isAdmin && (
                         <Link
                             to="/dashboard/users"
