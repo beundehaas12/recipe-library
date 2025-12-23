@@ -133,17 +133,23 @@ export function useBatchProcessing() {
 
             if (!htmlContent) throw new Error("Could not retrieve content from URL");
 
+            console.log('[BatchProcess] HTML fetched, length:', htmlContent.length);
+
             // 2. Parse HTML for recipe
             const processed = processHtmlForRecipe(htmlContent);
+            console.log('[BatchProcess] Processed result type:', processed.type);
+            console.log('[BatchProcess] Has schemaRecipe:', !!processed.schemaRecipe);
+
             let recipe;
             let usage = null;
 
             if (processed.type === 'schema') {
-                console.log('[BatchProcess] Schema.org data found');
+                console.log('[BatchProcess] ✅ Schema.org data found - using direct extraction');
                 recipe = processed.data;
                 recipe.ai_tags = ['📊 schema', ...(recipe.ai_tags || [])];
             } else {
-                console.log('[BatchProcess] Using AI to extract recipe');
+                console.log('[BatchProcess] ⚠️ No complete schema - falling back to AI');
+                console.log('[BatchProcess] Reason: Schema had insufficient data (missing title/ingredients/instructions)');
                 const result = await extractRecipeFromText(processed.data);
                 recipe = result.recipe;
                 usage = result.usage;
