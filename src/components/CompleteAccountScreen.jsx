@@ -113,146 +113,73 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         validateToken();
     }, [token, isInvitedUser]);
 
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setSubmitting(true);
+        setStatusLog([]);
 
         const addLog = (msg) => {
-            console.info(msg);
+            console.info(`[CompleteAccount] ${msg}`);
             setStatusLog(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`]);
         };
 
-        addLog('Starting process...');
-
-        // Increased to 15s timeout
-        const withTimeout = (promise, ms = 15000) => Promise.race([
-            promise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_15S: Request took too long')), ms))
-        ]);
-
         try {
             if (isInvitedUser) {
-                // === INVITED USER FLOW ===
+                // === INVITED USER FLOW (Clean Implementation) ===
+                addLog('Verifying session...');
 
-                // 1. Force refresh session
-                addLog('Refreshing session...');
-                try {
-                    await withTimeout(supabase.auth.refreshSession(), 2000); // Short timeout, non-blocking
-                } catch (e) {
-                    console.warn('Session refresh skipped:', e);
-                    addLog('Session refresh skipped...');
+                // 1. Verify we have a valid session before any auth operations
+                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError || !sessionData?.session) {
+                    throw new Error('Geen actieve sessie. Probeer de uitnodigingslink opnieuw.');
                 }
+                const user = sessionData.session.user;
+                addLog(`Session verified for ${user.email}`);
 
-
-                // 2. Metadata Update (Check connectivity)
-                addLog('Updating metadata...');
-                try {
-                    const { error: metaError } = await withTimeout(
-                        supabase.auth.updateUser({
-                            data: {
-                                first_name: firstName.trim(),
-                                last_name: lastName.trim()
-                            }
-                        })
-                    );
-                    if (metaError) throw metaError;
-                    addLog('Metadata updated.');
-                } catch (e) {
-                    console.warn('Metadata update skipped:', e);
-                    addLog('Metadata update skipped (non-critical)...');
-                }
-
-                // 3. Password Update
-                console.info('[CompleteAccount] Updating password...');
-                const { error: passwordError } = await withTimeout(
-                    supabase.auth.updateUser({ password: password })
-                );
-
+                // 2. Set password (required for invited users)
+                addLog('Setting password...');
+                const { error: passwordError } = await supabase.auth.updateUser({
+                    password: password
+                });
                 if (passwordError) {
-                    console.error('[CompleteAccount] Password error:', passwordError);
-                    throw new Error(passwordError.message);
+                    throw new Error(`Wachtwoord instellen mislukt: ${passwordError.message}`);
                 }
-                console.info('[CompleteAccount] Password updated successfully');
+                addLog('Password set successfully');
 
-                const { data: { user } } = await supabase.auth.getUser();
-                console.info('[CompleteAccount] Got user:', user?.id);
+                // 3. Update profile in database (not auth metadata - that hangs)
+                addLog('Updating profile...');
+                const { error: profileError } = await supabase
+                    .from('user_profiles')
+                    .upsert({
+                        user_id: user.id,
+                        first_name: firstName.trim(),
+                        last_name: lastName.trim()
+                    }, { onConflict: 'user_id' });
 
-                if (user) {
-                    // Update profile - row should already exist from invite trigger
-                    console.info('[CompleteAccount] Updating profile...');
-                    // Use select().maybeSingle() to know if the row existed and was updated
-                    const { data: updatedProfile, error: profileError } = await withTimeout(
-                        supabase
-                            .from('user_profiles')
-                            .update({
-                                first_name: firstName.trim(),
-                                last_name: lastName.trim()
-                            })
-                            .eq('user_id', user.id)
-                            .select()
-                            .maybeSingle()
-                    );
-
-                    // If error or no data returned (meaning row didn't exist), try insert
-                    if (profileError || !updatedProfile) {
-                        console.info('[CompleteAccount] Profile update returned no data or error, trying insert...', profileError);
-
-                        const { error: insertError } = await withTimeout(
-                            supabase
-                                .from('user_profiles')
-                                .insert({
-                                    user_id: user.id,
-                                    first_name: firstName.trim(),
-                                    last_name: lastName.trim()
-                                })
-                        );
-
-                        if (insertError) {
-                            console.error('[CompleteAccount] Profile insert also failed:', insertError);
-                        } else {
-                            console.info('[CompleteAccount] Profile inserted successfully');
-                        }
-                    } else {
-                        console.info('[CompleteAccount] Profile updated successfully');
-                    }
-
-                    // Update preferences - try update first, then insert
-                    const { data: updatedPrefs, error: prefError } = await withTimeout(
-                        supabase
-                            .from('user_preferences')
-                            .update({})
-                            .eq('user_id', user.id)
-                            .select()
-                            .maybeSingle()
-                    );
-
-                    if (prefError || !updatedPrefs) {
-                        await supabase
-                            .from('user_preferences')
-                            .insert({ user_id: user.id })
-                            .catch(e => console.warn('Preferences insert failed:', e));
-                    }
-
-                    // Update user metadata
-                    await supabase.auth.updateUser({
-                        data: {
-                            first_name: firstName.trim(),
-                            last_name: lastName.trim()
-                        }
-                    });
-                    console.info('[CompleteAccount] Metadata updated');
+                if (profileError) {
+                    console.warn('Profile update failed:', profileError);
+                    // Non-fatal: profile might already exist or trigger created it
                 }
 
-                // Success!
-                console.info('[CompleteAccount] All done, setting success state...');
+                // 4. Ensure preferences exist
+                addLog('Ensuring preferences...');
+                await supabase
+                    .from('user_preferences')
+                    .upsert({ user_id: user.id }, { onConflict: 'user_id' })
+                    .catch(e => console.warn('Preferences upsert failed:', e));
+
+                // Done!
+                addLog('Account setup complete!');
                 setSuccess(true);
                 setTimeout(() => {
                     if (onComplete) onComplete();
-                }, 2000);
+                }, 1500);
 
             } else {
-                // === TOKEN-BASED FLOW ===
+                // === TOKEN-BASED FLOW (Early Access) ===
+                addLog('Creating account...');
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: tokenData.email,
                     password: password,
@@ -269,26 +196,27 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                 }
 
                 if (authData.user) {
+                    addLog('Updating profile...');
                     await supabase
                         .from('user_profiles')
-                        .update({
+                        .upsert({
+                            user_id: authData.user.id,
                             first_name: firstName.trim(),
-                            last_name: lastName.trim(),
-                            display_name: `${firstName.trim()} ${lastName.trim()}`
-                        })
-                        .eq('user_id', authData.user.id);
+                            last_name: lastName.trim()
+                        }, { onConflict: 'user_id' });
                 }
 
+                addLog('Completing early access...');
                 await completeEarlyAccess(token);
-                setSuccess(true);
 
+                setSuccess(true);
                 setTimeout(() => {
                     if (onComplete) {
                         onComplete();
                     } else {
                         window.location.href = '/';
                     }
-                }, 3000);
+                }, 2000);
             }
 
         } catch (err) {
