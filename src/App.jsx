@@ -860,12 +860,12 @@ export default function App() {
     );
   }
 
-  // Show profile setup for invited users
-  if (user && showProfileSetup) {
+  // Show profile setup for invited users (show even without user - component handles polling)
+  if (showProfileSetup) {
     return (
       <CompleteAccountScreen
         isInvitedUser={true}
-        userEmail={user.email}
+        userEmail={user?.email}
         onComplete={() => {
           // Clear hash and reload
           window.history.replaceState({}, document.title, window.location.pathname);
