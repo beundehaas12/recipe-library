@@ -834,8 +834,8 @@ export default function App() {
     if (hash && (hash.includes('type=invite') || hash.includes('type=recovery'))) {
       // User came from invite or recovery link - show profile setup
       setShowProfileSetup(true);
-      // Clear the hash to prevent re-triggering
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Do NOT clear hash manually immediately - Supabase needs it to establish session
+      // Supabase client will clear it automatically
     }
   }, []);
 
