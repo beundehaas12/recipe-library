@@ -163,17 +163,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                     addLog('Password update sent (continuing...)');
                 }
 
-                // 3. Ensure preferences exist (trigger should have created profile)
-                addLog('Ensuring preferences...');
-                try {
-                    await supabase
-                        .from('user_preferences')
-                        .upsert({ user_id: user.id }, { onConflict: 'user_id' });
-                } catch (e) {
-                    console.warn('Preferences upsert failed:', e);
-                }
-
-                // Done!
+                // Done! (trigger handles profile/preferences creation)
                 addLog('Account setup complete!');
                 setSuccess(true);
                 setTimeout(() => {
