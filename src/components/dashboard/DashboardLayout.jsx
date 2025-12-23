@@ -6,7 +6,7 @@ import ActivityPanel from './ActivityPanel';
 import { getUnreadCount } from '../../lib/activityService';
 import { supabase } from '../../lib/supabase';
 
-export default function DashboardLayout({ children, user, signOut, activeFilter, onFilterChange, collections = [], onCreateCollection }) {
+export default function DashboardLayout({ children, user, signOut, activeFilter, onFilterChange, collections = [], onCreateCollection, isAdmin = false }) {
     const [showActivities, setShowActivities] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
@@ -106,6 +106,7 @@ export default function DashboardLayout({ children, user, signOut, activeFilter,
                     onFilterChange={onFilterChange}
                     collections={collections}
                     onCreateCollection={onCreateCollection}
+                    isAdmin={isAdmin}
                 />
 
                 {/* Content Area (List + Preview) */}

@@ -12,6 +12,7 @@ import PlanningPage from './components/PlanningPage';
 import ShoppingListPage from './components/ShoppingListPage';
 import FavoritesPage from './components/FavoritesPage';
 import DashboardPage from './components/dashboard/DashboardPage';
+import UserManagementPage from './components/dashboard/UserManagementPage';
 import CollectionPage from './components/CollectionPage';
 import FloatingMenu from './components/FloatingMenu';
 import AppHeader from './components/AppHeader';
@@ -880,6 +881,7 @@ function AuthenticatedApp() {
         <Route path="/shopping" element={<ShoppingListPage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard/users" element={<UserManagementPage />} />
       </Routes>
 
       <AppHeader

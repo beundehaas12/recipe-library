@@ -1,11 +1,27 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getUserRole, canAccessDashboard, canManageUsers } from '../lib/roleService';
 
 const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
+    const [role, setRole] = useState('user');
     const [loading, setLoading] = useState(true);
+
+    // Derived permissions
+    const isAdmin = role === 'admin';
+    const isAuthor = role === 'author' || role === 'admin';
+
+    // Fetch user role
+    const fetchRole = async (userId) => {
+        if (!userId) {
+            setRole('user');
+            return;
+        }
+        const userRole = await getUserRole(userId);
+        setRole(userRole);
+    };
 
     useEffect(() => {
         // Timeout fallback for mobile: if auth check takes too long, stop loading
@@ -17,8 +33,12 @@ export function AuthProvider({ children }) {
         }, 5000);
 
         // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
+            const currentUser = session?.user ?? null;
+            setUser(currentUser);
+            if (currentUser) {
+                await fetchRole(currentUser.id);
+            }
             setLoading(false);
         }).catch((error) => {
             console.error('Error getting session:', error);
@@ -27,8 +47,14 @@ export function AuthProvider({ children }) {
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                setUser(session?.user ?? null);
+            async (_event, session) => {
+                const currentUser = session?.user ?? null;
+                setUser(currentUser);
+                if (currentUser) {
+                    await fetchRole(currentUser.id);
+                } else {
+                    setRole('user');
+                }
                 setLoading(false);
             }
         );
@@ -75,6 +101,7 @@ export function AuthProvider({ children }) {
         } finally {
             // Always clear user state
             setUser(null);
+            setRole('user');
 
             // Manually clear all Supabase auth tokens from localStorage as fallback
             if (typeof window !== 'undefined' && window.localStorage) {
@@ -96,10 +123,15 @@ export function AuthProvider({ children }) {
 
     const value = {
         user,
+        role,
+        isAdmin,
+        isAuthor,
         loading,
         signUp,
         signIn,
         signOut,
+        canAccessDashboard: () => canAccessDashboard(role),
+        canManageUsers: () => canManageUsers(role),
     };
 
     return (
@@ -116,3 +148,4 @@ export function useAuth() {
     }
     return context;
 }
+

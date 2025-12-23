@@ -1,7 +1,8 @@
 import React from 'react';
-import { LayoutGrid, Clock, FolderOpen, Star, PlusCircle } from 'lucide-react';
+import { LayoutGrid, Clock, FolderOpen, Star, PlusCircle, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-export default function Sidebar({ activeFilter, onFilterChange, collections = [], onCreateCollection }) {
+export default function Sidebar({ activeFilter, onFilterChange, collections = [], onCreateCollection, isAdmin = false }) {
     const mainFilters = [
         { id: 'all', label: 'All Recipes', icon: LayoutGrid },
         { id: 'drafts', label: 'Processing', icon: Clock },
@@ -64,6 +65,22 @@ export default function Sidebar({ activeFilter, onFilterChange, collections = []
                     ))}
                 </div>
             </div>
+
+            {/* Admin Section */}
+            {isAdmin && (
+                <div className="p-4 pt-0">
+                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-3 mb-2">Admin</h2>
+                    <div className="space-y-1">
+                        <Link
+                            to="/dashboard/users"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                        >
+                            <Users size={18} className="text-zinc-500" />
+                            Gebruikersbeheer
+                        </Link>
+                    </div>
+                </div>
+            )}
 
             <div className="mt-auto p-4 border-t border-white/10">
                 <div className="bg-zinc-900 rounded-lg p-3">

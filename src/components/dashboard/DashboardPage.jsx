@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import DashboardLayout from './DashboardLayout';
@@ -8,13 +9,30 @@ import CreateCollectionModal from './CreateCollectionModal';
 import { useBatchProcessing } from '../../hooks/useBatchProcessing';
 
 export default function DashboardPage() {
-    const { user, signOut } = useAuth();
+    const navigate = useNavigate();
+    const { user, signOut, isAdmin, isAuthor, loading } = useAuth();
     const { queue, uploadFiles, updateItem: updateQueueItem, deleteItem: deleteQueueItem } = useBatchProcessing();
     const [selectedId, setSelectedId] = useState(null);
     const [dbRecipes, setDbRecipes] = useState([]);
     const [collections, setCollections] = useState([]);
     const [activeFilter, setActiveFilter] = useState('all');
     const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+
+    // Route guard: redirect non-author users to home
+    useEffect(() => {
+        if (!loading && !isAuthor) {
+            navigate('/');
+        }
+    }, [loading, isAuthor, navigate]);
+
+    // Don't render if not author
+    if (loading || !isAuthor) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+        );
+    }
 
     // Fetch collections
     useEffect(() => {
@@ -311,6 +329,7 @@ export default function DashboardPage() {
             onFilterChange={setActiveFilter}
             collections={collections}
             onCreateCollection={() => setIsCollectionModalOpen(true)}
+            isAdmin={isAdmin}
         >
             {/* Finder Column 2: List */}
             <RecipeQueueList
