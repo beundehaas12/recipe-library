@@ -81,6 +81,7 @@ export async function getAuthorProfileById(userId) {
  */
 export async function updateAuthorProfile(updates) {
     try {
+        console.log('[Profile] Starting update:', updates);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return { data: null, error: new Error('Not authenticated') };
 
@@ -93,16 +94,19 @@ export async function updateAuthorProfile(updates) {
             }
         }
 
-        // Use upsert to handle case where profile doesn't exist yet
+        // Use UPDATE instead of UPSERT since we know the profile exists (page loaded)
+        console.log('[Profile] Sending update to Supabase...');
         const { data, error } = await supabase
             .from('author_profiles')
-            .upsert({
-                user_id: user.id,
+            .update({
                 ...sanitizedUpdates,
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id' })
+            })
+            .eq('user_id', user.id)
             .select()
             .single();
+
+        console.log('[Profile] Update result:', { data, error });
 
         if (error) {
             console.error('Error updating author profile:', error);
