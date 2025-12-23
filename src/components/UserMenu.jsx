@@ -37,49 +37,37 @@ export default function UserMenu() {
 
     return (
         <div className="relative" ref={menuRef}>
-            {isSpecialUser ? (
-                // Split Button Design for Authors/Admins
-                <div className={`group flex items-center bg-black/40 backdrop-blur-md rounded-full transition-all shadow-sm ${isOpen ? 'ring-2 ring-primary/50 border-primary/50' : ''}`}>
-                    {/* Main Part: Avatar + Name */}
-                    <button
-                        onClick={toggleMenu}
-                        className="flex items-center gap-3 pl-1.5 pr-2 py-1.5 rounded-l-full transition-colors focus:outline-none"
-                    >
-                        <div className="relative overflow-hidden rounded-full border border-white/10 shadow-sm w-8 h-8">
-                            <img
-                                src={getAvatarUrl(profile, user)}
-                                alt="User"
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                        <div className="hidden md:flex flex-col items-start text-left">
-                            <span className="text-xs font-bold text-white leading-none mb-0.5">{displayName}</span>
-                            <span className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider leading-none">{displayRole}</span>
-                        </div>
-                    </button>
-
-                    {/* Dropdown Action Part */}
-                    <button
-                        onClick={toggleMenu}
-                        className="w-8 h-8 mr-1 rounded-full hover:bg-white/10 transition-colors focus:outline-none flex items-center justify-center text-zinc-400 group-hover:text-white"
-                        aria-label="Open user menu"
-                    >
-                        <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                </div>
-            ) : (
-                // Standard Button for Users
+            {/* Fishbowl Design for All Users */}
+            <div className={`group flex items-center bg-black/40 backdrop-blur-md rounded-full transition-all shadow-sm ${isOpen ? 'ring-2 ring-primary/50 border-primary/50' : ''}`}>
+                {/* Main Part: Avatar + Name */}
                 <button
                     onClick={toggleMenu}
-                    className="w-11 h-11 md:w-9 md:h-9 rounded-full bg-zinc-800/80 backdrop-blur-md border border-white/10 overflow-hidden hover:border-white/30 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-xl"
+                    className="flex items-center gap-3 pl-1.5 pr-2 py-1.5 rounded-l-full transition-colors focus:outline-none"
                 >
-                    <img
-                        src={getAvatarUrl(profile, user)}
-                        alt="User"
-                        className="w-full h-full object-cover"
-                    />
+                    <div className="relative overflow-hidden rounded-full border border-white/10 shadow-sm w-8 h-8">
+                        <img
+                            src={getAvatarUrl(profile, user)}
+                            alt="User"
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                    <div className="hidden md:flex flex-col items-start text-left">
+                        <span className="text-xs font-bold text-white leading-none mb-0.5">{displayName}</span>
+                        {isSpecialUser && (
+                            <span className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider leading-none">{displayRole}</span>
+                        )}
+                    </div>
                 </button>
-            )}
+
+                {/* Dropdown Action Part */}
+                <button
+                    onClick={toggleMenu}
+                    className="w-8 h-8 mr-1 rounded-full hover:bg-white/10 transition-colors focus:outline-none flex items-center justify-center text-zinc-400 group-hover:text-white"
+                    aria-label="Open user menu"
+                >
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+            </div>
 
             <AnimatePresence>
                 {isOpen && (
