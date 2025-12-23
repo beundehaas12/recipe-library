@@ -165,10 +165,13 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
                 // 3. Ensure preferences exist (trigger should have created profile)
                 addLog('Ensuring preferences...');
-                await supabase
-                    .from('user_preferences')
-                    .upsert({ user_id: user.id }, { onConflict: 'user_id' })
-                    .catch(e => console.warn('Preferences upsert failed:', e));
+                try {
+                    await supabase
+                        .from('user_preferences')
+                        .upsert({ user_id: user.id }, { onConflict: 'user_id' });
+                } catch (e) {
+                    console.warn('Preferences upsert failed:', e);
+                }
 
                 // Done!
                 addLog('Account setup complete!');
