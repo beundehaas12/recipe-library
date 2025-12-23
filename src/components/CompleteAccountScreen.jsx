@@ -267,7 +267,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                         </div>
                         <div>
                             <h1 className="text-2xl font-black tracking-tighter text-zinc-900 leading-none">
-                                KOOK<span className="text-primary">BOEK</span>
+                                Forkify
                             </h1>
                             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Culinary Assistant</p>
                         </div>

@@ -1,7 +1,7 @@
 // Dutch-only translations for Recipe Library
 export const translations = {
     // App General
-    appTitle: "Recepten",
+    appTitle: "Forkify",
 
     // Add Recipe Menu
     addRecipe: "Toevoegen",
