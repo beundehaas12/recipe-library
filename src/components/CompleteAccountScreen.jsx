@@ -129,19 +129,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
             if (isInvitedUser) {
                 // Fire password update (don't await - known to hang)
                 supabase.auth.updateUser({ password });
-
-                // Fire profile update (don't await)
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    supabase.from('user_profiles').upsert({
-                        id: user.id,
-                        first_name: firstName,
-                        last_name: lastName
-                    });
-                }
-
                 setSuccess(true);
-                setTimeout(() => onComplete?.(), 1000);
 
             } else {
                 // === TOKEN-BASED FLOW (Early Access) ===
@@ -236,8 +224,28 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         );
     }
 
-    // Success state
+    // Success state - now ask for name
     if (success) {
+        const handleProfileSubmit = async (e) => {
+            e.preventDefault();
+            setSubmitting(true);
+
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    await supabase.from('user_profiles').upsert({
+                        id: user.id,
+                        first_name: firstName,
+                        last_name: lastName
+                    });
+                }
+            } catch (err) {
+                console.error('Profile update error:', err);
+            }
+
+            onComplete?.();
+        };
+
         return (
             <div className="h-screen w-screen bg-white flex flex-col items-center justify-center p-8">
                 <motion.div
@@ -249,12 +257,52 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                         <CheckCircle size={32} className="text-emerald-500" />
                     </div>
                     <div className="space-y-2">
-                        <h1 className="text-2xl font-bold text-zinc-900">Welkom, {firstName}! 🎉</h1>
+                        <h1 className="text-2xl font-bold text-zinc-900">Welkom! 🎉</h1>
                         <p className="text-zinc-500">
-                            Je account is klaar. Een moment geduld...
+                            Je account is klaar. Hoe mogen we je noemen?
                         </p>
                     </div>
-                    <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+
+                    <form onSubmit={handleProfileSubmit} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="relative group/input">
+                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
+                                <input
+                                    type="text"
+                                    placeholder="Voornaam"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    required
+                                    className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
+                                />
+                            </div>
+                            <div className="relative group/input">
+                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
+                                <input
+                                    type="text"
+                                    placeholder="Achternaam"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    required
+                                    className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
+                                />
+                            </div>
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={submitting || !firstName || !lastName}
+                            className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        >
+                            {submitting ? (
+                                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+                            ) : (
+                                <>
+                                    Aan de slag
+                                    <ArrowRight size={18} />
+                                </>
+                            )}
+                        </button>
+                    </form>
                 </motion.div>
             </div>
         );
@@ -324,38 +372,6 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                                     readOnly
                                     className="w-full h-12 pl-11 pr-4 bg-zinc-100 border border-zinc-200 rounded-xl text-zinc-500 font-medium text-sm cursor-not-allowed"
                                 />
-                            </div>
-                        </div>
-
-                        {/* Name Fields */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Voornaam</label>
-                                <div className="relative group/input">
-                                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
-                                    <input
-                                        type="text"
-                                        placeholder="Voornaam"
-                                        value={firstName}
-                                        onChange={(e) => setFirstName(e.target.value)}
-                                        required
-                                        className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Achternaam</label>
-                                <div className="relative group/input">
-                                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
-                                    <input
-                                        type="text"
-                                        placeholder="Achternaam"
-                                        value={lastName}
-                                        onChange={(e) => setLastName(e.target.value)}
-                                        required
-                                        className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
-                                    />
-                                </div>
                             </div>
                         </div>
 
