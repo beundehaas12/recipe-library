@@ -116,8 +116,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                         .upsert({
                             user_id: user.id,
                             first_name: firstName.trim(),
-                            last_name: lastName.trim(),
-                            display_name: `${firstName.trim()} ${lastName.trim()}`
+                            last_name: lastName.trim()
                         }, { onConflict: 'user_id' })
                         .then(() => console.log('[CompleteAccount] Profile upsert done'))
                         .catch(e => console.warn('[CompleteAccount] Profile upsert failed:', e));
