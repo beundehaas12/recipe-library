@@ -236,7 +236,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                         <CheckCircle size={32} className="text-emerald-500" />
                     </div>
                     <div className="space-y-2">
-                        <h1 className="text-2xl font-bold text-zinc-900">Welkom, {firstName}! 🎉</h1>
+                        <h1 className="text-2xl font-bold text-zinc-900">Welkom! 🎉</h1>
                         <p className="text-zinc-500">
                             Je account is klaar. Een moment geduld...
                         </p>
