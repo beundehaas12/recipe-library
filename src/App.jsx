@@ -820,7 +820,7 @@ function AuthenticatedApp() {
 }
 
 export default function App() {
-  const { user, loading, profile } = useAuth();
+  const { user, loading } = useAuth();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   // Check for account completion token (our custom flow)
@@ -828,24 +828,16 @@ export default function App() {
   const completeToken = urlParams.get('complete');
 
   // Check for Supabase invite/recovery flow (in URL hash)
+  // Only trigger profile setup for users coming from invite links
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && (hash.includes('type=invite') || hash.includes('type=recovery'))) {
-      // User came from invite or recovery link
+      // User came from invite or recovery link - show profile setup
       setShowProfileSetup(true);
+      // Clear the hash to prevent re-triggering
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
-
-  // Check if logged in user needs to complete profile
-  useEffect(() => {
-    if (user && profile) {
-      // Check if profile is incomplete (no first/last name set)
-      const isIncomplete = !profile.first_name && !profile.last_name;
-      if (isIncomplete) {
-        setShowProfileSetup(true);
-      }
-    }
-  }, [user, profile]);
 
   if (loading) {
     return (
