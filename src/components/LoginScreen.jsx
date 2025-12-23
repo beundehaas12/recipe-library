@@ -19,6 +19,8 @@ export default function LoginScreen() {
     const [recipes, setRecipes] = useState([]);
 
     // Waitlist states
+    const [waitlistFirstName, setWaitlistFirstName] = useState('');
+    const [waitlistLastName, setWaitlistLastName] = useState('');
     const [waitlistEmail, setWaitlistEmail] = useState('');
     const [waitlistLoading, setWaitlistLoading] = useState(false);
     const [waitlistMessage, setWaitlistMessage] = useState('');
@@ -66,10 +68,12 @@ export default function LoginScreen() {
         setWaitlistLoading(true);
 
         try {
-            const result = await submitEarlyAccessRequest(waitlistEmail);
+            const result = await submitEarlyAccessRequest(waitlistEmail, waitlistFirstName, waitlistLastName);
             if (result.success) {
                 setWaitlistMessage('Je staat op de lijst! 🎉');
                 setWaitlistEmail('');
+                setWaitlistFirstName('');
+                setWaitlistLastName('');
             } else {
                 setWaitlistMessage(result.error || 'Er is iets misgegaan. Probeer het opnieuw.');
             }
@@ -248,26 +252,48 @@ export default function LoginScreen() {
                                 Meld je aan voor de vroege toegang lijst.
                             </p>
 
-                            <form onSubmit={handleWaitlistSubmit} className="flex gap-2" autoComplete="off">
-                                <div className="relative flex-1">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300" size={14} />
+                            <form onSubmit={handleWaitlistSubmit} className="space-y-2" autoComplete="off">
+                                <div className="flex gap-2">
                                     <input
-                                        type="email"
-                                        placeholder="E-mailadres"
-                                        value={waitlistEmail}
-                                        onChange={(e) => setWaitlistEmail(e.target.value)}
+                                        type="text"
+                                        placeholder="Voornaam"
+                                        value={waitlistFirstName}
+                                        onChange={(e) => setWaitlistFirstName(e.target.value)}
                                         required
                                         autoComplete="off"
-                                        className="w-full h-10 pl-9 pr-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-primary transition-all"
+                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-primary transition-all"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Achternaam"
+                                        value={waitlistLastName}
+                                        onChange={(e) => setWaitlistLastName(e.target.value)}
+                                        required
+                                        autoComplete="off"
+                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-primary transition-all"
                                     />
                                 </div>
-                                <button
-                                    type="submit"
-                                    disabled={waitlistLoading}
-                                    className="px-4 h-10 bg-zinc-900 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-black transition-all disabled:opacity-50 whitespace-nowrap"
-                                >
-                                    {waitlistLoading ? '...' : 'Aanmelden'}
-                                </button>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300" size={14} />
+                                        <input
+                                            type="email"
+                                            placeholder="E-mailadres"
+                                            value={waitlistEmail}
+                                            onChange={(e) => setWaitlistEmail(e.target.value)}
+                                            required
+                                            autoComplete="off"
+                                            className="w-full h-10 pl-9 pr-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-primary transition-all"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={waitlistLoading}
+                                        className="px-4 h-10 bg-zinc-900 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-black transition-all disabled:opacity-50 whitespace-nowrap"
+                                    >
+                                        {waitlistLoading ? '...' : 'Aanmelden'}
+                                    </button>
+                                </div>
                             </form>
 
                             {waitlistMessage && (

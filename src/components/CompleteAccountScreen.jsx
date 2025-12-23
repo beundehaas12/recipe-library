@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ChefHat, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle, User } from 'lucide-react';
+import { ChefHat, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { validateInvitationToken, completeEarlyAccess } from '../lib/roleService';
 import { fetchLandingPageRecipes } from '../lib/recipeService';
@@ -15,8 +15,6 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
     const [success, setSuccess] = useState(false);
 
     // Form state
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -224,29 +222,10 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         );
     }
 
-    // Success state - now ask for name
+    // Success state - auto-redirect (names already collected at signup)
     if (success) {
-        const handleProfileSubmit = (e) => {
-            e.preventDefault();
-
-            console.log('[CompleteAccount] Profile submit - tokenData:', tokenData);
-            console.log('[CompleteAccount] Names:', firstName, lastName);
-
-            // Use UPSERT - row may not exist for invited users (trigger didn't fire)
-            if (tokenData?.userId) {
-                supabase.from('user_profiles').upsert({
-                    user_id: tokenData.userId,  // Use user_id, NOT id!
-                    first_name: firstName,
-                    last_name: lastName
-                }, { onConflict: 'user_id' }).then(result => {
-                    console.log('[CompleteAccount] Upsert result:', result);
-                });
-            } else {
-                console.error('[CompleteAccount] No userId in tokenData!');
-            }
-
-            onComplete?.();
-        };
+        // Auto-redirect after short delay
+        setTimeout(() => onComplete?.(), 1500);
 
         return (
             <div className="h-screen w-screen bg-white flex flex-col items-center justify-center p-8">
@@ -261,50 +240,10 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                     <div className="space-y-2">
                         <h1 className="text-2xl font-bold text-zinc-900">Welkom! 🎉</h1>
                         <p className="text-zinc-500">
-                            Je account is klaar. Hoe mogen we je noemen?
+                            Je account is klaar. Een moment geduld...
                         </p>
                     </div>
-
-                    <form onSubmit={handleProfileSubmit} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="relative group/input">
-                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
-                                <input
-                                    type="text"
-                                    placeholder="Voornaam"
-                                    value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
-                                    required
-                                    className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
-                                />
-                            </div>
-                            <div className="relative group/input">
-                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
-                                <input
-                                    type="text"
-                                    placeholder="Achternaam"
-                                    value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
-                                    required
-                                    className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
-                                />
-                            </div>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={submitting || !firstName || !lastName}
-                            className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50"
-                        >
-                            {submitting ? (
-                                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                            ) : (
-                                <>
-                                    Aan de slag
-                                    <ArrowRight size={18} />
-                                </>
-                            )}
-                        </button>
-                    </form>
+                    <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full mx-auto" />
                 </motion.div>
             </div>
         );

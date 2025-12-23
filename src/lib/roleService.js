@@ -138,13 +138,19 @@ export async function getRoleCounts() {
 /**
  * Submit an early access request (public, from login page)
  * @param {string} email - Email address to register
+ * @param {string} firstName - First name
+ * @param {string} lastName - Last name
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function submitEarlyAccessRequest(email) {
+export async function submitEarlyAccessRequest(email, firstName, lastName) {
     try {
         const { error } = await supabase
             .from('early_access_requests')
-            .insert({ email: email.toLowerCase().trim() });
+            .insert({
+                email: email.toLowerCase().trim(),
+                first_name: firstName?.trim() || null,
+                last_name: lastName?.trim() || null
+            });
 
         if (error) {
             if (error.code === '23505') { // Unique constraint violation
