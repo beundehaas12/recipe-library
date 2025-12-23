@@ -109,35 +109,59 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                 console.log('[CompleteAccount] Got user:', user?.id);
 
                 if (user) {
-                    // Fire and forget - don't wait for these to complete
-                    console.log('[CompleteAccount] Updating profile (fire and forget)...');
-                    supabase
+                    // Update profile - row should already exist from invite trigger
+                    console.log('[CompleteAccount] Updating profile...');
+                    const { error: profileError } = await supabase
                         .from('user_profiles')
-                        .upsert({
-                            user_id: user.id,
+                        .update({
                             first_name: firstName.trim(),
                             last_name: lastName.trim()
-                        }, { onConflict: 'user_id' })
-                        .then(() => console.log('[CompleteAccount] Profile upsert done'))
-                        .catch(e => console.warn('[CompleteAccount] Profile upsert failed:', e));
+                        })
+                        .eq('user_id', user.id);
 
-                    supabase
+                    if (profileError) {
+                        console.error('[CompleteAccount] Profile update error:', profileError);
+                        // Try insert if update fails (row might not exist)
+                        const { error: insertError } = await supabase
+                            .from('user_profiles')
+                            .insert({
+                                user_id: user.id,
+                                first_name: firstName.trim(),
+                                last_name: lastName.trim()
+                            });
+                        if (insertError) {
+                            console.error('[CompleteAccount] Profile insert also failed:', insertError);
+                        } else {
+                            console.log('[CompleteAccount] Profile inserted successfully');
+                        }
+                    } else {
+                        console.log('[CompleteAccount] Profile updated successfully');
+                    }
+
+                    // Update preferences - try update first, then insert
+                    const { error: prefError } = await supabase
                         .from('user_preferences')
-                        .upsert({ user_id: user.id }, { onConflict: 'user_id' })
-                        .then(() => console.log('[CompleteAccount] Preferences upsert done'))
-                        .catch(e => console.warn('[CompleteAccount] Preferences upsert failed:', e));
+                        .update({})
+                        .eq('user_id', user.id);
+
+                    if (prefError) {
+                        await supabase
+                            .from('user_preferences')
+                            .insert({ user_id: user.id });
+                    }
 
                     // Update user metadata
-                    supabase.auth.updateUser({
+                    await supabase.auth.updateUser({
                         data: {
                             first_name: firstName.trim(),
                             last_name: lastName.trim()
                         }
-                    }).catch(e => console.warn('[CompleteAccount] Metadata update failed:', e));
+                    });
+                    console.log('[CompleteAccount] Metadata updated');
                 }
 
-                // Password was updated successfully - proceed immediately
-                console.log('[CompleteAccount] Setting success state...');
+                // Success!
+                console.log('[CompleteAccount] All done, setting success state...');
                 setSuccess(true);
                 setTimeout(() => {
                     if (onComplete) onComplete();
