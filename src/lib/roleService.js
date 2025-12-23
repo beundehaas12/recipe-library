@@ -137,6 +137,7 @@ export async function getRoleCounts() {
 
 /**
  * Submit an early access request (public, from login page)
+ * Uses a server-side function that checks if email already exists in auth.users
  * @param {string} email - Email address to register
  * @param {string} firstName - First name
  * @param {string} lastName - Last name
@@ -144,23 +145,19 @@ export async function getRoleCounts() {
  */
 export async function submitEarlyAccessRequest(email, firstName, lastName) {
     try {
-        const { error } = await supabase
-            .from('early_access_requests')
-            .insert({
-                email: email.toLowerCase().trim(),
-                first_name: firstName?.trim() || null,
-                last_name: lastName?.trim() || null
-            });
+        const { data, error } = await supabase.rpc('submit_early_access_request', {
+            p_email: email,
+            p_first_name: firstName || null,
+            p_last_name: lastName || null
+        });
 
         if (error) {
-            if (error.code === '23505') { // Unique constraint violation
-                return { success: false, error: 'Dit e-mailadres staat al op de lijst.' };
-            }
             console.error('Error submitting early access request:', error);
             return { success: false, error: error.message };
         }
 
-        return { success: true };
+        // The function returns a JSON object with success and optional error
+        return data;
     } catch (err) {
         console.error('Failed to submit early access request:', err);
         return { success: false, error: err.message };
