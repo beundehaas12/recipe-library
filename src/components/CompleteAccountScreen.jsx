@@ -137,7 +137,12 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
                 // 1. Force refresh session
                 addLog('Refreshing session...');
-                await withTimeout(supabase.auth.refreshSession());
+                try {
+                    await withTimeout(supabase.auth.refreshSession(), 2000); // Short timeout, non-blocking
+                } catch (e) {
+                    console.warn('Session refresh skipped:', e);
+                    addLog('Session refresh skipped...');
+                }
 
 
                 // 2. Metadata Update (Check connectivity)
