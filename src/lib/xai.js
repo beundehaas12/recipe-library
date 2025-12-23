@@ -7,22 +7,51 @@
 import { supabase } from './supabase';
 
 // =============================================================================
-// EDGE FUNCTION INVOKER
+// EDGE FUNCTION INVOKER (with retry for cold starts)
 // =============================================================================
 
-async function invokeEdgeFunction(functionName, body) {
-    const { data, error } = await supabase.functions.invoke(functionName, { body });
+async function invokeEdgeFunction(functionName, body, retries = 2) {
+    let lastError;
 
-    if (error) {
-        console.error(`Edge function error [${functionName}]:`, error);
-        throw new Error(error.message || `Failed to invoke ${functionName}`);
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            if (attempt > 0) {
+                console.log(`[xai] Retry attempt ${attempt} for ${functionName}...`);
+                // Wait before retry (exponential backoff: 2s, 4s)
+                await new Promise(r => setTimeout(r, 2000 * attempt));
+            }
+
+            console.log(`[xai] Invoking edge function: ${functionName} (attempt ${attempt + 1})`);
+            const { data, error } = await supabase.functions.invoke(functionName, { body });
+
+            if (error) {
+                console.error(`[xai] Edge function error [${functionName}]:`, error);
+                lastError = new Error(error.message || `Failed to invoke ${functionName}`);
+                // If it's a timeout or network error, retry
+                if (error.message?.includes('timeout') || error.message?.includes('fetch') || error.message?.includes('network')) {
+                    continue;
+                }
+                throw lastError;
+            }
+
+            if (data?.error) {
+                throw new Error(data.error);
+            }
+
+            console.log(`[xai] Edge function ${functionName} completed successfully`);
+            return data;
+        } catch (err) {
+            lastError = err;
+            console.error(`[xai] Attempt ${attempt + 1} failed:`, err.message);
+            // Only retry on specific error types
+            if (attempt < retries && (err.message?.includes('timeout') || err.message?.includes('fetch') || err.message?.includes('network') || err.message?.includes('Failed to invoke'))) {
+                continue;
+            }
+            throw err;
+        }
     }
 
-    if (data.error) {
-        throw new Error(data.error);
-    }
-
-    return data;
+    throw lastError || new Error(`Failed after ${retries + 1} attempts`);
 }
 
 // =============================================================================
