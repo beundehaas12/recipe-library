@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ChefHat, User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
+import { ChefHat, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { validateInvitationToken, completeEarlyAccess } from '../lib/roleService';
 import { fetchLandingPageRecipes } from '../lib/recipeService';
@@ -15,8 +15,6 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
     const [success, setSuccess] = useState(false);
 
     // Form state
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -165,22 +163,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                     addLog('Password update sent (continuing...)');
                 }
 
-                // 3. Update profile in database (not auth metadata - that hangs)
-                addLog('Updating profile...');
-                const { error: profileError } = await supabase
-                    .from('user_profiles')
-                    .upsert({
-                        user_id: user.id,
-                        first_name: firstName.trim(),
-                        last_name: lastName.trim()
-                    }, { onConflict: 'user_id' });
-
-                if (profileError) {
-                    console.warn('Profile update failed:', profileError);
-                    // Non-fatal: profile might already exist or trigger created it
-                }
-
-                // 4. Ensure preferences exist
+                // 3. Ensure preferences exist (trigger should have created profile)
                 addLog('Ensuring preferences...');
                 await supabase
                     .from('user_preferences')
@@ -199,28 +182,11 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                 addLog('Creating account...');
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: tokenData.email,
-                    password: password,
-                    options: {
-                        data: {
-                            first_name: firstName.trim(),
-                            last_name: lastName.trim()
-                        }
-                    }
+                    password: password
                 });
 
                 if (authError) {
                     throw new Error(authError.message);
-                }
-
-                if (authData.user) {
-                    addLog('Updating profile...');
-                    await supabase
-                        .from('user_profiles')
-                        .upsert({
-                            user_id: authData.user.id,
-                            first_name: firstName.trim(),
-                            last_name: lastName.trim()
-                        }, { onConflict: 'user_id' });
                 }
 
                 addLog('Completing early access...');
@@ -380,36 +346,6 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Name Fields */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Voornaam</label>
-                                <div className="relative group/input">
-                                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
-                                    <input
-                                        type="text"
-                                        placeholder="Voornaam"
-                                        value={firstName}
-                                        onChange={(e) => setFirstName(e.target.value)}
-                                        required
-                                        className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Achternaam</label>
-                                <div className="relative group/input">
-                                    <input
-                                        type="text"
-                                        placeholder="Achternaam"
-                                        value={lastName}
-                                        onChange={(e) => setLastName(e.target.value)}
-                                        required
-                                        className="w-full h-12 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
-                                    />
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Email (readonly) */}
                         <div className="space-y-2">
