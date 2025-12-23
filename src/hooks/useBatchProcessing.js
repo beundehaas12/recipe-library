@@ -104,10 +104,12 @@ export function useBatchProcessing() {
 
         const fetchWithProxy = async (proxyUrl) => {
             const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 10000);
+            const id = setTimeout(() => controller.abort(), 30000); // Extended to 30s
+            console.log('[BatchProcess] Step 1: Fetching via proxy...');
             const res = await fetch(proxyUrl, { signal: controller.signal });
             clearTimeout(id);
             if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+            console.log('[BatchProcess] Step 1: ✅ Fetch complete');
             return res.text();
         };
 
@@ -120,18 +122,21 @@ export function useBatchProcessing() {
                 const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                 htmlContent = await fetchWithProxy(proxyUrl);
             } catch (e) {
-                console.warn("Primary proxy failed, trying backup...", e);
+                console.warn("[BatchProcess] Primary proxy failed, trying backup...", e);
                 const backupProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                console.log('[BatchProcess] Step 1b: Trying backup proxy...');
                 const res = await fetch(backupProxy);
                 const data = await res.json();
                 if (data.contents) {
                     htmlContent = data.contents;
+                    console.log('[BatchProcess] Step 1b: ✅ Backup proxy worked');
                 } else {
                     throw new Error("Could not fetch URL content");
                 }
             }
 
             if (!htmlContent) throw new Error("Could not retrieve content from URL");
+
 
             console.log('[BatchProcess] HTML fetched, length:', htmlContent.length);
 
