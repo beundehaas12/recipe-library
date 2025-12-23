@@ -98,3 +98,35 @@ export async function getAllUsersWithRoles() {
         return [];
     }
 }
+
+/**
+ * Get counts of users by role (admin only)
+ * @returns {Promise<{total: number, admins: number, authors: number, users: number}>}
+ */
+export async function getRoleCounts() {
+    try {
+        const { data, error } = await supabase
+            .from('user_roles')
+            .select('role');
+
+        if (error) throw error;
+
+        const counts = {
+            total: data.length,
+            admins: 0,
+            authors: 0,
+            users: 0
+        };
+
+        data.forEach(user => {
+            if (counts[user.role + 's'] !== undefined) {
+                counts[user.role + 's']++;
+            }
+        });
+
+        return counts;
+    } catch (err) {
+        console.error('Failed to get role counts:', err);
+        return { total: 0, admins: 0, authors: 0, users: 0 };
+    }
+}
