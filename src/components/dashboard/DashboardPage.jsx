@@ -44,7 +44,8 @@ export default function DashboardPage() {
 
     // Fetch existing recipes with related data
     useEffect(() => {
-        if (!user) return;
+        // Wait for user AND role to be loaded (loading=false means auth+role are ready)
+        if (!user || loading) return;
 
         async function fetchRecipes() {
             let query = supabase
@@ -93,7 +94,7 @@ export default function DashboardPage() {
         }
 
         fetchRecipes();
-    }, [user]);
+    }, [user, loading, isAdmin]);
 
     // Combine Queue + DB Recipes
     const allRecipes = useMemo(() => {
