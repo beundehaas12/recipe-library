@@ -103,7 +103,7 @@ export default function CollectionCard({ collection, recipeCount = 0 }) {
                     </h3>
 
                     {/* Author Info */}
-                    {collection.author_profile && (
+                    {(collection.author_profile || collection.user_id) && (
                         <div className="flex items-center gap-2 mt-2">
                             <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20 bg-white/10 flex-shrink-0">
                                 <img

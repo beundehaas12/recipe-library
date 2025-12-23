@@ -488,7 +488,7 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                     {recipe.title}
                                 </motion.h1>
 
-                                {recipe.author_profile && (
+                                {(recipe.author_profile || recipe.author || recipe.user_id) && (
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
@@ -497,13 +497,13 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                     >
                                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-white/20 bg-white/10 shadow-lg shrink-0">
                                             <img
-                                                src={getAuthorAvatarUrl(recipe.author_profile, { id: recipe.user_id })}
+                                                src={getAuthorAvatarUrl(recipe.author_profile, { id: recipe.user_id || recipe.author })}
                                                 alt="Author"
                                                 className="w-full h-full object-cover"
                                             />
                                         </div>
                                         <span className="text-white/90 font-bold text-lg md:text-xl drop-shadow-md">
-                                            {getAuthorDisplayName(recipe.author_profile) || 'Unknown Chef'}
+                                            {getAuthorDisplayName(recipe.author_profile) || recipe.author || 'Unknown Chef'}
                                         </span>
                                     </motion.div>
                                 )}

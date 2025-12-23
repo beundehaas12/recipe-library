@@ -54,17 +54,17 @@ export default function RecipeThumbnail({ recipe, t }) {
                     </motion.h3>
 
                     {/* Author Info */}
-                    {recipe.author_profile && (
+                    {(recipe.author_profile || recipe.author || recipe.user_id) && (
                         <div className="flex items-center gap-2 mt-2">
                             <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20 bg-white/10 flex-shrink-0">
                                 <img
-                                    src={getAuthorAvatarUrl(recipe.author_profile, { id: recipe.user_id })}
+                                    src={getAuthorAvatarUrl(recipe.author_profile, { id: recipe.user_id || recipe.author })}
                                     alt=""
                                     className="w-full h-full object-cover"
                                 />
                             </div>
                             <span className="text-xs text-white/70 font-medium truncate drop-shadow-md">
-                                {getAuthorDisplayName(recipe.author_profile) || 'Unknown Chef'}
+                                {getAuthorDisplayName(recipe.author_profile) || recipe.author || 'Unknown Chef'}
                             </span>
                         </div>
                     )}
