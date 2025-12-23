@@ -226,19 +226,15 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
     // Success state - now ask for name
     if (success) {
-        const handleProfileSubmit = async (e) => {
+        const handleProfileSubmit = (e) => {
             e.preventDefault();
-            setSubmitting(true);
 
-            try {
-                if (tokenData?.userId) {
-                    await supabase.from('user_profiles').update({
-                        first_name: firstName,
-                        last_name: lastName
-                    }).eq('user_id', tokenData.userId);
-                }
-            } catch (err) {
-                console.error('Profile update error:', err);
+            // Fire profile update (don't await - session is broken)
+            if (tokenData?.userId) {
+                supabase.from('user_profiles').update({
+                    first_name: firstName,
+                    last_name: lastName
+                }).eq('user_id', tokenData.userId);
             }
 
             onComplete?.();
