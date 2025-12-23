@@ -162,7 +162,9 @@ export default function UserManagementPage() {
 
     // Filter early access requests
     const filteredEarlyAccess = earlyAccessRequests.filter(req =>
-        req.email.toLowerCase().includes(searchTerm.toLowerCase())
+        req.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (req.first_name && req.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (req.last_name && req.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     // Initial loading state
@@ -302,10 +304,11 @@ export default function UserManagementPage() {
                             <div className="bg-zinc-900/50 border border-white/5 rounded-xl overflow-hidden">
                                 {/* Early Access Table Header */}
                                 <div className="grid grid-cols-12 gap-4 px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-white/5 bg-zinc-900/80">
-                                    <div className="col-span-5">Email</div>
+                                    <div className="col-span-3">Naam</div>
+                                    <div className="col-span-3">Email</div>
                                     <div className="col-span-2">Status</div>
-                                    <div className="col-span-2">Requested</div>
-                                    <div className="col-span-3 text-right">Actions</div>
+                                    <div className="col-span-2">Aangevraagd</div>
+                                    <div className="col-span-2 text-right">Actions</div>
                                 </div>
 
                                 {/* Early Access List */}
@@ -433,15 +436,28 @@ function EarlyAccessRow({ request, onApprove, onDelete, isApproving, isDeleting 
 
     return (
         <div className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-white/5 transition-colors items-center group">
-            <div className="col-span-5 flex items-center gap-3 overflow-hidden">
+            <div className="col-span-3 flex items-center gap-3 overflow-hidden">
                 <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 border border-white/10 text-muted-foreground">
-                    <Mail size={14} />
+                    {request.first_name ? (
+                        <span className="text-xs font-bold text-zinc-300">
+                            {request.first_name[0]}{request.last_name?.[0] || ''}
+                        </span>
+                    ) : (
+                        <Mail size={14} />
+                    )}
                 </div>
                 <div className="min-w-0">
                     <div className="text-sm font-medium text-zinc-200 truncate">
-                        {request.email}
+                        {request.first_name || request.last_name
+                            ? `${request.first_name || ''} ${request.last_name || ''}`.trim()
+                            : <span className="text-zinc-500 italic">Geen naam</span>
+                        }
                     </div>
                 </div>
+            </div>
+
+            <div className="col-span-3 text-sm text-zinc-400 truncate">
+                {request.email}
             </div>
 
             <div className="col-span-2">
@@ -456,7 +472,7 @@ function EarlyAccessRow({ request, onApprove, onDelete, isApproving, isDeleting 
                 {new Date(request.created_at).toLocaleDateString()}
             </div>
 
-            <div className="col-span-3 flex justify-end gap-2">
+            <div className="col-span-2 flex justify-end gap-2">
                 {isApproving || isDeleting ? (
                     <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 ) : (
