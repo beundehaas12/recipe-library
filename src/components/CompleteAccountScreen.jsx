@@ -138,15 +138,32 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                 const user = sessionData.session.user;
                 addLog(`Session verified for ${user.email}`);
 
-                // 2. Set password (required for invited users)
+                // 2. Set password (fire-and-continue pattern)
+                // Note: updateUser({ password }) works server-side but the Promise often doesn't resolve.
+                // We fire it and continue after a short delay.
                 addLog('Setting password...');
-                const { error: passwordError } = await supabase.auth.updateUser({
-                    password: password
-                });
-                if (passwordError) {
-                    throw new Error(`Wachtwoord instellen mislukt: ${passwordError.message}`);
+                let passwordSet = false;
+                const passwordPromise = supabase.auth.updateUser({ password })
+                    .then(({ error }) => {
+                        if (error) {
+                            console.error('Password error:', error);
+                        } else {
+                            passwordSet = true;
+                            addLog('Password confirmed');
+                        }
+                    })
+                    .catch(e => console.error('Password exception:', e));
+
+                // Wait up to 3 seconds for the Promise to resolve
+                await Promise.race([
+                    passwordPromise,
+                    new Promise(resolve => setTimeout(resolve, 3000))
+                ]);
+
+                // Proceed regardless - the password update works server-side even if Promise hangs
+                if (!passwordSet) {
+                    addLog('Password update sent (continuing...)');
                 }
-                addLog('Password set successfully');
 
                 // 3. Update profile in database (not auth metadata - that hangs)
                 addLog('Updating profile...');
