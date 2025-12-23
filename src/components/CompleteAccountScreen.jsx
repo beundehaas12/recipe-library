@@ -136,8 +136,25 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         try {
             if (isInvitedUser) {
                 // === INVITED USER FLOW ===
-                console.info('[CompleteAccount] Updating password...');
 
+                // 1. Force refresh session
+                console.info('[CompleteAccount] Refreshing session...');
+                await supabase.auth.refreshSession();
+
+                // 2. Metadata Update (Check connectivity)
+                console.info('[CompleteAccount] Updating metadata...');
+                const { error: metaError } = await withTimeout(
+                    supabase.auth.updateUser({
+                        data: {
+                            first_name: firstName.trim(),
+                            last_name: lastName.trim()
+                        }
+                    })
+                );
+                if (metaError) throw new Error(`Metadata update error: ${metaError.message}`);
+
+                // 3. Password Update
+                console.info('[CompleteAccount] Updating password...');
                 const { error: passwordError } = await withTimeout(
                     supabase.auth.updateUser({ password: password })
                 );
