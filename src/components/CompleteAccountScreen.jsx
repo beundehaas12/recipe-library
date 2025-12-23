@@ -7,7 +7,8 @@ import { fetchLandingPageRecipes } from '../lib/recipeService';
 import BentoRecipeCard from './BentoRecipeCard';
 
 export default function CompleteAccountScreen({ token, isInvitedUser, userEmail, onComplete }) {
-    const [loading, setLoading] = useState(!isInvitedUser);
+    // Start loading by default to prevent prematute interaction
+    const [loading, setLoading] = useState(true);
     const [validating, setValidating] = useState(!isInvitedUser);
     const [tokenData, setTokenData] = useState(isInvitedUser ? { email: userEmail } : null);
     const [error, setError] = useState('');
