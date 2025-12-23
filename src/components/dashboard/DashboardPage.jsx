@@ -339,7 +339,11 @@ export default function DashboardPage() {
             onCreateCollection={() => setIsCollectionModalOpen(true)}
             isAdmin={isAdmin}
             onUpload={handleUpload}
-            onUrlSubmit={(url) => processUrl(url, user.id)}
+            onUrlSubmit={(url, context) => processUrl(url, user.id, context || {}, (savedRecipe, itemId) => {
+                setDbRecipes(prev => [savedRecipe, ...prev]);
+                deleteQueueItem(itemId);
+                setSelectedId(savedRecipe.id);
+            })}
         >
             {/* Finder Column 2: List */}
             <RecipeQueueList

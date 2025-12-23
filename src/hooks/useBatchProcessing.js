@@ -86,7 +86,7 @@ export function useBatchProcessing() {
     }, []);
 
     // Process URL to extract recipe
-    const processUrl = useCallback(async (url, userId, context = {}) => {
+    const processUrl = useCallback(async (url, userId, context = {}, onSuccess) => {
         if (!url) return;
 
         const itemId = `temp-url-${Date.now()}`;
@@ -105,11 +105,9 @@ export function useBatchProcessing() {
         const fetchWithProxy = async (proxyUrl) => {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), 30000); // Extended to 30s
-            console.log('[BatchProcess] Step 1: Fetching via proxy...');
             const res = await fetch(proxyUrl, { signal: controller.signal });
             clearTimeout(id);
             if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
-            console.log('[BatchProcess] Step 1: ✅ Fetch complete');
             return res.text();
         };
 
@@ -124,12 +122,10 @@ export function useBatchProcessing() {
             } catch (e) {
                 console.warn("[BatchProcess] Primary proxy failed, trying backup...", e);
                 const backupProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                console.log('[BatchProcess] Step 1b: Trying backup proxy...');
                 const res = await fetch(backupProxy);
                 const data = await res.json();
                 if (data.contents) {
                     htmlContent = data.contents;
-                    console.log('[BatchProcess] Step 1b: ✅ Backup proxy worked');
                 } else {
                     throw new Error("Could not fetch URL content");
                 }
@@ -137,24 +133,19 @@ export function useBatchProcessing() {
 
             if (!htmlContent) throw new Error("Could not retrieve content from URL");
 
-
-            console.log('[BatchProcess] HTML fetched, length:', htmlContent.length);
-
             // 2. Parse HTML for recipe
             const processed = processHtmlForRecipe(htmlContent);
-            console.log('[BatchProcess] Processed result type:', processed.type);
-            console.log('[BatchProcess] Has schemaRecipe:', !!processed.schemaRecipe);
 
             let recipe;
             let usage = null;
 
             if (processed.type === 'schema') {
-                console.log('[BatchProcess] ✅ Schema.org data found - using direct extraction');
+                console.log('[BatchProcess] Using Schema.org data');
                 recipe = processed.data;
                 recipe.ai_tags = ['📊 schema', ...(recipe.ai_tags || [])];
+                usage = { model: 'schema-org', processing_time_ms: 0 };
             } else {
-                console.log('[BatchProcess] ⚠️ No complete schema - falling back to AI');
-                console.log('[BatchProcess] Reason: Schema had insufficient data (missing title/ingredients/instructions)');
+                console.log('[BatchProcess] Falling back to AI');
                 const result = await extractRecipeFromText(processed.data);
                 recipe = result.recipe;
                 usage = result.usage;
@@ -166,31 +157,31 @@ export function useBatchProcessing() {
             }
 
             // 3. Save to database
-            console.log('[BatchProcess] Step 3: Saving URL recipe:', recipe.title);
             const savedRecipe = await saveRecipe(userId, recipe, {
                 type: 'url',
-                url: url
+                url: url,
+                original_image_url: recipe.image || recipe.image_url
             }, usage);
 
-            console.log('[BatchProcess] Step 3: ✅ Recipe saved with ID:', savedRecipe.id);
-
             // 4. Update queue to DONE
-            console.log('[BatchProcess] Step 4: Updating queue item', itemId, 'to done');
-            setQueue(prev => {
-                console.log('[BatchProcess] Step 4: Queue before update:', prev.map(q => ({ id: q.id, status: q.status })));
-                const updated = prev.map(q =>
-                    q.id === itemId
-                        ? {
-                            ...q,
-                            status: 'done',
-                            ...savedRecipe,
-                            title: savedRecipe.title
-                        }
-                        : q
-                );
-                console.log('[BatchProcess] Step 4: Queue after update:', updated.map(q => ({ id: q.id, status: q.status })));
-                return updated;
-            });
+            const queueItem = {
+                id: itemId,
+                status: 'done',
+                ...savedRecipe,
+                title: savedRecipe.title
+            };
+
+            setQueue(prev => prev.map(q =>
+                q.id === itemId
+                    ? queueItem
+                    : q
+            ));
+
+            // 5. Invoke Success Callback
+            if (onSuccess) {
+                onSuccess(savedRecipe, itemId);
+            }
+
             console.log('[BatchProcess] ✅ URL processing complete');
 
         } catch (error) {
@@ -202,6 +193,8 @@ export function useBatchProcessing() {
             ));
         }
     }, []);
+
+
 
     const updateItem = useCallback((id, updates) => {
         setQueue(prev => prev.map(item =>
