@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ChefHat, Mail, Lock, Eye, EyeOff, Sparkles, Camera, Users } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChefHat, Mail, Lock, Eye, EyeOff, Sparkles, Camera, Users, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { fetchLandingPageRecipes } from '../lib/recipeService';
+import { submitEarlyAccessRequest } from '../lib/roleService';
+import BentoRecipeCard from './BentoRecipeCard';
 
 export default function LoginScreen() {
     const { signIn, signUp } = useAuth();
-    const [isSignUp, setIsSignUp] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -13,14 +15,27 @@ export default function LoginScreen() {
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [hasInvite, setHasInvite] = useState(false);
+    const [isSignUp, setIsSignUp] = useState(false);
+    const [recipes, setRecipes] = useState([]);
 
-    // Check for invitation token in URL
+    // Waitlist states
+    const [waitlistEmail, setWaitlistEmail] = useState('');
+    const [waitlistLoading, setWaitlistLoading] = useState(false);
+    const [waitlistMessage, setWaitlistMessage] = useState('');
+
+    // Check for invitation token in URL and fetch landing recipes
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('invite')) {
             setHasInvite(true);
-            setIsSignUp(true); // Default to sign up for new invitees
+            setIsSignUp(true);
         }
+
+        const loadRecipes = async () => {
+            const data = await fetchLandingPageRecipes(15);
+            setRecipes(data);
+        };
+        loadRecipes();
     }, []);
 
     const handleSubmit = async (e) => {
@@ -30,7 +45,7 @@ export default function LoginScreen() {
         setLoading(true);
 
         try {
-            if (isSignUp) {
+            if (isSignUp || hasInvite) {
                 await signUp(email, password);
                 setMessage('Account aangemaakt! Controleer je e-mail om te bevestigen.');
             } else {
@@ -45,112 +60,130 @@ export default function LoginScreen() {
         }
     };
 
+    const handleWaitlistSubmit = async (e) => {
+        e.preventDefault();
+        setWaitlistMessage('');
+        setWaitlistLoading(true);
+
+        try {
+            const result = await submitEarlyAccessRequest(waitlistEmail);
+            if (result.success) {
+                setWaitlistMessage('Je staat op de lijst! 🎉');
+                setWaitlistEmail('');
+            } else {
+                setWaitlistMessage(result.error || 'Er is iets misgegaan. Probeer het opnieuw.');
+            }
+        } catch (err) {
+            console.error('Waitlist error:', err);
+            setWaitlistMessage('Er is iets misgegaan. Probeer het opnieuw.');
+        } finally {
+            setWaitlistLoading(false);
+        }
+    };
+
+    // Skeleton recipes for immediate animation start
+    const skeletonRecipes = useMemo(() => Array.from({ length: 12 }).map((_, i) => ({
+        id: `skeleton-${i}`,
+        title: "Laden...",
+        author_profile: null,
+        user_id: null,
+        image_url: null
+    })), []);
+
+    const displayRecipes = recipes.length > 0 ? recipes : skeletonRecipes;
+
+    // Randomized order per column - moved outside JSX to comply with Hook rules
+    const columnData = useMemo(() => {
+        return [0, 1, 2].map((col) => {
+            const durations = [180, 130, 260];
+            const offsets = [0, -40, -90]; // Clear staggered start points (verspringing)
+
+            return {
+                duration: durations[col],
+                offset: offsets[col] % durations[col],
+                // Shuffle recipes uniquely for this column
+                recipes: [...displayRecipes].sort(() => Math.random() - 0.5)
+            };
+        });
+    }, [displayRecipes]);
+
     return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            {/* Ambient background glow */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-[radial-gradient(circle_at_center,var(--primary-glow)_0%,transparent_70%)] opacity-20 pointer-events-none" />
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-blue-500/5" />
-            </div>
-
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="relative z-10 flex flex-col items-center max-w-md w-full"
-            >
-                {/* Logo Section */}
+        <div className="h-screen w-screen bg-white flex flex-col md:flex-row overflow-hidden fixed inset-0">
+            {/* Left Side: Login Form (50%) */}
+            <div className="w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 bg-white">
                 <motion.div
-                    initial={{ y: -20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 0.6 }}
-                    className="mb-12 relative group"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="w-full max-w-sm space-y-12"
                 >
-                    <div className="absolute -inset-4 bg-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="w-24 h-24 glass-panel border-primary/30 rounded-[var(--radius)] flex items-center justify-center shadow-2xl relative">
-                        <ChefHat size={48} className="text-primary" />
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                            className="absolute -top-2 -right-2 w-8 h-8 glass-panel border-primary/20 rounded-lg flex items-center justify-center"
-                        >
-                            <Sparkles size={16} className="text-primary" />
-                        </motion.div>
-                    </div>
-                </motion.div>
-
-                {/* Title & Subtitle */}
-                <div className="text-center mb-10 space-y-3">
-                    <motion.h1
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.5 }}
-                        className="text-5xl md:text-6xl font-black text-white tracking-tighter"
-                    >
-                        KOOK<span className="text-primary">BOEK</span>
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4, duration: 0.5 }}
-                        className="text-muted-foreground font-medium text-lg tracking-wide uppercase text-[10px]"
-                    >
-                        Jouw AI-gestuurde culinaire assistent
-                    </motion.p>
-                </div>
-
-                {/* Invitation Banner */}
-                {hasInvite && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.45, duration: 0.5 }}
-                        className="w-full mb-6 bg-primary/10 border border-primary/30 rounded-2xl p-5 flex items-center gap-4"
-                    >
-                        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                            <Users size={24} className="text-primary" />
+                    {/* Brand Section */}
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
+                            <ChefHat size={24} className="text-primary-foreground" />
                         </div>
                         <div>
-                            <p className="text-white font-bold text-sm">Je bent uitgenodigd! 🎉</p>
-                            <p className="text-white/60 text-xs mt-0.5">Log in of registreer om deel te nemen aan een gedeelde receptenbibliotheek.</p>
+                            <h1 className="text-2xl font-black tracking-tighter text-zinc-900 leading-none">
+                                KOOK<span className="text-primary">BOEK</span>
+                            </h1>
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Culinary Assistant</p>
                         </div>
-                    </motion.div>
-                )}
+                    </div>
 
-                {/* Main Auth Card */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.6 }}
-                    className="w-full glass-panel p-8 shadow-2xl relative overflow-hidden group"
-                >
-                    {/* Inner subtle glow */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <div className="space-y-4">
+                        <h2 className="text-4xl font-black text-zinc-900 tracking-tight">
+                            {isSignUp || hasInvite ? 'Maak een account' : 'Welkom terug!'}
+                        </h2>
+                        <p className="text-zinc-500 text-lg">
+                            {isSignUp || hasInvite
+                                ? 'Sluit je aan bij onze culinaire community.'
+                                : 'Log in op je persoonlijke receptenbibliotheek.'}
+                        </p>
+                    </div>
 
-                    <h2 className="text-2xl font-black text-white mb-8">
-                        {isSignUp ? 'Account aanmaken' : 'Inloggen'}
-                    </h2>
+                    {/* Invitation Banner */}
+                    {hasInvite && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center gap-4"
+                        >
+                            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
+                                <Users size={18} className="text-primary-foreground" />
+                            </div>
+                            <div>
+                                <p className="text-zinc-900 font-bold text-xs uppercase tracking-tight">Je bent uitgenodigd! 🎉</p>
+                                <p className="text-zinc-500 text-[11px]">Join een gedeelde bibliotheek.</p>
+                            </div>
+                        </motion.div>
+                    )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Auth Form */}
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">E-mailadres</label>
+                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">E-mailadres</label>
                             <div className="relative group/input">
-                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
+                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
                                 <input
                                     type="email"
                                     placeholder="naam@voorbeeld.nl"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="input-standard pl-12"
+                                    className="w-full h-14 pl-12 pr-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Wachtwoord</label>
+                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1 flex justify-between">
+                                Wachtwoord
+                                {!isSignUp && !hasInvite && (
+                                    <button type="button" className="text-primary hover:underline lowercase font-medium">Vergeten?</button>
+                                )}
+                            </label>
                             <div className="relative group/input">
-                                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
+                                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     placeholder="••••••••"
@@ -158,12 +191,12 @@ export default function LoginScreen() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     minLength={6}
-                                    className="input-standard pl-12 pr-12"
+                                    className="w-full h-14 pl-12 pr-12 bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-500 transition-colors"
                                 >
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
@@ -172,20 +205,22 @@ export default function LoginScreen() {
 
                         {error && (
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="text-red-400 text-xs font-bold text-center bg-red-500/10 border border-red-500/20 rounded-[var(--radius-btn)] py-3 px-4"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-red-600 text-[11px] font-bold flex items-center gap-2 bg-red-50 p-4 rounded-xl border border-red-100"
                             >
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
                                 {error}
                             </motion.div>
                         )}
 
                         {message && (
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="text-primary text-xs font-bold text-center bg-primary/10 border border-primary/20 rounded-[var(--radius-btn)] py-3 px-4"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-emerald-600 text-[11px] font-bold flex items-center gap-2 bg-emerald-50 p-4 rounded-xl border border-emerald-100"
                             >
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                                 {message}
                             </motion.div>
                         )}
@@ -193,54 +228,97 @@ export default function LoginScreen() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary w-full !py-4 text-black font-black uppercase tracking-widest mt-4 shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-[0.98]"
+                            className="w-full h-14 bg-zinc-900 hover:bg-black text-white rounded-2xl font-bold tracking-widest mt-4 transition-all active:scale-[0.98] flex items-center justify-center gap-3 group disabled:opacity-70"
                         >
                             {loading ? (
-                                <span className="flex items-center justify-center gap-3">
-                                    <div className="w-5 h-5 border-3 border-black/20 border-t-black rounded-full animate-spin" />
-                                    Bezig...
-                                </span>
+                                <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                             ) : (
-                                isSignUp ? 'Registreren' : 'Inloggen'
+                                <>
+                                    <span>{isSignUp || hasInvite ? 'Account aanmaken' : 'Inloggen'}</span>
+                                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                </>
                             )}
                         </button>
                     </form>
 
-                    <div className="mt-8 text-center pt-6 border-t border-white/5">
-                        <button
-                            onClick={() => {
-                                setIsSignUp(!isSignUp);
-                                setError('');
-                                setMessage('');
-                            }}
-                            className="text-muted-foreground hover:text-primary transition-all text-xs font-bold uppercase tracking-widest"
-                        >
-                            {isSignUp ? 'Al een account? Inloggen' : 'Nog geen account? Registreren'}
-                        </button>
+                    <div className="pt-8 border-t border-zinc-100 flex flex-col gap-4">
+                        <div className="space-y-3">
+                            <p className="text-zinc-500 text-xs font-medium leading-relaxed">
+                                Geen account? Kookboek is momenteel alleen op uitnodiging.
+                                Meld je aan voor de vroege toegang lijst.
+                            </p>
+
+                            <form onSubmit={handleWaitlistSubmit} className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300" size={14} />
+                                    <input
+                                        type="email"
+                                        placeholder="E-mailadres"
+                                        value={waitlistEmail}
+                                        onChange={(e) => setWaitlistEmail(e.target.value)}
+                                        required
+                                        className="w-full h-10 pl-9 pr-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-primary transition-all"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={waitlistLoading}
+                                    className="px-4 h-10 bg-zinc-900 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-black transition-all disabled:opacity-50 whitespace-nowrap"
+                                >
+                                    {waitlistLoading ? '...' : 'Aanmelden'}
+                                </button>
+                            </form>
+
+                            {waitlistMessage && (
+                                <p className="text-emerald-600 text-[10px] font-bold text-left px-1 animate-in fade-in slide-in-from-top-1">
+                                    {waitlistMessage}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </motion.div>
+            </div>
 
-                {/* Simple Features for Context */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8, duration: 0.6 }}
-                    className="mt-12 grid grid-cols-3 gap-8 text-center w-full max-w-sm"
-                >
-                    {[
-                        { icon: <Camera size={20} />, label: "Scannen" },
-                        { icon: <Sparkles size={20} />, label: "AI Chef" },
-                        { icon: <ChefHat size={20} />, label: "Collectie" },
-                    ].map((feature, idx) => (
-                        <div key={idx} className="flex flex-col items-center gap-3 group/feature">
-                            <div className="w-12 h-12 rounded-2xl glass-card flex items-center justify-center text-muted-foreground group-hover/feature:text-primary group-hover/feature:scale-110 transition-all border-white/5 group-hover/feature:border-primary/30">
-                                {feature.icon}
+            {/* Right Side: Discovery area (50%) - ZERO borders/backgrounds */}
+            <div className="hidden md:flex w-1/2 h-full relative overflow-hidden items-center justify-center bg-white">
+                <div className="w-full h-full pr-6 relative flex gap-3">
+                    {/* Continuous Scrolling Columns - Exactly 3 columns */}
+                    {columnData.map((col, colIdx) => {
+                        return (
+                            <div key={colIdx} className="flex-1 h-full overflow-hidden relative">
+                                <div
+                                    style={{
+                                        animationDuration: `${col.duration}s`,
+                                        WebkitAnimationDuration: `${col.duration}s`,
+                                        animationDelay: `${col.offset}s`,
+                                        WebkitAnimationDelay: `${col.offset}s`
+                                    }}
+                                    className="animate-scroll-up flex flex-col gap-3"
+                                >
+                                    {/* Double the items for seamless loop */}
+                                    {[...col.recipes, ...col.recipes].map((recipe, idx) => {
+                                        return (
+                                            <div
+                                                key={`${colIdx}-${recipe.id}-${idx}`}
+                                                className="w-full"
+                                            >
+                                                <BentoRecipeCard
+                                                    recipe={recipe}
+                                                    size="small"
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover/feature:text-white transition-colors">{feature.label}</span>
-                        </div>
-                    ))}
-                </motion.div>
-            </motion.div>
+                        );
+                    })}
+                </div>
+
+                {/* Ambient Blur Glows - Subtle depth */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.02] blur-[100px] rounded-full -mr-64 -mt-64" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/[0.02] blur-[100px] rounded-full -ml-64 -mb-64" />
+            </div>
         </div>
     );
 }

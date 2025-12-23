@@ -130,3 +130,193 @@ export async function getRoleCounts() {
         return { total: 0, admins: 0, authors: 0, users: 0 };
     }
 }
+
+// ============================================================================
+// EARLY ACCESS FUNCTIONS
+// ============================================================================
+
+/**
+ * Submit an early access request (public, from login page)
+ * @param {string} email - Email address to register
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function submitEarlyAccessRequest(email) {
+    try {
+        const { error } = await supabase
+            .from('early_access_requests')
+            .insert({ email: email.toLowerCase().trim() });
+
+        if (error) {
+            if (error.code === '23505') { // Unique constraint violation
+                return { success: false, error: 'Dit e-mailadres staat al op de lijst.' };
+            }
+            console.error('Error submitting early access request:', error);
+            return { success: false, error: error.message };
+        }
+
+        return { success: true };
+    } catch (err) {
+        console.error('Failed to submit early access request:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+/**
+ * Get all early access requests (admin only)
+ * @returns {Promise<Array>}
+ */
+export async function getEarlyAccessRequests() {
+    try {
+        const { data, error } = await supabase
+            .from('early_access_requests')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching early access requests:', error);
+            return [];
+        }
+
+        return data || [];
+    } catch (err) {
+        console.error('Failed to fetch early access requests:', err);
+        return [];
+    }
+}
+
+/**
+ * Get counts of early access requests by status (admin only)
+ * @returns {Promise<{pending: number, approved: number, completed: number}>}
+ */
+export async function getEarlyAccessCounts() {
+    try {
+        const { data, error } = await supabase
+            .from('early_access_requests')
+            .select('status');
+
+        if (error) throw error;
+
+        const counts = { pending: 0, approved: 0, completed: 0 };
+        data.forEach(req => {
+            if (counts[req.status] !== undefined) {
+                counts[req.status]++;
+            }
+        });
+
+        return counts;
+    } catch (err) {
+        console.error('Failed to get early access counts:', err);
+        return { pending: 0, approved: 0, completed: 0 };
+    }
+}
+
+/**
+ * Approve an early access request (admin only)
+ * Generates invitation token and automatically sends invite email
+ * @param {string} requestId - UUID of the request
+ * @returns {Promise<{success: boolean, email?: string, invitation_token?: string, error?: string}>}
+ */
+export async function approveEarlyAccessRequest(requestId) {
+    try {
+        const { data, error } = await supabase
+            .rpc('approve_early_access', { p_request_id: requestId });
+
+        if (error) {
+            console.error('Error approving early access request:', error);
+            return { success: false, error: error.message };
+        }
+
+        // Automatically send invite email via Edge Function
+        if (data.success && data.email) {
+            try {
+                const { error: inviteError } = await supabase.functions.invoke('invite-user', {
+                    body: { email: data.email }
+                });
+
+                if (inviteError) {
+                    console.error('Failed to send invite email:', inviteError);
+                    // Don't fail the approval, just log the email error
+                    return { ...data, emailSent: false, emailError: inviteError.message };
+                }
+
+                return { ...data, emailSent: true };
+            } catch (emailErr) {
+                console.error('Email sending failed:', emailErr);
+                return { ...data, emailSent: false, emailError: emailErr.message };
+            }
+        }
+
+        return data;
+    } catch (err) {
+        console.error('Failed to approve early access request:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+/**
+ * Validate an invitation token (for account completion)
+ * @param {string} token - UUID invitation token
+ * @returns {Promise<{valid: boolean, email?: string, request_id?: string, error?: string}>}
+ */
+export async function validateInvitationToken(token) {
+    try {
+        const { data, error } = await supabase
+            .rpc('validate_invitation_token', { p_token: token });
+
+        if (error) {
+            console.error('Error validating invitation token:', error);
+            return { valid: false, error: error.message };
+        }
+
+        return data;
+    } catch (err) {
+        console.error('Failed to validate invitation token:', err);
+        return { valid: false, error: err.message };
+    }
+}
+
+/**
+ * Mark early access request as completed (after account creation)
+ * @param {string} token - UUID invitation token
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function completeEarlyAccess(token) {
+    try {
+        const { data, error } = await supabase
+            .rpc('complete_early_access', { p_token: token });
+
+        if (error) {
+            console.error('Error completing early access:', error);
+            return { success: false, error: error.message };
+        }
+
+        return data;
+    } catch (err) {
+        console.error('Failed to complete early access:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+/**
+ * Delete an early access request (admin only)
+ * @param {string} requestId - UUID of the request
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function deleteEarlyAccessRequest(requestId) {
+    try {
+        const { error } = await supabase
+            .from('early_access_requests')
+            .delete()
+            .eq('id', requestId);
+
+        if (error) {
+            console.error('Error deleting early access request:', error);
+            return { success: false, error: error.message };
+        }
+
+        return { success: true };
+    } catch (err) {
+        console.error('Failed to delete early access request:', err);
+        return { success: false, error: err.message };
+    }
+}

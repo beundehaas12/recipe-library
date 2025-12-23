@@ -19,9 +19,9 @@ DROP POLICY IF EXISTS "Users can view their own recipes" ON recipes;
 -- 2. CREATE A PUBLIC-READ POLICY FOR AUTHENTICATED USERS
 -- ============================================================================
 
--- All authenticated users can view all recipes (public feed)
-CREATE POLICY "Authenticated users can view all recipes" ON recipes
-    FOR SELECT USING (auth.uid() IS NOT NULL);
+-- All users can view all recipes (public feed & landing page)
+CREATE POLICY "All users can view all recipes" ON recipes
+    FOR SELECT USING (true);
 
 -- Note: INSERT, UPDATE, DELETE policies remain unchanged:
 -- - Users can insert their own recipes (user_id = auth.uid())

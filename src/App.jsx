@@ -5,6 +5,7 @@ import { analyzeRecipeImage } from './lib/xai';
 import { translations as t } from './lib/translations';
 import { useAuth } from './context/AuthContext';
 import LoginScreen from './components/LoginScreen';
+import CompleteAccountScreen from './components/CompleteAccountScreen';
 import RecipeList from './components/RecipeList';
 import RecipeCard from './components/RecipeCard';
 import PlanningPage from './components/PlanningPage';
@@ -821,11 +822,29 @@ function AuthenticatedApp() {
 export default function App() {
   const { user, loading } = useAuth();
 
+  // Check for account completion token
+  const urlParams = new URLSearchParams(window.location.search);
+  const completeToken = urlParams.get('complete');
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
       </div>
+    );
+  }
+
+  // Show account completion screen if token present (even if not logged in)
+  if (completeToken) {
+    return (
+      <CompleteAccountScreen
+        token={completeToken}
+        onComplete={() => {
+          // Clear URL params and reload
+          window.history.replaceState({}, document.title, window.location.pathname);
+          window.location.reload();
+        }}
+      />
     );
   }
 

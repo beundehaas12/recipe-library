@@ -115,3 +115,13 @@
     mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
   }
 }
+@keyframes scrollUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+
+.animate-scroll-up {
+  will-change: transform;
+  animation: scrollUp linear infinite;
+  transform: translateZ(0);
+}

@@ -366,6 +366,52 @@ export async function fetchRecipesList(userId) {
 }
 
 /**
+ * Fetch a selection of recipes for the landing page (unauthenticated).
+ * Includes author profile information.
+ * 
+ * @param {number} limit - Number of recipes to fetch
+ * @returns {Promise<Object[]>} List of recipes with author info
+ */
+export async function fetchLandingPageRecipes(limit = 12) {
+    const { data: recipes, error: recipesError } = await supabase
+        .from('recipes')
+        .select('*')
+        .not('image_url', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+    if (recipesError) {
+        console.error('Error fetching landing page recipes:', recipesError);
+        return [];
+    }
+
+    if (!recipes || recipes.length === 0) return [];
+
+    // Fetch author profiles for these recipes
+    const userIds = [...new Set(recipes.map(r => r.user_id))];
+    const { data: profiles, error: profilesError } = await supabase
+        .from('author_profiles')
+        .select('*')
+        .in('user_id', userIds);
+
+    if (profilesError) {
+        console.warn('Error fetching author profiles for landing page:', profilesError);
+        return recipes;
+    }
+
+    // Combine them
+    const profilesMap = (profiles || []).reduce((acc, p) => {
+        acc[p.user_id] = p;
+        return acc;
+    }, {});
+
+    return recipes.map(r => ({
+        ...r,
+        author_profile: profilesMap[r.user_id] || null
+    }));
+}
+
+/**
  * Update a recipe with new data.
  * Handles updating both main table and normalized tables.
  * 
