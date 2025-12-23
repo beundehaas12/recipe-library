@@ -12,6 +12,9 @@ import AddToPlanModal from './AddToPlanModal';
 import BackButton from './BackButton';
 import { useAuth } from '../context/AuthContext';
 import { toggleFavorite, checkIsFavorite } from '../lib/plannerService';
+import { startOfWeek, addDays, format, parseISO } from 'date-fns';
+import { nl } from 'date-fns/locale';
+import { getAuthorDisplayName, getAuthorAvatarUrl } from '../lib/authorProfileService';
 
 // Language code to Dutch name mapping
 const languageNames = {
@@ -494,21 +497,15 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                         transition={{ delay: 0.2 }}
                                         className="flex items-center gap-3 mt-4 mb-2"
                                     >
-                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-white/20 bg-white/10 shadow-lg">
-                                            {recipe.author_profile.avatar_url ? (
-                                                <img
-                                                    src={recipe.author_profile.avatar_url}
-                                                    alt=""
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white/50">
-                                                    {recipe.author_profile.first_name?.[0]}{recipe.author_profile.last_name?.[0]}
-                                                </div>
-                                            )}
+                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-white/20 bg-white/10 shadow-lg shrink-0">
+                                            <img
+                                                src={getAuthorAvatarUrl(recipe.author_profile, { id: recipe.user_id })}
+                                                alt="Author"
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
                                         <span className="text-white/90 font-bold text-lg md:text-xl drop-shadow-md">
-                                            {recipe.author_profile.first_name} {recipe.author_profile.last_name}
+                                            {getAuthorDisplayName(recipe.author_profile) || 'Unknown Chef'}
                                         </span>
                                     </motion.div>
                                 )}
