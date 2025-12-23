@@ -1,12 +1,15 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getUserRole, canAccessDashboard, canManageUsers } from '../lib/roleService';
+import { getUserProfile, getUserPreferences, updateUserProfile, updateUserPreferences } from '../lib/profileService';
 
 const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [role, setRole] = useState('user');
+    const [profile, setProfile] = useState(null);
+    const [preferences, setPreferences] = useState(null);
     const [loading, setLoading] = useState(true);
 
     // Derived permissions
@@ -21,6 +24,16 @@ export function AuthProvider({ children }) {
         }
         const userRole = await getUserRole(userId);
         setRole(userRole);
+    };
+
+    // Fetch user profile and preferences
+    const fetchProfileAndPrefs = async () => {
+        const [profileResult, prefsResult] = await Promise.all([
+            getUserProfile(),
+            getUserPreferences()
+        ]);
+        setProfile(profileResult.data);
+        setPreferences(prefsResult.data);
     };
 
     useEffect(() => {
@@ -38,6 +51,7 @@ export function AuthProvider({ children }) {
             setUser(currentUser);
             if (currentUser) {
                 await fetchRole(currentUser.id);
+                await fetchProfileAndPrefs();
             }
             setLoading(false);
         }).catch((error) => {
@@ -52,8 +66,11 @@ export function AuthProvider({ children }) {
                 setUser(currentUser);
                 if (currentUser) {
                     await fetchRole(currentUser.id);
+                    await fetchProfileAndPrefs();
                 } else {
                     setRole('user');
+                    setProfile(null);
+                    setPreferences(null);
                 }
                 setLoading(false);
             }
@@ -102,6 +119,8 @@ export function AuthProvider({ children }) {
             // Always clear user state
             setUser(null);
             setRole('user');
+            setProfile(null);
+            setPreferences(null);
 
             // Manually clear all Supabase auth tokens from localStorage as fallback
             if (typeof window !== 'undefined' && window.localStorage) {
@@ -121,15 +140,34 @@ export function AuthProvider({ children }) {
         }
     };
 
+    // Profile update wrapper that refreshes state
+    const handleUpdateProfile = async (updates) => {
+        const result = await updateUserProfile(updates);
+        if (result.data) setProfile(result.data);
+        return result;
+    };
+
+    // Preferences update wrapper that refreshes state
+    const handleUpdatePreferences = async (updates) => {
+        const result = await updateUserPreferences(updates);
+        if (result.data) setPreferences(result.data);
+        return result;
+    };
+
     const value = {
         user,
         role,
+        profile,
+        preferences,
         isAdmin,
         isAuthor,
         loading,
         signUp,
         signIn,
         signOut,
+        updateProfile: handleUpdateProfile,
+        updatePreferences: handleUpdatePreferences,
+        refreshProfile: fetchProfileAndPrefs,
         canAccessDashboard: () => canAccessDashboard(role),
         canManageUsers: () => canManageUsers(role),
     };

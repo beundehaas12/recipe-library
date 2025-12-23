@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react';
 import { uploadSourceImage } from '../lib/supabase';
-import { analyzeRecipeImage } from '../lib/xai';
+import { analyzeRecipeImage, extractRecipeFromText } from '../lib/xai';
+import { processHtmlForRecipe } from '../lib/htmlParser';
 import { saveRecipe } from '../lib/recipeService';
 
 export function useBatchProcessing() {
     const [queue, setQueue] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
 
-    // Mock upload function for now - in real implementation this would use the existing upload logic
+    // Process image files
     const uploadFiles = useCallback(async (files, userId, context = {}) => {
         setIsUploading(true);
         const newItems = Array.from(files).map((file, index) => ({
@@ -50,11 +51,6 @@ export function useBatchProcessing() {
                 // 3. AUTO-APPROVE: Save directly to database
                 console.log('[BatchProcess] Auto-Approving recipe:', recipeRaw.title);
 
-                // Merge context into extra_data if needed, or handle collections
-                // For now, saveRecipe handles the main insert. Collection linking happens logic usually in Dashboard, 
-                // but we can try to do it here if we had access to the join table logic. 
-                // However, saveRecipe returns the SAVED recipe.
-
                 const savedRecipe = await saveRecipe(userId, recipeRaw, {
                     url: publicUrl,
                     type: 'image',
@@ -89,6 +85,107 @@ export function useBatchProcessing() {
         setIsUploading(false);
     }, []);
 
+    // Process URL to extract recipe
+    const processUrl = useCallback(async (url, userId, context = {}) => {
+        if (!url) return;
+
+        const itemId = `temp-url-${Date.now()}`;
+        const displayName = url.replace(/^https?:\/\/(www\.)?/, '').substring(0, 30) + '...';
+
+        // Add to queue immediately
+        setQueue(prev => [{
+            id: itemId,
+            title: displayName,
+            status: 'processing',
+            source_url: url,
+            created_at: new Date().toISOString(),
+            context
+        }, ...prev]);
+
+        const fetchWithProxy = async (proxyUrl) => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 10000);
+            const res = await fetch(proxyUrl, { signal: controller.signal });
+            clearTimeout(id);
+            if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+            return res.text();
+        };
+
+        try {
+            console.log('[BatchProcess] Processing URL:', url);
+
+            // 1. Fetch page content via proxy
+            let htmlContent = "";
+            try {
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                htmlContent = await fetchWithProxy(proxyUrl);
+            } catch (e) {
+                console.warn("Primary proxy failed, trying backup...", e);
+                const backupProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const res = await fetch(backupProxy);
+                const data = await res.json();
+                if (data.contents) {
+                    htmlContent = data.contents;
+                } else {
+                    throw new Error("Could not fetch URL content");
+                }
+            }
+
+            if (!htmlContent) throw new Error("Could not retrieve content from URL");
+
+            // 2. Parse HTML for recipe
+            const processed = processHtmlForRecipe(htmlContent);
+            let recipe;
+            let usage = null;
+
+            if (processed.type === 'schema') {
+                console.log('[BatchProcess] Schema.org data found');
+                recipe = processed.data;
+                recipe.ai_tags = ['📊 schema', ...(recipe.ai_tags || [])];
+            } else {
+                console.log('[BatchProcess] Using AI to extract recipe');
+                const result = await extractRecipeFromText(processed.data);
+                recipe = result.recipe;
+                usage = result.usage;
+                recipe.ai_tags = ['🤖 gemini', '🔗 url', ...(recipe.ai_tags || [])];
+            }
+
+            if (!recipe || !recipe.title) {
+                throw new Error('Kon geen recept vinden op deze pagina');
+            }
+
+            // 3. Save to database
+            console.log('[BatchProcess] Saving URL recipe:', recipe.title);
+            const savedRecipe = await saveRecipe(userId, recipe, {
+                type: 'url',
+                url: url
+            }, usage);
+
+            console.log('[BatchProcess] URL Recipe saved with ID:', savedRecipe.id);
+
+            // 4. Update queue to DONE
+            setQueue(prev => prev.map(q =>
+                q.id === itemId
+                    ? {
+                        ...q,
+                        status: 'done',
+                        ...savedRecipe,
+                        title: savedRecipe.title
+                    }
+                    : q
+            ));
+            console.log('[BatchProcess] ✅ URL processing complete');
+
+        } catch (error) {
+            console.error("[BatchProcess] ❌ URL Error:", error);
+            setQueue(prev => prev.map(q =>
+                q.id === itemId
+                    ? { ...q, status: 'error', error: error.message }
+                    : q
+            ));
+        }
+    }, []);
+
     const updateItem = useCallback((id, updates) => {
         setQueue(prev => prev.map(item =>
             item.id === id ? { ...item, ...updates } : item
@@ -103,7 +200,9 @@ export function useBatchProcessing() {
         queue,
         isUploading,
         uploadFiles,
+        processUrl,
         updateItem,
         deleteItem
     };
 }
+

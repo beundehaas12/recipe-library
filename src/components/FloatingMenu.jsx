@@ -34,7 +34,7 @@ export default function FloatingMenu({ onSearch }) {
         { label: 'Mijn kookboek', path: '/favorites' },
     ];
 
-    if (location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/dashboard')) return null;
+    if (location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/settings')) return null;
 
     return (
         <div className="fixed top-4 left-0 right-0 z-[5000] justify-center px-4 pointer-events-none hidden lg:flex">

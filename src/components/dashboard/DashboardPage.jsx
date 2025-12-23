@@ -11,7 +11,7 @@ import { useBatchProcessing } from '../../hooks/useBatchProcessing';
 export default function DashboardPage() {
     const navigate = useNavigate();
     const { user, signOut, isAdmin, isAuthor, loading } = useAuth();
-    const { queue, uploadFiles, updateItem: updateQueueItem, deleteItem: deleteQueueItem } = useBatchProcessing();
+    const { queue, uploadFiles, processUrl, updateItem: updateQueueItem, deleteItem: deleteQueueItem } = useBatchProcessing();
     const [selectedId, setSelectedId] = useState(null);
     const [dbRecipes, setDbRecipes] = useState([]);
     const [collections, setCollections] = useState([]);
@@ -330,6 +330,8 @@ export default function DashboardPage() {
             collections={collections}
             onCreateCollection={() => setIsCollectionModalOpen(true)}
             isAdmin={isAdmin}
+            onUpload={handleUpload}
+            onUrlSubmit={(url) => processUrl(url, user.id)}
         >
             {/* Finder Column 2: List */}
             <RecipeQueueList

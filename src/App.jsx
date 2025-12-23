@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { supabase, uploadTempImage, uploadSourceImage, deleteImageByUrl } from './lib/supabase';
-import { analyzeRecipeImage, extractRecipeFromText } from './lib/xai';
-import { processHtmlForRecipe } from './lib/htmlParser';
+import { analyzeRecipeImage } from './lib/xai';
 import { translations as t } from './lib/translations';
 import { useAuth } from './context/AuthContext';
 import LoginScreen from './components/LoginScreen';
@@ -11,16 +10,17 @@ import RecipeCard from './components/RecipeCard';
 import PlanningPage from './components/PlanningPage';
 import ShoppingListPage from './components/ShoppingListPage';
 import FavoritesPage from './components/FavoritesPage';
+import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardPage from './components/dashboard/DashboardPage';
 import UserManagementPage from './components/dashboard/UserManagementPage';
+import AccountSettingsPage from './components/dashboard/AccountSettingsPage';
 import CollectionPage from './components/CollectionPage';
 import FloatingMenu from './components/FloatingMenu';
 import AppHeader from './components/AppHeader';
-import InviteModal from './components/InviteModal';
-import { getMyWorkspaces, getWorkspaceMembersBasic, acceptInvitation } from './lib/workspaceService';
-import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight, CheckCircle2, AlertCircle, Loader2, ExternalLink, ChevronDown, ChevronUp, Check, Menu, Compass, Calendar, ShoppingBasket, Heart, Clock, Users } from 'lucide-react';
+import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Search, LogOut, X, Play, Info, Settings, ArrowRight, CheckCircle2, AlertCircle, Loader2, ExternalLink, ChevronDown, ChevronUp, Check, Menu, Compass, Calendar, ShoppingBasket, Heart, Clock } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
+
 
 function Home({ activeTasks, setActiveTasks, searchQuery, recipes, collections, loading, searchResults, instantFilteredRecipes, scrolled, isSearching }) {
   const { user, signOut } = useAuth();
@@ -358,13 +358,6 @@ function AuthenticatedApp() {
   const [isSearching, setIsSearching] = useState(false);
   const [tokenUsage, setTokenUsage] = useState(null);
   const [scrolled, setScrolled] = useState(false);
-  const [showUrlInput, setShowUrlInput] = useState(false);
-  const [urlInputValue, setUrlInputValue] = useState("");
-
-  // Workspace state
-  const [currentWorkspace, setCurrentWorkspace] = useState(null);
-  const [workspaceMembers, setWorkspaceMembers] = useState([]);
-  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -377,43 +370,6 @@ function AuthenticatedApp() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Fetch workspaces and handle invitation tokens
-  useEffect(() => {
-    if (user) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const inviteToken = urlParams.get('invite');
-      if (inviteToken) {
-        // Accept invitation and clear the URL param
-        acceptInvitation(inviteToken)
-          .then(result => {
-            if (result?.success) {
-              console.log('✅ Invitation accepted');
-              // Clear the invite param from URL
-              window.history.replaceState({}, '', window.location.pathname);
-            }
-          })
-          .catch(err => console.error('Failed to accept invitation:', err))
-          .finally(() => fetchWorkspaces());
-      } else {
-        fetchWorkspaces();
-      }
-    }
-  }, [user]);
-
-  const fetchWorkspaces = async () => {
-    try {
-      const workspaces = await getMyWorkspaces(user.id);
-      if (workspaces.length > 0) {
-        const ws = workspaces[0]; // Use first workspace for now
-        setCurrentWorkspace(ws);
-        const members = await getWorkspaceMembersBasic(ws.id);
-        setWorkspaceMembers(members);
-      }
-    } catch (err) {
-      console.error('Failed to fetch workspaces:', err);
-    }
-  };
 
   // Fetch recipes
   useEffect(() => {
@@ -626,96 +582,6 @@ function AuthenticatedApp() {
       updateTask(taskId, { status: 'error', error: error.message });
     }
   };
-
-  const processUrl = async (url) => {
-    if (!url) return;
-    setShowUrlInput(false);
-    const taskId = Date.now().toString();
-    const taskName = url.replace(/^https?:\/\/(www\.)?/, '').substring(0, 20) + '...';
-
-    setActiveTasks(prev => [{
-      id: taskId, type: 'url', name: taskName, status: 'processing',
-      steps: [{ message: 'Fetching page...', done: false }]
-    }, ...prev]);
-
-    const startTime = Date.now();
-    const extractionHistory = {
-      timestamp: new Date().toISOString(), source_type: 'url', source_url: url, extraction_method: null,
-      schema_used: false, ai_used: false, ai_model: null, tokens: null, estimated_cost_eur: null, processing_time_ms: null, notes: []
-    };
-
-    const fetchWithProxy = async (proxyUrl) => {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(proxyUrl, { signal: controller.signal });
-      clearTimeout(id);
-      if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
-      return res.text();
-    };
-
-    try {
-      let htmlContent = "";
-      try {
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-        htmlContent = await fetchWithProxy(proxyUrl);
-        extractionHistory.notes.push('Fetched via corsproxy.io');
-      } catch (e) {
-        console.warn("Primary proxy failed, trying backup...", e);
-        extractionHistory.notes.push('Primary proxy failed, using backup');
-        const backupProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        const res = await fetch(backupProxy);
-        const data = await res.json();
-        if (data.contents) {
-          htmlContent = data.contents;
-          extractionHistory.notes.push('Fetched via allorigins.win');
-        } else {
-          throw new Error("Backup proxy also failed");
-        }
-      }
-
-      if (!htmlContent) throw new Error("Could not retrieve content from URL");
-
-      addTaskStep(taskId, 'Parsing content...');
-      // Direct calls using top-level imports
-      const processed = processHtmlForRecipe(htmlContent);
-      let recipe;
-      let usage = null;
-
-      if (processed.type === 'schema') {
-        addTaskStep(taskId, 'Recipe data found!');
-        recipe = processed.data;
-        extractionHistory.extraction_method = 'schema';
-        extractionHistory.schema_used = true;
-        extractionHistory.notes.push('Schema.org JSON-LD data found');
-        recipe.ai_tags = ['📊 schema', ...(recipe.ai_tags || [])];
-      } else {
-        addTaskStep(taskId, 'AI is analyzing...');
-        const result = await extractRecipeFromText(processed.data);
-        recipe = result.recipe;
-        usage = result.usage;
-        setTokenUsage(usage);
-        extractionHistory.extraction_method = processed.schemaRecipe ? 'schema+gemini' : 'gemini';
-        extractionHistory.schema_used = !!processed.schemaRecipe;
-        extractionHistory.ai_used = true;
-        extractionHistory.ai_model = 'gemini-3-flash-preview';
-        extractionHistory.tokens = { prompt: usage.prompt_tokens, completion: usage.completion_tokens, total: usage.total_tokens };
-        extractionHistory.notes.push('AI extracted recipe from cleaned HTML');
-        recipe.ai_tags = ['🤖 gemini', ...(recipe.ai_tags || [])];
-      }
-
-      extractionHistory.processing_time_ms = Date.now() - startTime;
-      if (!recipe || !recipe.title) throw new Error('Kon geen recepttitel vinden op deze pagina');
-
-      addTaskStep(taskId, 'Saving recipe...');
-      await saveRecipeToDb(recipe, { type: 'url', url }, extractionHistory, taskId);
-      completeTaskSteps(taskId);
-
-    } catch (error) {
-      console.error("URL processing failed:", error);
-      updateTask(taskId, { status: 'error', error: error.message });
-    }
-  };
-
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) handleCapture(file);
@@ -882,6 +748,7 @@ function AuthenticatedApp() {
         <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/dashboard/users" element={<UserManagementPage />} />
+        <Route path="/settings" element={<AccountSettingsPage />} />
       </Routes>
 
       <AppHeader
@@ -893,74 +760,9 @@ function AuthenticatedApp() {
         clearSearch={() => setSearchQuery('')}
         instantFilteredRecipes={instantFilteredRecipes}
         searchResults={searchResults}
-        onCameraClick={() => document.getElementById('cameraInput')?.click()}
-        onUrlClick={() => setShowUrlInput(true)}
-        workspace={currentWorkspace}
-        workspaceMembers={workspaceMembers}
-        onInviteClick={() => setShowInviteModal(true)}
       />
       <FloatingMenu onSearch={setSearchQuery} />
       <BackgroundTaskBar />
-
-      {/* Invite Modal */}
-      <AnimatePresence>
-        {showInviteModal && currentWorkspace && (
-          <InviteModal
-            workspace={currentWorkspace}
-            currentUserId={user.id}
-            onClose={() => setShowInviteModal(false)}
-            onMembersChange={fetchWorkspaces}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* URL Input Modal Global */}
-      <AnimatePresence>
-        {showUrlInput && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
-            onClick={() => setShowUrlInput(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="glass-panel w-full max-w-md p-8 rounded-[var(--radius)] shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-white mb-2">{t.pasteUrl}</h3>
-              <p className="text-muted-foreground text-sm mb-6">Plak een link van je favoriete receptensite.</p>
-
-              <input
-                type="url"
-                placeholder="https://example.com/lekker-recept"
-                className="input-standard mb-6 !py-4 text-lg"
-                value={urlInputValue}
-                onChange={(e) => setUrlInputValue(e.target.value)}
-                autoFocus
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowUrlInput(false)}
-                  className="btn-secondary flex-1"
-                >
-                  {t.cancel}
-                </button>
-                <button
-                  onClick={() => processUrl(urlInputValue)}
-                  disabled={!urlInputValue}
-                  className="btn-primary flex-1 !text-black"
-                >
-                  {t.analyzeUrl}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <input
         type="file"

@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { ChefHat, Plus, Camera as CameraCaptureIcon, Upload as UploadIcon, Link as LinkIcon, Search, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart, UserPlus, LayoutGrid } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChefHat, Search, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { getAvatarUrl } from '../lib/profileService';
+import UserMenu from './UserMenu';
 
 export default function AppHeader({
     user,
@@ -11,32 +14,16 @@ export default function AppHeader({
     handleSearch,
     clearSearch,
     instantFilteredRecipes,
-    searchResults,
-    onCameraClick,
-    onUrlClick,
-    workspace,
-    workspaceMembers = [],
-    onInviteClick
+    searchResults
 }) {
-    const [showAddMenu, setShowAddMenu] = useState(false);
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-
-    // Close dropdowns when clicking outside
-    useEffect(() => {
-        const handleClickOutside = () => {
-            setShowAddMenu(false);
-            setShowProfileMenu(false);
-        };
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, []);
+    const { profile } = useAuth();
 
     // Hide header on detail pages (recipe, collection) to favor the back button, and on dashboard
-    if (location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/collection/') || location.pathname.startsWith('/dashboard')) return null;
+    if (location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/collection/') || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/settings')) return null;
 
     return (
         <>
@@ -72,152 +59,8 @@ export default function AppHeader({
                             <Search size={22} />
                         </button>
 
-                        {/* Add Recipe */}
-                        <div className="relative">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowAddMenu(!showAddMenu);
-                                    setShowProfileMenu(false);
-                                }}
-                                className="w-11 h-11 md:h-11 md:w-auto md:px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all flex items-center justify-center md:gap-3 whitespace-nowrap active:scale-95 group shadow-xl"
-                            >
-                                <Plus size={22} className="text-primary md:hidden" />
-                                <div className="hidden md:flex w-6 h-6 rounded-full bg-primary/20 items-center justify-center group-hover:bg-primary/30 transition-colors">
-                                    <Plus size={14} className="text-primary" />
-                                </div>
-                                <span className="hidden md:inline text-sm font-bold text-white tracking-tight">
-                                    {t.addRecipe}
-                                </span>
-                            </button>
-
-                            <AnimatePresence>
-                                {showAddMenu && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        transition={{ duration: 0.1 }}
-                                        className="absolute top-full right-0 mt-3 w-60 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-3xl overflow-hidden py-2 z-50"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        {/* Media option - triggers native iOS picker */}
-                                        <button
-                                            onClick={() => {
-                                                setShowAddMenu(false);
-                                                onCameraClick();
-                                            }}
-                                            className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
-                                        >
-                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
-                                                <CameraCaptureIcon size={16} />
-                                            </div>
-                                            <span>Media</span>
-                                        </button>
-                                        {/* URL option */}
-                                        <button
-                                            onClick={() => {
-                                                setShowAddMenu(false);
-                                                onUrlClick();
-                                            }}
-                                            className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-gray-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
-                                        >
-                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
-                                                <LinkIcon size={16} />
-                                            </div>
-                                            <span>URL</span>
-                                        </button>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-
-                        {/* Stacked Workspace Member Avatars */}
-                        {workspaceMembers.length > 1 && (
-                            <div className="hidden md:flex items-center -space-x-2">
-                                {workspaceMembers.slice(0, 3).map((member, idx) => (
-                                    <div
-                                        key={member.user_id || idx}
-                                        className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md border-2 border-black flex items-center justify-center text-white text-xs font-bold shadow-lg"
-                                        style={{ zIndex: 10 - idx }}
-                                    >
-                                        {member.avatar_url ? (
-                                            <img src={member.avatar_url} className="w-full h-full object-cover rounded-full" alt="" />
-                                        ) : (
-                                            member.email?.[0]?.toUpperCase() || '?'
-                                        )}
-                                    </div>
-                                ))}
-                                {workspaceMembers.length > 3 && (
-                                    <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md border-2 border-black flex items-center justify-center text-white text-xs font-bold shadow-lg">
-                                        +{workspaceMembers.length - 3}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Invite Button */}
-                        {onInviteClick && (
-                            <button
-                                onClick={onInviteClick}
-                                className="hidden md:flex h-11 w-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 items-center justify-center text-white/70 hover:text-primary hover:bg-black/60 transition-all"
-                                title="Uitnodigen"
-                            >
-                                <UserPlus size={18} />
-                            </button>
-                        )}
-
                         {/* User Profile */}
-                        <div className="relative">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowProfileMenu(!showProfileMenu);
-                                    setShowAddMenu(false);
-                                }}
-                                className="h-11 w-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all overflow-hidden shadow-xl"
-                            >
-                                {user?.user_metadata?.avatar_url ? (
-                                    <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
-                                ) : (
-                                    user?.email?.[0]?.toUpperCase() || '?'
-                                )}
-                            </button>
-
-                            <AnimatePresence>
-                                {showProfileMenu && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        transition={{ duration: 0.1 }}
-                                        className="absolute top-full right-0 mt-3 w-56 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-3xl overflow-hidden py-2 z-50"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="px-4 py-2 border-b border-white/5 mb-1">
-                                            <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black">{t.signedInAs}</p>
-                                            <p className="text-white font-bold truncate text-sm">{user.email}</p>
-                                        </div>
-
-                                        <Link
-                                            to="/dashboard"
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-white hover:bg-white/10 transition-colors text-sm font-medium"
-                                        >
-                                            <LayoutGrid size={18} />
-                                            <span>Dashboard</span>
-                                        </Link>
-
-                                        <button
-                                            onClick={signOut}
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-bold"
-                                        >
-                                            <LogOut size={18} />
-                                            <span>{t.signOut}</span>
-                                        </button>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
+                        <UserMenu />
                     </div>
                 </div>
             </header>
@@ -367,7 +210,7 @@ export default function AppHeader({
                             <div className="mt-auto pt-6 border-t border-white/5">
                                 <div className="px-4 py-2 mb-2">
                                     <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black">{t.signedInAs}</p>
-                                    <p className="text-white font-bold truncate text-sm mt-1">{user.email}</p>
+                                    <p className="text-white font-bold truncate text-sm mt-1">{[profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user.email}</p>
                                 </div>
                                 <button
                                     onClick={signOut}
