@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAvatarUrl } from '../lib/profileService';
+import BackButton from './BackButton';
 import UserMenu from './UserMenu';
 
 export default function AppHeader({
@@ -22,8 +23,18 @@ export default function AppHeader({
     const location = useLocation();
     const { profile } = useAuth();
 
-    // Hide header on detail pages (recipe, collection) to favor the back button, and on dashboard
-    if (location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/collection/') || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/settings')) return null;
+    // Determine if we are on a "deep" page (Recipe Detail or Collection Detail)
+    // Dashboard and Settings should likely still keep their own/current behavior or user explicitly said "not dashboard".
+    // User: "niet dashboard dus".
+    // So Dashboard check must remain or DashboardLayout handles it?
+    // DashboardLayout has Sidebar. Usually Dashboard hides AppHeader.
+    // Line 26: `if (... || location.pathname.startsWith('/dashboard') || ...)`
+    // I should KEEP the dashboard exclusion.
+    // REMOVE recipe/collection exclusion.
+
+    if (location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/settings')) return null;
+
+    const isDeepPage = location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/collection/');
 
     return (
         <>
@@ -31,20 +42,26 @@ export default function AppHeader({
             <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
                 <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between">
                     <div className="flex items-center gap-3 pointer-events-auto relative z-[5000]">
-                        {/* Mobile Hamburger */}
-                        <button
-                            onClick={() => setMobileMenuOpen(true)}
-                            className="lg:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
-                        >
-                            <Menu size={22} />
-                        </button>
+                        {isDeepPage ? (
+                            <BackButton className="!bg-black/40 !backdrop-blur-md !border-white/10" />
+                        ) : (
+                            <>
+                                {/* Mobile Hamburger */}
+                                <button
+                                    onClick={() => setMobileMenuOpen(true)}
+                                    className="lg:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
+                                >
+                                    <Menu size={22} />
+                                </button>
 
-                        <div className={`hidden lg:flex bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full`}>
-                            <ChefHat size={22} />
-                        </div>
-                        <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden lg:block">
-                            {t.appTitle}
-                        </h1>
+                                <div className={`hidden lg:flex bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full`}>
+                                    <ChefHat size={22} />
+                                </div>
+                                <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden lg:block">
+                                    {t.appTitle}
+                                </h1>
+                            </>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto relative z-[5000]">

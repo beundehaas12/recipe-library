@@ -110,16 +110,8 @@ export default function CollectionPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background pb-20">
-            {/* Header - Same structure as RecipeCard */}
-            <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
-                <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
-                    <BackButton />
-                </div>
-            </header>
-
-            {/* Hero Title Section - Same container structure as RecipeCard */}
-            <div className="max-w-[1600px] mx-auto px-4 lg:px-20 pt-32 mb-12">
+        <div className="min-h-screen bg-background pb-20">        {/* Hero Title Section - Same container structure as RecipeCard */}
+            < div className="max-w-[1600px] mx-auto px-4 lg:px-20 pt-32 mb-12" >
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -164,10 +156,10 @@ export default function CollectionPage() {
                         </motion.div>
                     )}
                 </motion.div>
-            </div>
+            </div >
 
             {/* Recipe Grid - Same container structure as RecipeCard */}
-            <div className="max-w-[1600px] mx-auto px-0 md:px-4 lg:px-20">
+            < div className="max-w-[1600px] mx-auto px-0 md:px-4 lg:px-20" >
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-0.5 md:gap-1 lg:gap-2">
                     {recipes.map(recipe => (
                         <div key={recipe.id} className="w-full">
@@ -181,7 +173,7 @@ export default function CollectionPage() {
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

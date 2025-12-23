@@ -394,10 +394,8 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
 
                 {/* Cinematic Floating Header - Completely transparent background version */}
                 <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
-                    <div className="max-w-[1600px] mx-auto w-full flex justify-between items-center px-0">
-                        <BackButton />
-
-                        <div className="flex gap-3 pointer-events-auto">
+                    <div className="max-w-[1600px] mx-auto w-full flex justify-end items-center px-0">
+                        <div className="flex gap-3 pointer-events-auto mr-44">
                             {isEditing ? (
                                 <div className="flex gap-2">
                                     <button onClick={handleSave} className="btn-primary !py-2 !px-4 text-sm !text-black">Opslaan</button>

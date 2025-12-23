@@ -34,7 +34,7 @@ export default function FloatingMenu({ onSearch }) {
         { label: 'Mijn kookboek', path: '/favorites' },
     ];
 
-    if (location.pathname.startsWith('/recipe/') || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/settings')) return null;
+    if (location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/settings')) return null;
 
     return (
         <div className="fixed top-4 left-0 right-0 z-[5000] justify-center px-4 pointer-events-none hidden lg:flex">
@@ -87,11 +87,12 @@ export default function FloatingMenu({ onSearch }) {
                             className="flex items-center gap-1 md:gap-1"
                         >
                             {navItems.map((item) => {
-                                const isActive = location.pathname === item.path;
+                                // Manual check is nice but NavLink isActive handles it if configured correctly
                                 return (
                                     <NavLink
                                         key={item.label}
                                         to={item.path}
+                                        end={item.path === '/'}
                                         className={({ isActive }) => `
                                             relative px-4 h-9 flex items-center justify-center rounded-full text-sm font-bold tracking-wide transition-all
                                             ${isActive ? 'text-black bg-primary' : 'text-white/70 hover:text-white hover:bg-white/10'}
