@@ -108,29 +108,25 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         e.preventDefault();
         setError('');
 
-        // Validation
-        if (password !== confirmPassword) {
-            setError('Wachtwoorden komen niet overeen.');
-            return;
-        }
+        const [statusLog, setStatusLog] = useState([]);
 
-        if (password.length < 6) {
-            setError('Wachtwoord moet minimaal 6 tekens bevatten.');
-            return;
-        }
+        // Auto-scroll log
+        const logEndRef = useRef(null);
+        useEffect(() => {
+            logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, [statusLog]);
 
-        if (!firstName.trim() || !lastName.trim()) {
-            setError('Vul je voor- en achternaam in.');
-            return;
-        }
+        const addLog = (msg) => {
+            console.info(msg);
+            setStatusLog(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`]);
+        };
 
-        setSubmitting(true);
-        console.info('[CompleteAccount] Starting submission...');
+        addLog('Starting process...');
 
-        // Helper to timeout promises
-        const withTimeout = (promise, ms = 15000) => Promise.race([
+        // REDUCED TO 5s timeout
+        const withTimeout = (promise, ms = 5000) => Promise.race([
             promise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), ms))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_5S: Request took too long')), ms))
         ]);
 
         try {
@@ -138,8 +134,9 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                 // === INVITED USER FLOW ===
 
                 // 1. Force refresh session
-                console.info('[CompleteAccount] Refreshing session...');
+                addLog('Refreshing session...');
                 await supabase.auth.refreshSession();
+
 
                 // 2. Metadata Update (Check connectivity)
                 console.info('[CompleteAccount] Updating metadata...');
