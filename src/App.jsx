@@ -409,8 +409,35 @@ function AuthenticatedApp() {
       if (error) throw error;
       if (colsError) throw colsError;
 
-      setRecipes(data || []);
-      setCollections(colsData?.map(c => {
+      // --- Fetch Author Profiles ---
+      const userIds = new Set([
+        ...(data || []).map(r => r.user_id),
+        ...(colsData || []).map(c => c.user_id)
+      ].filter(Boolean));
+
+      let profileMap = {};
+      if (userIds.size > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('author_profiles')
+          .select('user_id, first_name, last_name, avatar_url')
+          .in('user_id', Array.from(userIds));
+
+        if (!profilesError && profiles) {
+          profileMap = profiles.reduce((acc, p) => {
+            acc[p.user_id] = p;
+            return acc;
+          }, {});
+        }
+      }
+
+      // Merge profiles into recipes
+      const recipesWithAuthors = (data || []).map(r => ({
+        ...r,
+        author_profile: profileMap[r.user_id] || null
+      }));
+
+      // Merge profiles into collections
+      const collectionsWithAuthors = (colsData || []).map(c => {
         // Filter out null recipes (deleted ones)
         const validRecipes = c.recipe_collections
           ?.map(rc => rc.recipe)
@@ -418,6 +445,7 @@ function AuthenticatedApp() {
 
         return {
           ...c,
+          author_profile: profileMap[c.user_id] || null,
           recipe_count: validRecipes.length,
           // Extract limit 4 images
           preview_images: validRecipes
@@ -425,7 +453,11 @@ function AuthenticatedApp() {
             .filter(url => url)
             .slice(0, 4)
         };
-      }) || []);
+      });
+
+      setRecipes(recipesWithAuthors);
+      setCollections(collectionsWithAuthors);
+
     } catch (error) {
       console.error('Error fetching recipes:', error.message);
     } finally {

@@ -487,6 +487,32 @@ export default function RecipeCard({ recipe, onImageUpdate, onDelete, onUpdate }
                                     {recipe.title}
                                 </motion.h1>
 
+                                {recipe.author_profile && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        className="flex items-center gap-3 mt-4 mb-2"
+                                    >
+                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-white/20 bg-white/10 shadow-lg">
+                                            {recipe.author_profile.avatar_url ? (
+                                                <img
+                                                    src={recipe.author_profile.avatar_url}
+                                                    alt=""
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white/50">
+                                                    {recipe.author_profile.first_name?.[0]}{recipe.author_profile.last_name?.[0]}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-white/90 font-bold text-lg md:text-xl drop-shadow-md">
+                                            {recipe.author_profile.first_name} {recipe.author_profile.last_name}
+                                        </span>
+                                    </motion.div>
+                                )}
+
                                 <div className="mb-4"></div>
 
                                 {/* Description */}

@@ -25,6 +25,20 @@ export default function CollectionPage() {
                     .single();
 
                 if (collectionError) throw collectionError;
+
+                // Fetch author profile for the collection
+                if (collectionData.user_id) {
+                    const { data: authorProfile } = await supabase
+                        .from('author_profiles')
+                        .select('avatar_url, first_name, last_name')
+                        .eq('user_id', collectionData.user_id)
+                        .single();
+
+                    if (authorProfile) {
+                        collectionData.author_profile = authorProfile;
+                    }
+                }
+
                 setCollection(collectionData);
 
                 // Fetch recipes in this collection
@@ -35,7 +49,9 @@ export default function CollectionPage() {
 
                 if (relationsError) throw relationsError;
 
+                // Also fetch author profiles for the recipes in the collection
                 const recipeIds = relations.map(r => r.recipe_id);
+                // ... (existing logic) ...
 
                 if (recipeIds.length > 0) {
                     const { data: recipesData, error: recipesError } = await supabase
@@ -45,7 +61,27 @@ export default function CollectionPage() {
                         .order('created_at', { ascending: false });
 
                     if (recipesError) throw recipesError;
-                    setRecipes(recipesData || []);
+
+                    // Fetch authors for these recipes for the thumbnails
+                    const userIds = [...new Set(recipesData.map(r => r.user_id).filter(Boolean))];
+                    let profileMap = {};
+                    if (userIds.length > 0) {
+                        const { data: profiles } = await supabase
+                            .from('author_profiles')
+                            .select('user_id, first_name, last_name, avatar_url')
+                            .in('user_id', userIds);
+
+                        if (profiles) {
+                            profileMap = profiles.reduce((acc, p) => { acc[p.user_id] = p; return acc; }, {});
+                        }
+                    }
+
+                    const recipesWithAuthors = recipesData.map(r => ({
+                        ...r,
+                        author_profile: profileMap[r.user_id]
+                    }));
+
+                    setRecipes(recipesWithAuthors || []);
                 }
             } catch (error) {
                 console.error('Error fetching collection:', error);
@@ -101,6 +137,32 @@ export default function CollectionPage() {
                     <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.85] drop-shadow-2xl font-display uppercase">
                         {collection.name}
                     </h1>
+
+                    {collection.author_profile && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="flex items-center gap-3 mt-4 mb-2"
+                        >
+                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-white/20 bg-white/10 shadow-lg">
+                                {collection.author_profile.avatar_url ? (
+                                    <img
+                                        src={collection.author_profile.avatar_url}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white/50">
+                                        {collection.author_profile.first_name?.[0]}{collection.author_profile.last_name?.[0]}
+                                    </div>
+                                )}
+                            </div>
+                            <span className="text-white/90 font-bold text-lg md:text-xl drop-shadow-md">
+                                {collection.author_profile.first_name} {collection.author_profile.last_name}
+                            </span>
+                        </motion.div>
+                    )}
                 </motion.div>
             </div>
 

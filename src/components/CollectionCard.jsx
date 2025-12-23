@@ -100,6 +100,28 @@ export default function CollectionCard({ collection, recipeCount = 0 }) {
                         {collection.name}
                     </h3>
 
+                    {/* Author Info */}
+                    {collection.author_profile && (
+                        <div className="flex items-center gap-2 mt-2">
+                            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20 bg-white/10 flex-shrink-0">
+                                {collection.author_profile.avatar_url ? (
+                                    <img
+                                        src={collection.author_profile.avatar_url}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-white/50">
+                                        {collection.author_profile.first_name?.[0]}{collection.author_profile.last_name?.[0]}
+                                    </div>
+                                )}
+                            </div>
+                            <span className="text-xs text-white/70 font-medium truncate drop-shadow-md">
+                                {collection.author_profile.first_name} {collection.author_profile.last_name}
+                            </span>
+                        </div>
+                    )}
+
                     <div className="flex items-center gap-3 mt-2 text-xs text-white/70 font-semibold">
                         <span className="flex items-center gap-1.5">
                             <ChefHat size={12} className="text-white/40" />

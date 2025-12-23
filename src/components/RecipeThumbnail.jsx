@@ -51,6 +51,28 @@ export default function RecipeThumbnail({ recipe, t }) {
                         {recipe.title}
                     </motion.h3>
 
+                    {/* Author Info */}
+                    {recipe.author_profile && (
+                        <div className="flex items-center gap-2 mt-2">
+                            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20 bg-white/10 flex-shrink-0">
+                                {recipe.author_profile.avatar_url ? (
+                                    <img
+                                        src={recipe.author_profile.avatar_url}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-white/50">
+                                        {recipe.author_profile.first_name?.[0]}{recipe.author_profile.last_name?.[0]}
+                                    </div>
+                                )}
+                            </div>
+                            <span className="text-xs text-white/70 font-medium truncate drop-shadow-md">
+                                {recipe.author_profile.first_name} {recipe.author_profile.last_name}
+                            </span>
+                        </div>
+                    )}
+
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
