@@ -269,7 +269,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                             <h1 className="text-2xl font-black tracking-tighter text-zinc-900 leading-none">
                                 Forkify
                             </h1>
-                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Culinary Assistant</p>
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Alle recepten op 1 plek</p>
                         </div>
                     </div>
 
