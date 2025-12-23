@@ -248,7 +248,7 @@ export default function LoginScreen() {
                                 Meld je aan voor de vroege toegang lijst.
                             </p>
 
-                            <form onSubmit={handleWaitlistSubmit} className="flex gap-2">
+                            <form onSubmit={handleWaitlistSubmit} className="flex gap-2" autoComplete="off">
                                 <div className="relative flex-1">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300" size={14} />
                                     <input
@@ -257,6 +257,7 @@ export default function LoginScreen() {
                                         value={waitlistEmail}
                                         onChange={(e) => setWaitlistEmail(e.target.value)}
                                         required
+                                        autoComplete="off"
                                         className="w-full h-10 pl-9 pr-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-primary transition-all"
                                     />
                                 </div>
