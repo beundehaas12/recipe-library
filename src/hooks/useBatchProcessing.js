@@ -166,25 +166,31 @@ export function useBatchProcessing() {
             }
 
             // 3. Save to database
-            console.log('[BatchProcess] Saving URL recipe:', recipe.title);
+            console.log('[BatchProcess] Step 3: Saving URL recipe:', recipe.title);
             const savedRecipe = await saveRecipe(userId, recipe, {
                 type: 'url',
                 url: url
             }, usage);
 
-            console.log('[BatchProcess] URL Recipe saved with ID:', savedRecipe.id);
+            console.log('[BatchProcess] Step 3: ✅ Recipe saved with ID:', savedRecipe.id);
 
             // 4. Update queue to DONE
-            setQueue(prev => prev.map(q =>
-                q.id === itemId
-                    ? {
-                        ...q,
-                        status: 'done',
-                        ...savedRecipe,
-                        title: savedRecipe.title
-                    }
-                    : q
-            ));
+            console.log('[BatchProcess] Step 4: Updating queue item', itemId, 'to done');
+            setQueue(prev => {
+                console.log('[BatchProcess] Step 4: Queue before update:', prev.map(q => ({ id: q.id, status: q.status })));
+                const updated = prev.map(q =>
+                    q.id === itemId
+                        ? {
+                            ...q,
+                            status: 'done',
+                            ...savedRecipe,
+                            title: savedRecipe.title
+                        }
+                        : q
+                );
+                console.log('[BatchProcess] Step 4: Queue after update:', updated.map(q => ({ id: q.id, status: q.status })));
+                return updated;
+            });
             console.log('[BatchProcess] ✅ URL processing complete');
 
         } catch (error) {
