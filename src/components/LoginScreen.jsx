@@ -261,7 +261,7 @@ export default function LoginScreen() {
                                         onChange={(e) => setWaitlistFirstName(e.target.value)}
                                         required
                                         autoComplete="off"
-                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-primary transition-all"
+                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
                                     />
                                     <input
                                         type="text"
@@ -270,7 +270,7 @@ export default function LoginScreen() {
                                         onChange={(e) => setWaitlistLastName(e.target.value)}
                                         required
                                         autoComplete="off"
-                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-primary transition-all"
+                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
                                     />
                                 </div>
                                 <div className="flex gap-2">
@@ -283,7 +283,7 @@ export default function LoginScreen() {
                                             onChange={(e) => setWaitlistEmail(e.target.value)}
                                             required
                                             autoComplete="off"
-                                            className="w-full h-10 pl-9 pr-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-primary transition-all"
+                                            className="w-full h-10 pl-9 pr-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
                                         />
                                     </div>
                                     <button
