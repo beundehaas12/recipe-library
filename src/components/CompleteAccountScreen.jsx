@@ -253,26 +253,26 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
     return (
         <div className="h-screen w-screen bg-white flex flex-col md:flex-row overflow-hidden fixed inset-0">
             {/* Left Side: Form (50%) */}
+            {/* Left Side: Form (50%) */}
             <div className="w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 bg-white overflow-y-auto">
+                {/* Brand Section - Absolute Top Left */}
+                <div className="absolute top-8 left-8 md:top-12 md:left-12 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
+                        <ChefHat size={20} className="text-primary-foreground" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-black tracking-tighter text-zinc-900 leading-none">
+                            Forkify
+                        </h1>
+                    </div>
+                </div>
+
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="w-full max-w-sm space-y-10"
+                    className="w-full max-w-sm space-y-8"
                 >
-                    {/* Brand Section */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
-                            <ChefHat size={24} className="text-primary-foreground" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-black tracking-tighter text-zinc-900 leading-none">
-                                Forkify
-                            </h1>
-                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Alle recepten op 1 plek</p>
-                        </div>
-                    </div>
-
                     {/* Welcome Message */}
                     <div className="space-y-4">
                         <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-4">
