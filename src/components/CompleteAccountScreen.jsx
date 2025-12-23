@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ChefHat, User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -24,6 +24,15 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
     // Recipe slideshow state
     const [recipes, setRecipes] = useState([]);
+
+    // Log state moved to top level to fix Hook Error #321
+    const [statusLog, setStatusLog] = useState([]);
+    const logEndRef = useRef(null);
+
+    // Auto-scroll log
+    useEffect(() => {
+        logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [statusLog]);
 
     // Fetch recipes for slideshow
     useEffect(() => {
@@ -107,14 +116,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-
-        const [statusLog, setStatusLog] = useState([]);
-
-        // Auto-scroll log
-        const logEndRef = useRef(null);
-        useEffect(() => {
-            logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, [statusLog]);
+        setSubmitting(true);
 
         const addLog = (msg) => {
             console.info(msg);
