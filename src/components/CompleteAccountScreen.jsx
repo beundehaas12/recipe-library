@@ -232,13 +232,14 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
             console.log('[CompleteAccount] Profile submit - tokenData:', tokenData);
             console.log('[CompleteAccount] Names:', firstName, lastName);
 
-            // Fire profile update (don't await - session is broken)
+            // Use UPSERT - row may not exist for invited users (trigger didn't fire)
             if (tokenData?.userId) {
-                supabase.from('user_profiles').update({
+                supabase.from('user_profiles').upsert({
+                    user_id: tokenData.userId,  // Use user_id, NOT id!
                     first_name: firstName,
                     last_name: lastName
-                }).eq('user_id', tokenData.userId).then(result => {
-                    console.log('[CompleteAccount] Update result:', result);
+                }, { onConflict: 'user_id' }).then(result => {
+                    console.log('[CompleteAccount] Upsert result:', result);
                 });
             } else {
                 console.error('[CompleteAccount] No userId in tokenData!');
