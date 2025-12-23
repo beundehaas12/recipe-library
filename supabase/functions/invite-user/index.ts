@@ -1,5 +1,6 @@
 // Supabase Edge Function: invite-user
 // Sends auth invite email using Supabase Admin API
+// Creates user_profiles with names from early_access_requests
 // Handles errors gracefully with fallback to password reset
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
@@ -39,6 +40,17 @@ serve(async (req: Request) => {
         const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:5173'
         const redirect = redirectTo || siteUrl
 
+        // Look up names from early_access_requests
+        const { data: earlyAccess } = await supabaseAdmin
+            .from('early_access_requests')
+            .select('first_name, last_name')
+            .eq('email', email.toLowerCase().trim())
+            .single()
+
+        const firstName = earlyAccess?.first_name || null
+        const lastName = earlyAccess?.last_name || null
+        console.log(`[invite-user] Names from early_access: ${firstName} ${lastName}`)
+
         // Try to send invite first (most common case for new users)
         console.log(`[invite-user] Attempting to invite: ${email}`)
 
@@ -47,8 +59,31 @@ serve(async (req: Request) => {
                 redirectTo: redirect
             })
 
-            if (!error) {
-                console.log(`[invite-user] Successfully sent invite to: ${email}`)
+            if (!error && data?.user) {
+                console.log(`[invite-user] Successfully sent invite to: ${email}, user id: ${data.user.id}`)
+
+                // Create user_profiles row with names
+                if (data.user.id) {
+                    const { error: profileError } = await supabaseAdmin
+                        .from('user_profiles')
+                        .upsert({
+                            user_id: data.user.id,
+                            first_name: firstName,
+                            last_name: lastName
+                        }, { onConflict: 'user_id' })
+
+                    if (profileError) {
+                        console.log(`[invite-user] Profile upsert warning:`, profileError.message)
+                    } else {
+                        console.log(`[invite-user] Created profile for ${data.user.id}`)
+                    }
+
+                    // Also create user_preferences
+                    await supabaseAdmin
+                        .from('user_preferences')
+                        .upsert({ user_id: data.user.id }, { onConflict: 'user_id' })
+                }
+
                 return new Response(
                     JSON.stringify({ success: true, message: 'Invite sent successfully' }),
                     { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
@@ -56,10 +91,10 @@ serve(async (req: Request) => {
             }
 
             // If invite failed, check the error type
-            console.log(`[invite-user] Invite failed:`, error.message)
+            console.log(`[invite-user] Invite failed:`, error?.message)
 
             // User might already exist - try password reset as fallback
-            if (error.message.includes('already') || error.message.includes('Database error')) {
+            if (error?.message.includes('already') || error?.message.includes('Database error')) {
                 console.log(`[invite-user] Trying password reset for existing user: ${email}`)
 
                 const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
@@ -67,6 +102,21 @@ serve(async (req: Request) => {
                 })
 
                 if (!resetError) {
+                    // Get existing user by email and update their profile
+                    const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+                    const existingUser = users?.users?.find(u => u.email === email.toLowerCase().trim())
+
+                    if (existingUser && firstName) {
+                        await supabaseAdmin
+                            .from('user_profiles')
+                            .upsert({
+                                user_id: existingUser.id,
+                                first_name: firstName,
+                                last_name: lastName
+                            }, { onConflict: 'user_id' })
+                        console.log(`[invite-user] Updated profile for existing user ${existingUser.id}`)
+                    }
+
                     return new Response(
                         JSON.stringify({ success: true, message: 'Password reset email sent (user may already exist)' }),
                         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
@@ -75,8 +125,6 @@ serve(async (req: Request) => {
 
                 console.log(`[invite-user] Password reset also failed:`, resetError.message)
 
-                // If password reset also fails, the user might exist but email sending is disabled
-                // Return success anyway since approval was done, and log the issue
                 return new Response(
                     JSON.stringify({
                         success: true,
@@ -92,7 +140,6 @@ serve(async (req: Request) => {
         } catch (inviteError: any) {
             console.error('[invite-user] Invite/reset error:', inviteError.message)
 
-            // Return a helpful error
             return new Response(
                 JSON.stringify({
                     success: false,
