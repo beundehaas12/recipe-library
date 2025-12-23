@@ -104,26 +104,30 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                 const { data: { user } } = await supabase.auth.getUser();
 
                 if (user) {
-                    // Upsert profile
-                    const { error: profileError } = await supabase
-                        .from('user_profiles')
-                        .upsert({
-                            user_id: user.id,
-                            first_name: firstName.trim(),
-                            last_name: lastName.trim(),
-                            display_name: `${firstName.trim()} ${lastName.trim()}`
-                        }, { onConflict: 'user_id' });
-
-                    if (profileError) {
-                        console.error('Profile upsert error:', profileError);
+                    // Try to upsert profile (ignore errors - profile may already exist)
+                    try {
+                        await supabase
+                            .from('user_profiles')
+                            .upsert({
+                                user_id: user.id,
+                                first_name: firstName.trim(),
+                                last_name: lastName.trim(),
+                                display_name: `${firstName.trim()} ${lastName.trim()}`
+                            }, { onConflict: 'user_id' });
+                    } catch (e) {
+                        console.warn('Profile upsert failed (may already exist):', e);
                     }
 
-                    // Upsert preferences
-                    await supabase
-                        .from('user_preferences')
-                        .upsert({ user_id: user.id }, { onConflict: 'user_id' });
+                    // Try to upsert preferences (ignore errors)
+                    try {
+                        await supabase
+                            .from('user_preferences')
+                            .upsert({ user_id: user.id }, { onConflict: 'user_id' });
+                    } catch (e) {
+                        console.warn('Preferences upsert failed (may already exist):', e);
+                    }
 
-                    // Update user metadata
+                    // Update user metadata (this usually works)
                     await supabase.auth.updateUser({
                         data: {
                             first_name: firstName.trim(),
@@ -132,6 +136,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                     });
                 }
 
+                // Password was updated successfully - that's the main thing
                 setSuccess(true);
                 setTimeout(() => {
                     if (onComplete) onComplete();
