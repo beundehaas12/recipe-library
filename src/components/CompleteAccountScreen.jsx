@@ -229,12 +229,19 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
         const handleProfileSubmit = (e) => {
             e.preventDefault();
 
+            console.log('[CompleteAccount] Profile submit - tokenData:', tokenData);
+            console.log('[CompleteAccount] Names:', firstName, lastName);
+
             // Fire profile update (don't await - session is broken)
             if (tokenData?.userId) {
                 supabase.from('user_profiles').update({
                     first_name: firstName,
                     last_name: lastName
-                }).eq('user_id', tokenData.userId);
+                }).eq('user_id', tokenData.userId).then(result => {
+                    console.log('[CompleteAccount] Update result:', result);
+                });
+            } else {
+                console.error('[CompleteAccount] No userId in tokenData!');
             }
 
             onComplete?.();
