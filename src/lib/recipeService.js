@@ -293,6 +293,17 @@ export async function fetchRecipeWithDetails(recipeId) {
 
     const recipe = recipeRes.data;
 
+    // Fetch author profile
+    let authorProfile = null;
+    if (recipe.user_id) {
+        const { data: profile } = await supabase
+            .from('author_profiles')
+            .select('*')
+            .eq('user_id', recipe.user_id)
+            .single();
+        authorProfile = profile;
+    }
+
     // Group ingredients by group_name
     const ingredients = ingredientsRes.data || [];
     const groupedIngredients = {};
@@ -312,6 +323,7 @@ export async function fetchRecipeWithDetails(recipeId) {
 
     return {
         ...recipe,
+        author_profile: authorProfile,
         ingredients: ingredients.map(ing => ({
             id: ing.id,
             amount: ing.quantity,
