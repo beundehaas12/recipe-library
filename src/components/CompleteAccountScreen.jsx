@@ -304,13 +304,16 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
                         {/* Email (readonly) */}
                         <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">E-mailadres</label>
+                            <label htmlFor="email" className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">E-mailadres</label>
                             <div className="relative">
                                 <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" />
                                 <input
                                     type="email"
+                                    id="email"
+                                    name="email"
                                     value={tokenData?.email || ''}
                                     readOnly
+                                    autoComplete="email"
                                     className="w-full h-12 pl-11 pr-4 bg-zinc-100 border border-zinc-200 rounded-xl text-zinc-500 font-medium text-sm cursor-not-allowed"
                                 />
                             </div>
@@ -318,16 +321,19 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
                         {/* Password */}
                         <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Wachtwoord</label>
+                            <label htmlFor="new-password" className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Wachtwoord</label>
                             <div className="relative group/input">
                                 <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
+                                    id="new-password"
+                                    name="new-password"
                                     placeholder="Minimaal 6 tekens"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     minLength={6}
+                                    autoComplete="new-password"
                                     className="w-full h-12 pl-11 pr-11 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
                                 />
                                 <button
@@ -342,15 +348,18 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
                         {/* Confirm Password */}
                         <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Bevestig wachtwoord</label>
+                            <label htmlFor="confirm-password" className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Bevestig wachtwoord</label>
                             <div className="relative group/input">
                                 <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
+                                    id="confirm-password"
+                                    name="confirm-password"
                                     placeholder="Herhaal wachtwoord"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
+                                    autoComplete="new-password"
                                     className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
                                 />
                             </div>
