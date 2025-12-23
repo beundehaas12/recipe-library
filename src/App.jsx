@@ -821,23 +821,21 @@ function AuthenticatedApp() {
 
 export default function App() {
   const { user, loading } = useAuth();
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
+
+  // Check for Supabase invite/recovery flow (in URL hash) IMMEDIATELY on first render
+  // Must happen before Supabase client processes and clears the hash
+  const [showProfileSetup, setShowProfileSetup] = useState(() => {
+    const hash = window.location.hash;
+    const isInviteFlow = hash && (hash.includes('type=invite') || hash.includes('type=recovery') || hash.includes('type=magiclink'));
+    if (isInviteFlow) {
+      console.log('[App] Detected invite/recovery hash:', hash);
+    }
+    return isInviteFlow;
+  });
 
   // Check for account completion token (our custom flow)
   const urlParams = new URLSearchParams(window.location.search);
   const completeToken = urlParams.get('complete');
-
-  // Check for Supabase invite/recovery flow (in URL hash)
-  // Only trigger profile setup for users coming from invite links
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (hash && (hash.includes('type=invite') || hash.includes('type=recovery'))) {
-      // User came from invite or recovery link - show profile setup
-      setShowProfileSetup(true);
-      // Do NOT clear hash manually immediately - Supabase needs it to establish session
-      // Supabase client will clear it automatically
-    }
-  }, []);
 
   if (loading) {
     return (
