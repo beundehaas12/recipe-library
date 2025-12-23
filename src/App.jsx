@@ -857,9 +857,9 @@ export default function App() {
         isInvitedUser={true}
         userEmail={user?.email}
         onComplete={() => {
-          // Clear hash and reload page to ensure fresh profile data
+          // Clear hash and continue
           window.history.replaceState({}, document.title, window.location.pathname);
-          window.location.reload();
+          setShowProfileSetup(false);
         }}
       />
     );
