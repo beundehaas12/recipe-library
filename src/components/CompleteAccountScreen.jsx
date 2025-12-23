@@ -111,17 +111,21 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                 if (user) {
                     // Update profile - row should already exist from invite trigger
                     console.log('[CompleteAccount] Updating profile...');
-                    const { error: profileError } = await supabase
+                    // Use select().maybeSingle() to know if the row existed and was updated
+                    const { data: updatedProfile, error: profileError } = await supabase
                         .from('user_profiles')
                         .update({
                             first_name: firstName.trim(),
                             last_name: lastName.trim()
                         })
-                        .eq('user_id', user.id);
-
-                    if (profileError) {
-                        console.error('[CompleteAccount] Profile update error:', profileError);
-                        // Try insert if update fails (row might not exist)
+                        .eq('user_id', user.id)
+                        .select()
+                        .maybeSingle();
+                    
+                    // If error or no data returned (meaning row didn't exist), try insert
+                    if (profileError || !updatedProfile) {
+                        console.log('[CompleteAccount] Profile update returned no data or error, trying insert...', profileError);
+                        
                         const { error: insertError } = await supabase
                             .from('user_profiles')
                             .insert({
@@ -129,6 +133,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                                 first_name: firstName.trim(),
                                 last_name: lastName.trim()
                             });
+                            
                         if (insertError) {
                             console.error('[CompleteAccount] Profile insert also failed:', insertError);
                         } else {
@@ -139,15 +144,18 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                     }
 
                     // Update preferences - try update first, then insert
-                    const { error: prefError } = await supabase
+                    const { data: updatedPrefs, error: prefError } = await supabase
                         .from('user_preferences')
                         .update({})
-                        .eq('user_id', user.id);
-
-                    if (prefError) {
+                        .eq('user_id', user.id)
+                        .select()
+                        .maybeSingle();
+                    
+                    if (prefError || !updatedPrefs) {
                         await supabase
                             .from('user_preferences')
-                            .insert({ user_id: user.id });
+                            .insert({ user_id: user.id })
+                            .catch(e => console.warn('Preferences insert failed:', e));
                     }
 
                     // Update user metadata
@@ -158,6 +166,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                         }
                     });
                     console.log('[CompleteAccount] Metadata updated');
+
                 }
 
                 // Success!

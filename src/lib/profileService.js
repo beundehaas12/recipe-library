@@ -76,7 +76,8 @@ export async function updateUserProfile(updates) {
             .update(safeUpdates)
             .eq('user_id', user.id)
             .select()
-            .single();
+            .select()
+            .maybeSingle();
 
         if (error) {
             console.error('Error updating profile:', error);
@@ -145,7 +146,8 @@ export async function uploadAvatar(file) {
             })
             .eq('user_id', user.id)
             .select()
-            .single();
+            .select()
+            .maybeSingle();
 
         if (error) {
             // Cleanup uploaded file on profile update failure
@@ -254,7 +256,8 @@ export async function updateUserPreferences(updates) {
             .update(safeUpdates)
             .eq('user_id', user.id)
             .select()
-            .single();
+            .select()
+            .maybeSingle();
 
         if (error) {
             console.error('Error updating preferences:', error);
