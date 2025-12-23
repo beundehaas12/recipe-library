@@ -328,7 +328,6 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     minLength={6}
-                                    autoComplete="new-password"
                                     className="w-full h-12 pl-11 pr-11 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
                                 />
                                 <button
@@ -352,7 +351,6 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
-                                    autoComplete="new-password"
                                     className="w-full h-12 pl-11 pr-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-sm"
                                 />
                             </div>
