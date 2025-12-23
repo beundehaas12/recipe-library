@@ -125,50 +125,10 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
 
         try {
             if (isInvitedUser) {
-                // === INVITED USER FLOW (Clean Implementation) ===
-                addLog('Verifying session...');
-
-                // 1. Verify we have a valid session before any auth operations
-                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-                if (sessionError || !sessionData?.session) {
-                    throw new Error('Geen actieve sessie. Probeer de uitnodigingslink opnieuw.');
-                }
-                const user = sessionData.session.user;
-                addLog(`Session verified for ${user.email}`);
-
-                // 2. Set password (fire-and-continue pattern)
-                // Note: updateUser({ password }) works server-side but the Promise often doesn't resolve.
-                // We fire it and continue after a short delay.
-                addLog('Setting password...');
-                let passwordSet = false;
-                const passwordPromise = supabase.auth.updateUser({ password })
-                    .then(({ error }) => {
-                        if (error) {
-                            console.error('Password error:', error);
-                        } else {
-                            passwordSet = true;
-                            addLog('Password confirmed');
-                        }
-                    })
-                    .catch(e => console.error('Password exception:', e));
-
-                // Wait up to 3 seconds for the Promise to resolve
-                await Promise.race([
-                    passwordPromise,
-                    new Promise(resolve => setTimeout(resolve, 3000))
-                ]);
-
-                // Proceed regardless - the password update works server-side even if Promise hangs
-                if (!passwordSet) {
-                    addLog('Password update sent (continuing...)');
-                }
-
-                // Done! (trigger handles profile/preferences creation)
-                addLog('Account setup complete!');
+                // Fire password update and complete immediately
+                supabase.auth.updateUser({ password });
                 setSuccess(true);
-                setTimeout(() => {
-                    if (onComplete) onComplete();
-                }, 1500);
+                setTimeout(() => onComplete?.(), 1000);
 
             } else {
                 // === TOKEN-BASED FLOW (Early Access) ===
