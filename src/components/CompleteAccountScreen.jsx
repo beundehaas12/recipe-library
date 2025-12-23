@@ -52,7 +52,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                 console.info('[CompleteAccount] Checking session for invited user:', user?.id);
 
                 if (user) {
-                    setTokenData({ email: user.email });
+                    setTokenData({ email: user.email, userId: user.id });
                     setLoading(false);
                     setValidating(false);
                 } else {
@@ -61,7 +61,7 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
                     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
                         console.info('[CompleteAccount] Auth state change:', event, session?.user?.id);
                         if (session?.user) {
-                            setTokenData({ email: session.user.email });
+                            setTokenData({ email: session.user.email, userId: session.user.id });
                             setLoading(false);
                             setValidating(false);
                             subscription.unsubscribe();
@@ -231,13 +231,11 @@ export default function CompleteAccountScreen({ token, isInvitedUser, userEmail,
             setSubmitting(true);
 
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    await supabase.from('user_profiles').upsert({
-                        id: user.id,
+                if (tokenData?.userId) {
+                    await supabase.from('user_profiles').update({
                         first_name: firstName,
                         last_name: lastName
-                    });
+                    }).eq('user_id', tokenData.userId);
                 }
             } catch (err) {
                 console.error('Profile update error:', err);
