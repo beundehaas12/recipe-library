@@ -18,7 +18,7 @@ export default function BentoRecipeCard({ recipe, size = 'small' }) {
                 ${isLarge ? 'md:col-span-2 md:row-span-2 aspect-square' : ''}
                 ${isWide ? 'md:col-span-2 aspect-[2/1]' : ''}
                 ${isTall ? 'md:row-span-2 aspect-[1/2]' : ''}
-                ${!isLarge && !isWide && !isTall ? 'aspect-square' : ''}
+                ${!isLarge && !isWide && !isTall ? 'aspect-[2/3]' : ''}
             `}
         >
             {/* Image Layer */}
