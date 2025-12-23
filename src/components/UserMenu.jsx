@@ -27,7 +27,7 @@ export default function UserMenu() {
     const isOnDashboard = location.pathname.startsWith('/dashboard');
     const isSpecialUser = role === 'admin' || role === 'author';
     const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user?.email?.split('@')[0];
-    const displayRole = role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Author';
+    const displayRole = role ? role.charAt(0).toUpperCase() + role.slice(1) : '';
 
     // Helper toggle function
     const toggleMenu = (e) => {

@@ -7,19 +7,19 @@ const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [role, setRole] = useState('user');
+    const [role, setRole] = useState(null); // null = not loaded yet
     const [profile, setProfile] = useState(null);
     const [preferences, setPreferences] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Derived permissions
+    // Derived permissions - treat null role as no access
     const isAdmin = role === 'admin';
     const isAuthor = role === 'author' || role === 'admin';
 
     // Fetch user role
     const fetchRole = async (userId) => {
         if (!userId) {
-            setRole('user');
+            setRole(null);
             return;
         }
         const userRole = await getUserRole(userId);
@@ -68,7 +68,7 @@ export function AuthProvider({ children }) {
                     await fetchRole(currentUser.id);
                     await fetchProfileAndPrefs();
                 } else {
-                    setRole('user');
+                    setRole(null);
                     setProfile(null);
                     setPreferences(null);
                 }
@@ -120,7 +120,7 @@ export function AuthProvider({ children }) {
         } finally {
             // Always clear user state
             setUser(null);
-            setRole('user');
+            setRole(null);
             setProfile(null);
             setPreferences(null);
 
