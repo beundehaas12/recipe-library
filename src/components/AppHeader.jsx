@@ -209,7 +209,7 @@ export default function AppHeader({
                                     { icon: Compass, label: 'Ontdek', path: '/' },
                                     { icon: Calendar, label: 'Planning', path: '/planning' },
                                     { icon: ShoppingBasket, label: 'Boodschappen', path: '/shopping' },
-                                    { icon: Heart, label: 'Mijn kookboek', path: '/favorites' },
+                                    { icon: Heart, label: 'Mijn favorieten', path: '/favorites' },
                                 ].map((item) => (
                                     <NavLink
                                         key={item.label}

@@ -248,7 +248,7 @@ export default function LoginScreen() {
                     <div className="pt-8 border-t border-zinc-100 flex flex-col gap-4">
                         <div className="space-y-3">
                             <p className="text-zinc-500 text-xs font-medium leading-relaxed">
-                                Geen account? Kookboek is momenteel alleen op uitnodiging.
+                                Geen account? Forkify is momenteel alleen op uitnodiging.
                                 Meld je aan voor de vroege toegang lijst.
                             </p>
 
