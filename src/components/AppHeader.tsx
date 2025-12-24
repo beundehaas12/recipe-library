@@ -1,17 +1,16 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChefHat, Search, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart } from 'lucide-react';
+import { ChefHat, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import type { UserProfile } from '@/types/database';
 import { translations as t } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
 import BackButton from './BackButton';
 import UserMenu from './UserMenu';
-import SearchOverlay from './SearchOverlay';
 
 interface AppHeaderProps {
     user: User;
@@ -24,15 +23,10 @@ export default function AppHeader({
     profile,
     role,
 }: AppHeaderProps) {
-    const [showSearch, setShowSearch] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
-    const searchParams = useSearchParams();
     const supabase = createClient();
-
-    // Initial value from URL
-    const initialQuery = searchParams.get('q') || '';
 
 
     // Hide header on dashboard/settings (they have their own layout)
@@ -84,29 +78,12 @@ export default function AppHeader({
                         </h1>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto relative z-[5000]">
-                        <div className="flex-1" />
-
-                        {/* Search Icon (Desktop & Mobile Unified) */}
-                        <button
-                            onClick={() => setShowSearch(true)}
-                            className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all active:scale-95"
-                        >
-                            <Search size={22} />
-                        </button>
-
+                    <div className="flex items-center gap-3 pointer-events-auto relative z-[5000]">
                         {/* User Profile */}
                         <UserMenu user={user} profile={profile} role={role} />
                     </div>
                 </div>
             </header>
-
-            {/* Search Overlay */}
-            <SearchOverlay
-                isOpen={showSearch}
-                onClose={() => setShowSearch(false)}
-                initialQuery={initialQuery}
-            />
 
             {/* Mobile Hamburger Menu Overlay */}
             <AnimatePresence>
