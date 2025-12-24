@@ -33,6 +33,9 @@ export async function GET(request: Request) {
             }
         );
 
+        // Force sign out current user (e.g. admin) before processing the new invite code
+        await supabase.auth.signOut();
+
         const { error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (!error) {

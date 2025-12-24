@@ -99,7 +99,8 @@ serve(async (req: Request) => {
                 console.log(`[invite-user] Trying password reset for existing user: ${email}`)
 
                 const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-                    redirectTo: redirect
+                    // Also redirect to callback -> complete-account for resets
+                    redirectTo: `${siteUrl}/auth/callback?next=/complete-account`
                 })
 
                 if (!resetError) {
