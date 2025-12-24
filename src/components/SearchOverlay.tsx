@@ -104,16 +104,15 @@ export default function SearchOverlay({
         saveRecentSearch(text);
         const params = new URLSearchParams();
         params.set('q', text);
-        // Close after a brief delay to allow navigation to start
         router.push(`/?${params.toString()}`);
-        // Don't close immediately - let the page transition happen under the overlay
-        setTimeout(() => onClose(), 300);
+        // Wait for page to fully load before closing overlay
+        setTimeout(() => onClose(), 600);
     };
 
     const handleRecipeClick = (recipe: Recipe) => {
         saveRecentSearch(recipe.title);
         router.push(`/recipe/${recipe.id}`);
-        setTimeout(() => onClose(), 300);
+        setTimeout(() => onClose(), 600);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
