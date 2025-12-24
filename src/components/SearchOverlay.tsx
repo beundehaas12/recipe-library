@@ -84,14 +84,14 @@ export default function SearchOverlay({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex flex-col pt-safe px-4 lg:px-20"
+                    className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-xl flex flex-col pt-24 px-4 lg:px-20"
                 >
                     {/* Search Input Section */}
                     <motion.div
                         initial={{ y: -20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.1, type: 'spring', damping: 20 }}
-                        className="max-w-[800px] mx-auto w-full mt-8 md:mt-20"
+                        className="max-w-[800px] mx-auto w-full"
                     >
                         <div className="relative group">
                             <input
