@@ -61,7 +61,10 @@ export async function getAuthorCollections(userId: string): Promise<Collection[]
         return [];
     }
 
-    // Process preview images for each collection
+    // Fetch author profile
+    const authorProfile = await getAuthorProfile(userId);
+
+    // Process preview images for each collection and attach author profile
     return data.map((collection: any) => {
         const previewImages = collection.recipe_collections
             ?.map((rc: any) => rc.recipe?.image_url)
@@ -72,6 +75,7 @@ export async function getAuthorCollections(userId: string): Promise<Collection[]
             ...collection,
             recipe_count: collection.recipe_collections?.length || 0,
             preview_images: previewImages,
+            author_profile: authorProfile,
         };
     });
 }
