@@ -85,9 +85,11 @@ export default function AppHeader({
             <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
                 <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between">
                     <div className="flex items-center gap-3 pointer-events-auto relative z-[5000]">
-                        {isDeepPage ? (
+                        {isDeepPage && (
                             <BackButton className="!bg-black/40 !backdrop-blur-md !border-white/10" />
-                        ) : (
+                        )}
+
+                        {!isDeepPage && (
                             <>
                                 {/* Mobile Hamburger */}
                                 <button
@@ -96,15 +98,16 @@ export default function AppHeader({
                                 >
                                     <Menu size={22} />
                                 </button>
-
-                                <div className="hidden lg:flex bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full">
-                                    <ChefHat size={22} />
-                                </div>
-                                <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden lg:block">
-                                    {t.appTitle}
-                                </h1>
                             </>
                         )}
+
+                        {/* Logo - always visible */}
+                        <div className="hidden lg:flex bg-black/40 backdrop-blur-md border border-white/10 text-primary p-2.5 rounded-full">
+                            <ChefHat size={22} />
+                        </div>
+                        <h1 className="text-xl font-bold text-white tracking-tight drop-shadow-md hidden lg:block">
+                            {t.appTitle}
+                        </h1>
                     </div>
 
                     <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto relative z-[5000]">
