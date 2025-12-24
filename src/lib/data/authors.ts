@@ -38,7 +38,14 @@ export async function getAuthorRecipes(userId: string): Promise<Recipe[]> {
         return [];
     }
 
-    return data;
+    // Fetch author profile
+    const authorProfile = await getAuthorProfile(userId);
+
+    // Attach author profile to each recipe
+    return data.map((recipe) => ({
+        ...recipe,
+        author_profile: authorProfile,
+    }));
 }
 
 /**
