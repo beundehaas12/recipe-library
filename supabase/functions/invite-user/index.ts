@@ -36,8 +36,8 @@ serve(async (req: Request) => {
             }
         )
 
-        // Get the site URL for redirect
-        const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:5173'
+        // Get the site URL for redirect - Default to Next.js port 3000
+        const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3000'
         const redirect = redirectTo || siteUrl
 
         // Look up names from early_access_requests

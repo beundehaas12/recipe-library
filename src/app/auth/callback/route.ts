@@ -33,14 +33,18 @@ export async function GET(request: Request) {
             }
         );
 
-        // Force sign out current user (e.g. admin) before processing the new invite code
-        await supabase.auth.signOut();
+        console.log(`[Auth Callback] Processing code exchange for code: ${code?.substring(0, 5)}...`);
 
         const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-        if (!error) {
-            return NextResponse.redirect(`${origin}${next}`);
+        if (error) {
+            console.error('[Auth Callback] Exchange error:', error.message);
+            // On error, redirect to login with error
+            return NextResponse.redirect(`${origin}/login?error=auth_exchange_failed`);
         }
+
+        console.log('[Auth Callback] Exchange successful, redirecting to:', next);
+        return NextResponse.redirect(`${origin}${next}`);
     }
 
     // Return the user to an error page with instructions
