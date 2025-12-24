@@ -6,61 +6,42 @@ export async function middleware(request: NextRequest) {
         request,
     });
 
-    try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-        if (!supabaseUrl || !supabaseKey) {
-            console.error('Middleware: Missing Supabase environment variables');
-            return supabaseResponse;
-        }
-
-        const supabase = createServerClient(
-            supabaseUrl,
-            supabaseKey,
-            {
-                cookies: {
-                    getAll() {
-                        return request.cookies.getAll();
-                    },
-                    setAll(cookiesToSet) {
-                        cookiesToSet.forEach(({ name, value }) =>
-                            request.cookies.set(name, value)
-                        );
-                        supabaseResponse = NextResponse.next({
-                            request,
-                        });
-                        cookiesToSet.forEach(({ name, value, options }) =>
-                            supabaseResponse.cookies.set(name, value, options)
-                        );
-                    },
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() {
+                    return request.cookies.getAll();
                 },
-            }
-        );
-
-        // Refreshing the auth token
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-
-        // Redirect unauthenticated users to login (except for public routes)
-        const publicRoutes = ['/login', '/complete-account', '/auth/callback'];
-        const isPublicRoute = publicRoutes.some(route =>
-            request.nextUrl.pathname.startsWith(route)
-        );
-
-        if (!user && !isPublicRoute && request.nextUrl.pathname !== '/') {
-            // For now, allow home page, but normally you might redirect
-            // const url = request.nextUrl.clone();
-            // url.pathname = '/login';
-            // return NextResponse.redirect(url);
+                setAll(cookiesToSet) {
+                    cookiesToSet.forEach(({ name, value }) =>
+                        request.cookies.set(name, value)
+                    );
+                    supabaseResponse = NextResponse.next({
+                        request,
+                    });
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        supabaseResponse.cookies.set(name, value, options)
+                    );
+                },
+            },
         }
+    );
 
-        return supabaseResponse;
-    } catch (e) {
-        console.error('Middleware execution error:', e);
-        return supabaseResponse;
+    // Refreshing the auth token
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    // Protect routes
+    if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/login';
+        return NextResponse.redirect(url);
     }
+
+    return supabaseResponse;
 }
 
 export const config = {
