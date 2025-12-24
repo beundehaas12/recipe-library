@@ -8,9 +8,9 @@ export default async function FavoritesPage() {
     if (!user) redirect('/');
 
     return (
-        <div className="min-h-screen bg-background p-8 pt-24">
-            <div className="max-w-[1200px] mx-auto">
-                <h1 className="text-3xl font-black text-white mb-4">Mijn Favorieten</h1>
+        <div className="min-h-screen bg-background pt-24 pb-12">
+            <div className="px-0 md:px-4 lg:px-20">
+                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-4">Mijn Favorieten</h1>
                 <p className="text-muted-foreground">
                     Je opgeslagen favoriete recepten. (Coming soon)
                 </p>
