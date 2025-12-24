@@ -42,3 +42,4 @@ next-env.d.ts
 
 # backup
 OLD_VITE_PROJECT/
+forkify-next/
