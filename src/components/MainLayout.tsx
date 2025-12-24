@@ -10,9 +10,11 @@ interface MainLayoutProps {
     user: User;
     profile?: UserProfile | null;
     role?: 'user' | 'author' | 'admin' | null;
+    searchQuery?: string;
+    onSearchChange?: (query: string) => void;
 }
 
-export default function MainLayout({ children, user, profile, role }: MainLayoutProps) {
+export default function MainLayout({ children, user, profile, role, searchQuery, onSearchChange }: MainLayoutProps) {
     return (
         <>
             {/* App Header - Mobile & Desktop Navigation */}
@@ -20,10 +22,18 @@ export default function MainLayout({ children, user, profile, role }: MainLayout
                 user={user}
                 profile={profile}
                 role={role}
+                searchQuery={searchQuery}
+                onSearchChange={onSearchChange}
             />
 
             {/* Floating Menu - Desktop Only */}
-            <FloatingMenu />
+            <FloatingMenu
+                user={user}
+                profile={profile}
+                role={role}
+                searchQuery={searchQuery}
+                onSearchChange={onSearchChange}
+            />
 
             {/* Page Content */}
             {children}
