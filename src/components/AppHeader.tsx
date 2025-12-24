@@ -11,6 +11,7 @@ import { translations as t } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
 import BackButton from './BackButton';
 import UserMenu from './UserMenu';
+import SearchOverlay from './SearchOverlay';
 
 interface AppHeaderProps {
     user: User;
@@ -23,43 +24,11 @@ export default function AppHeader({
     profile,
     role,
 }: AppHeaderProps) {
-    const [showMobileSearch, setShowMobileSearch] = useState(false);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const pathname = usePathname();
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const supabase = createClient();
+    const [showSearch, setShowSearch] = useState(false);
 
-    // Initial value from URL, but managed locally for performance
+    // Initial value from URL
     const initialQuery = searchParams.get('q') || '';
-    const [localQuery, setLocalQuery] = useState(initialQuery);
 
-    // Sync local state if URL changes externally (e.g. back button)
-    useEffect(() => {
-        setLocalQuery(initialQuery);
-    }, [initialQuery]);
-
-    // Debounce search updates to URL
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            // Only update URL if it's different to avoid loops
-            if (localQuery !== initialQuery) {
-                const params = new URLSearchParams(searchParams.toString());
-                if (localQuery) {
-                    params.set('q', localQuery);
-                } else {
-                    params.delete('q');
-                }
-                router.replace(`/?${params.toString()}`);
-            }
-        }, 300); // 300ms delay
-
-        return () => clearTimeout(timer);
-    }, [localQuery, router, searchParams, initialQuery]);
-
-    const handleSearchChange = (val: string) => {
-        setLocalQuery(val);
-    };
 
     // Hide header on dashboard/settings (they have their own layout)
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/settings')) return null;
@@ -113,10 +82,10 @@ export default function AppHeader({
                     <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl pointer-events-auto relative z-[5000]">
                         <div className="flex-1" />
 
-                        {/* Mobile Search Icon */}
+                        {/* Search Icon (Desktop & Mobile Unified) */}
                         <button
-                            onClick={() => setShowMobileSearch(true)}
-                            className="lg:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
+                            onClick={() => setShowSearch(true)}
+                            className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all active:scale-95"
                         >
                             <Search size={22} />
                         </button>
@@ -127,53 +96,12 @@ export default function AppHeader({
                 </div>
             </header>
 
-            {/* Mobile Search Overlay */}
-            <AnimatePresence>
-                {showMobileSearch && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed inset-0 z-[70] bg-[#000000] flex flex-col pt-safe px-4 lg:px-20"
-                    >
-                        <div className="flex items-center gap-4 px-4 py-4 border-b border-white/10 mt-safe-top glass-panel !border-none">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    placeholder={t.searchPlaceholder}
-                                    className="input-standard !rounded-full pl-10 py-3"
-                                    value={localQuery}
-                                    onChange={(e) => handleSearchChange(e.target.value)}
-                                />
-                                {localQuery && (
-                                    <button
-                                        onClick={() => handleSearchChange('')}
-                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                )}
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setShowMobileSearch(false);
-                                    if (!localQuery) handleSearchChange('');
-                                }}
-                                className="text-white font-medium px-2"
-                            >
-                                {t.cancel}
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto px-4 py-4">
-                            {/* Search Results logic moved to HomePage */}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Search Overlay */}
+            <SearchOverlay
+                isOpen={showSearch}
+                onClose={() => setShowSearch(false)}
+                initialQuery={initialQuery}
+            />
 
             {/* Mobile Hamburger Menu Overlay */}
             <AnimatePresence>
