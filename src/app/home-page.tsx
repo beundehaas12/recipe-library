@@ -202,11 +202,11 @@ export default function HomePage({ initialRecipes, initialCollections, user, pro
                                 <motion.h3
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className="text-2xl font-bold text-white mb-8 flex items-center gap-3 px-4"
+                                    className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3 px-0 md:px-4 lg:px-20 mb-4 md:mb-8"
                                 >
-                                    Zoekresultaten voor "<span className="text-primary">{searchQuery}</span>"
-                                    <span className="text-white/40 text-base font-normal">
-                                        ({displayRecipes.length} {displayRecipes.length === 1 ? 'recept' : 'recepten'})
+                                    Zoekresultaten voor <span className="text-primary">{searchQuery}</span>
+                                    <span className="text-sm font-bold text-muted-foreground/60 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                                        {displayRecipes.length}
                                     </span>
                                 </motion.h3>
                             )}
