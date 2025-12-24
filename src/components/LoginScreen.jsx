@@ -162,14 +162,13 @@ export default function LoginScreen() {
                         <div className="space-y-2">
                             <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">E-mailadres</label>
                             <div className="relative group/input">
-                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
                                 <input
                                     type="email"
                                     placeholder="naam@voorbeeld.nl"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="w-full h-14 pl-12 pr-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                                    className="w-full h-14 px-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                                 />
                             </div>
                         </div>
@@ -182,7 +181,6 @@ export default function LoginScreen() {
                                 )}
                             </label>
                             <div className="relative group/input">
-                                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within/input:text-primary transition-colors" />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     placeholder="••••••••"
@@ -190,7 +188,7 @@ export default function LoginScreen() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     minLength={6}
-                                    className="w-full h-14 pl-12 pr-12 bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                                    className="w-full h-14 px-4 pr-12 bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                                 />
                                 <button
                                     type="button"
