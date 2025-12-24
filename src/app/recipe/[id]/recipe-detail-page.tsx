@@ -6,6 +6,8 @@ import Link from 'next/link';
 import type { Recipe } from '@/types/database';
 import { translations as t } from '@/lib/translations';
 import { getAuthorDisplayName, getAuthorAvatarUrl } from '@/lib/authorProfileService';
+import IngredientsList from '@/components/recipe/IngredientsList';
+import CookingSteps from '@/components/recipe/CookingSteps';
 
 interface RecipeDetailPageProps {
     recipe: Recipe;
@@ -30,7 +32,7 @@ export default function RecipeDetailPage({ recipe }: RecipeDetailPageProps) {
                         />
                     ) : (
                         <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
-                            <ChefHat size={80} className="text-white/10" />
+                            <ChefHat size={80} className="text-white" />
                         </div>
                     )}
 
@@ -40,8 +42,8 @@ export default function RecipeDetailPage({ recipe }: RecipeDetailPageProps) {
                 </motion.div>
 
                 {/* Title Section */}
-                <div className="absolute bottom-0 left-0 right-0 z-20 pb-8 px-6 lg:px-20">
-                    <div className="max-w-[1200px] mx-auto">
+                <div className="absolute bottom-0 left-0 right-0 z-20 pb-8">
+                    <div className="max-w-[1600px] mx-auto px-4 lg:px-20 w-full">
                         {recipe.cuisine && (
                             <motion.span
                                 initial={{ opacity: 0, y: 20 }}
@@ -89,7 +91,7 @@ export default function RecipeDetailPage({ recipe }: RecipeDetailPageProps) {
             </div>
 
             {/* Content Section */}
-            <div className="max-w-[1200px] mx-auto px-6 lg:px-20 py-12">
+            <div className="max-w-[1600px] mx-auto px-4 lg:px-20 py-12">
                 {/* Meta Info */}
                 <div className="flex flex-wrap gap-6 mb-12">
                     {recipe.prep_time && (
@@ -124,43 +126,31 @@ export default function RecipeDetailPage({ recipe }: RecipeDetailPageProps) {
                     </p>
                 )}
 
-                <div className="grid lg:grid-cols-[1fr_2fr] gap-12">
-                    {/* Ingredients */}
-                    {recipe.ingredients && recipe.ingredients.length > 0 && (
-                        <div>
-                            <h2 className="text-2xl font-black text-white mb-6">{t.ingredients}</h2>
-                            <ul className="space-y-3">
-                                {recipe.ingredients.map((ing, idx) => (
-                                    <li
-                                        key={idx}
-                                        className="flex items-start gap-3 text-white/80"
-                                    >
-                                        <span className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                                        <span>
-                                            {typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.item}`.trim()}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                {/* Content Section with Grid Layout */}
+                <div className="grid lg:grid-cols-[1fr_2fr] gap-12 lg:gap-24 relative">
+                    {/* Sidebar: Ingredients */}
+                    <aside className="relative">
+                        {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                            <IngredientsList ingredients={recipe.ingredients} />
+                        ) : (
+                            <div className="p-6 bg-white/5 rounded-2xl border border-white/10 text-white/50 text-center italic">
+                                Geen ingrediënten beschikbaar
+                            </div>
+                        )}
+                    </aside>
 
-                    {/* Instructions */}
-                    {recipe.instructions && recipe.instructions.length > 0 && (
-                        <div>
-                            <h2 className="text-2xl font-black text-white mb-6">{t.instructions}</h2>
-                            <ol className="space-y-6">
-                                {recipe.instructions.map((step, idx) => (
-                                    <li key={idx} className="flex gap-4">
-                                        <span className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center flex-shrink-0 text-sm">
-                                            {idx + 1}
-                                        </span>
-                                        <p className="text-white/80 leading-relaxed pt-1">{step}</p>
-                                    </li>
-                                ))}
-                            </ol>
-                        </div>
-                    )}
+                    {/* Main Content: Instructions */}
+                    <div className="min-h-[500px]">
+                        {recipe.instructions && recipe.instructions.length > 0 ? (
+                            <CookingSteps steps={recipe.instructions} />
+                        ) : (
+                            <div className="p-8 bg-white/5 rounded-2xl border border-white/10 text-white/50 text-center italic">
+                                Geen instructies beschikbaar
+                            </div>
+                        )}
+
+                        {/* Tags moved here or kept at bottom? Let's keep distinct tags section below or integrated */}
+                    </div>
                 </div>
 
                 {/* Tags */}

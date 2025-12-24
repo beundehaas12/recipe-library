@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, ArrowRight, Clock, ChefHat, Loader2 } from 'lucide-react';
+import { Search, X, ArrowRight, Clock, ChefHat, Loader2, Folder, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import type { Recipe } from '@/types/database';
+import type { Recipe, Collection, AuthorProfile } from '@/types/database';
+import { getAuthorDisplayName, getAuthorAvatarUrl } from '@/lib/authorProfileService';
 
 const RECENT_SEARCHES_KEY = 'forkify_recent_searches';
 const MAX_RECENT_SEARCHES = 5;
@@ -16,13 +17,19 @@ interface SearchOverlayProps {
     initialQuery?: string;
 }
 
+interface SearchResults {
+    recipes: Recipe[];
+    collections: Collection[];
+    authors: AuthorProfile[];
+}
+
 export default function SearchOverlay({
     isOpen,
     onClose,
     initialQuery = '',
 }: SearchOverlayProps) {
     const [query, setQuery] = useState(initialQuery);
-    const [results, setResults] = useState<Recipe[]>([]);
+    const [results, setResults] = useState<SearchResults>({ recipes: [], collections: [], authors: [] });
     const [isLoading, setIsLoading] = useState(false);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
     const router = useRouter();
@@ -57,29 +64,47 @@ export default function SearchOverlay({
     useEffect(() => {
         if (isOpen) {
             setQuery(initialQuery);
-            setResults([]);
+            setResults({ recipes: [], collections: [], authors: [] });
         }
     }, [isOpen, initialQuery]);
 
-    // Debounced search
+    // Debounced search - now queries recipes, collections, and authors
     useEffect(() => {
         if (!query.trim()) {
-            setResults([]);
+            setResults({ recipes: [], collections: [], authors: [] });
             return;
         }
 
         const timer = setTimeout(async () => {
             setIsLoading(true);
             try {
-                const { data, error } = await supabase
-                    .from('recipes')
-                    .select('id, title, image_url, cuisine, author')
-                    .or(`title.ilike.%${query}%,description.ilike.%${query}%,cuisine.ilike.%${query}%`)
-                    .limit(8);
+                // Search all three in parallel
+                const [recipesRes, collectionsRes, authorsRes] = await Promise.all([
+                    // Recipes search
+                    supabase
+                        .from('recipes')
+                        .select('id, title, image_url, cuisine, author')
+                        .or(`title.ilike.%${query}%,description.ilike.%${query}%,cuisine.ilike.%${query}%`)
+                        .limit(5),
+                    // Collections search
+                    supabase
+                        .from('collections')
+                        .select('id, name, user_id')
+                        .ilike('name', `%${query}%`)
+                        .limit(3),
+                    // Authors search
+                    supabase
+                        .from('author_profiles')
+                        .select('user_id, first_name, last_name, avatar_url')
+                        .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+                        .limit(3),
+                ]);
 
-                if (!error && data) {
-                    setResults(data as Recipe[]);
-                }
+                setResults({
+                    recipes: (recipesRes.data || []) as Recipe[],
+                    collections: (collectionsRes.data || []) as Collection[],
+                    authors: (authorsRes.data || []) as AuthorProfile[],
+                });
             } catch (err) {
                 console.error('Search error:', err);
             } finally {
@@ -99,33 +124,52 @@ export default function SearchOverlay({
         return () => window.removeEventListener('keydown', handleEsc);
     }, [onClose]);
 
+    // Handle search submit
     const handleSearch = (text: string) => {
         if (!text.trim()) return;
         saveRecentSearch(text);
         const params = new URLSearchParams();
         params.set('q', text);
-        // Close overlay first, then navigate
         onClose();
-        // Small delay to let close animation start, then navigate
         setTimeout(() => router.push(`/?${params.toString()}`), 50);
     };
 
+    // Handle recipe click
     const handleRecipeClick = (recipe: Recipe) => {
         saveRecentSearch(recipe.title);
         onClose();
         setTimeout(() => router.push(`/recipe/${recipe.id}`), 50);
     };
 
+    // Handle collection click
+    const handleCollectionClick = (collection: Collection) => {
+        saveRecentSearch(collection.name);
+        onClose();
+        setTimeout(() => router.push(`/collection/${collection.id}`), 50);
+    };
+
+    // Handle author click
+    const handleAuthorClick = (author: AuthorProfile) => {
+        const name = getAuthorDisplayName(author) || 'Unknown';
+        saveRecentSearch(name);
+        onClose();
+        setTimeout(() => router.push(`/author/${author.user_id}`), 50);
+    };
+
+    // Handle Enter key
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             handleSearch(query);
         }
     };
 
+    // Clear recent searches
     const clearRecentSearches = () => {
         setRecentSearches([]);
         localStorage.removeItem(RECENT_SEARCHES_KEY);
     };
+
+    const hasResults = results.recipes.length > 0 || results.collections.length > 0 || results.authors.length > 0;
 
     return (
         <AnimatePresence>
@@ -148,7 +192,7 @@ export default function SearchOverlay({
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="Zoek recepten..."
+                                placeholder="Wat zoek je..."
                                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 pl-16 text-xl md:text-2xl font-bold text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
@@ -157,7 +201,7 @@ export default function SearchOverlay({
                             {isLoading ? (
                                 <Loader2 size={28} className="absolute left-5 top-1/2 -translate-y-1/2 text-primary animate-spin" />
                             ) : (
-                                <Search size={28} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-primary transition-colors" />
+                                <Search size={28} className="absolute left-5 top-1/2 -translate-y-1/2 text-white group-focus-within:text-primary transition-colors" />
                             )}
                             {query && (
                                 <button
@@ -210,72 +254,137 @@ export default function SearchOverlay({
                                 animate={{ opacity: 1 }}
                                 className="text-center py-16"
                             >
-                                <ChefHat size={48} className="mx-auto text-white/10 mb-4" />
-                                <p className="text-white/30 text-lg">Zoek naar recepten, ingrediënten of keukens...</p>
+                                <ChefHat size={48} className="mx-auto text-white mb-4" />
+                                <p className="text-white/60 text-lg">Zoek naar recepten, collecties of chefs...</p>
                             </motion.div>
                         )}
 
-                        {/* Query entered - show results */}
+                        {/* Query entered - show grouped results */}
                         {query.trim() && (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="space-y-1"
+                                className="space-y-6"
                             >
-                                {results.length > 0 ? (
-                                    <>
-                                        {results.map((recipe) => (
-                                            <button
-                                                key={recipe.id}
-                                                onClick={() => handleRecipeClick(recipe)}
-                                                className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 text-left group transition-colors"
-                                            >
-                                                {recipe.image_url ? (
-                                                    <img
-                                                        src={recipe.image_url}
-                                                        alt={recipe.title}
-                                                        className="w-14 h-14 rounded-lg object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-14 h-14 rounded-lg bg-white/5 flex items-center justify-center">
-                                                        <ChefHat size={24} className="text-white/20" />
-                                                    </div>
-                                                )}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-white font-bold truncate group-hover:text-primary transition-colors">
-                                                        {recipe.title}
-                                                    </p>
-                                                    {recipe.cuisine && (
-                                                        <p className="text-white/40 text-sm">{recipe.cuisine}</p>
+                                {/* Recipes Section */}
+                                {results.recipes.length > 0 && (
+                                    <div>
+                                        <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                            <ChefHat size={14} /> Recepten ({results.recipes.length})
+                                        </h3>
+                                        <div className="space-y-1">
+                                            {results.recipes.map((recipe) => (
+                                                <button
+                                                    key={recipe.id}
+                                                    onClick={() => handleRecipeClick(recipe)}
+                                                    className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 text-left group transition-colors"
+                                                >
+                                                    {recipe.image_url ? (
+                                                        <img
+                                                            src={recipe.image_url}
+                                                            alt={recipe.title}
+                                                            className="w-12 h-12 rounded-lg object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center">
+                                                            <ChefHat size={20} className="text-white" />
+                                                        </div>
                                                     )}
-                                                </div>
-                                                <ArrowRight size={18} className="text-white/20 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" />
-                                            </button>
-                                        ))}
-                                        {/* Search all option */}
-                                        <button
-                                            onClick={() => handleSearch(query)}
-                                            className="w-full flex items-center gap-4 p-4 rounded-xl bg-primary/10 hover:bg-primary/20 text-left group transition-colors mt-4"
-                                        >
-                                            <Search size={20} className="text-primary" />
-                                            <span className="text-white font-medium">
-                                                Alle resultaten voor <span className="text-primary font-bold">"{query}"</span>
-                                            </span>
-                                            <ArrowRight size={18} className="ml-auto text-primary" />
-                                        </button>
-                                    </>
-                                ) : !isLoading ? (
-                                    <button
-                                        onClick={() => handleSearch(query)}
-                                        className="w-full flex items-center gap-4 p-5 rounded-xl bg-white/5 hover:bg-primary/20 text-left group transition-colors"
-                                    >
-                                        <Search size={22} className="text-primary" />
-                                        <span className="text-lg text-white font-medium">
-                                            Zoek naar <span className="text-primary font-bold">"{query}"</span>
-                                        </span>
-                                        <ArrowRight size={20} className="ml-auto text-primary" />
-                                    </button>
-                                ) : null}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-white font-bold truncate group-hover:text-primary transition-colors">
+                                                            {recipe.title}
+                                                        </p>
+                                                        {recipe.cuisine && (
+                                                            <p className="text-white/40 text-sm">{recipe.cuisine}</p>
+                                                        )}
+                                                    </div>
+                                                    <ArrowRight size={18} className="text-white group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Collections Section */}
+                                {results.collections.length > 0 && (
+                                    <div>
+                                        <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                            <Folder size={14} /> Collecties ({results.collections.length})
+                                        </h3>
+                                        <div className="space-y-1">
+                                            {results.collections.map((collection) => (
+                                                <button
+                                                    key={collection.id}
+                                                    onClick={() => handleCollectionClick(collection)}
+                                                    className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 text-left group transition-colors"
+                                                >
+                                                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                        <Folder size={20} className="text-primary" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-white font-bold truncate group-hover:text-primary transition-colors">
+                                                            {collection.name}
+                                                        </p>
+                                                        <p className="text-white/40 text-sm">Collectie</p>
+                                                    </div>
+                                                    <ArrowRight size={18} className="text-white group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Authors Section */}
+                                {results.authors.length > 0 && (
+                                    <div>
+                                        <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                            <User size={14} /> Chefs ({results.authors.length})
+                                        </h3>
+                                        <div className="space-y-1">
+                                            {results.authors.map((author) => (
+                                                <button
+                                                    key={author.user_id}
+                                                    onClick={() => handleAuthorClick(author)}
+                                                    className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 text-left group transition-colors"
+                                                >
+                                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-white/5">
+                                                        <img
+                                                            src={getAuthorAvatarUrl(author, { id: author.user_id })}
+                                                            alt=""
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-white font-bold truncate group-hover:text-primary transition-colors">
+                                                            {getAuthorDisplayName(author) || 'Unknown Chef'}
+                                                        </p>
+                                                        <p className="text-white/40 text-sm">Chef</p>
+                                                    </div>
+                                                    <ArrowRight size={18} className="text-white group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Search all option - always show when query present */}
+                                <button
+                                    onClick={() => handleSearch(query)}
+                                    className="w-full flex items-center gap-4 p-4 rounded-xl bg-primary/10 hover:bg-primary/20 text-left group transition-colors"
+                                >
+                                    <Search size={20} className="text-primary" />
+                                    <span className="text-white font-medium">
+                                        Alle resultaten voor <span className="text-primary font-bold">"{query}"</span>
+                                    </span>
+                                    <ArrowRight size={18} className="ml-auto text-primary" />
+                                </button>
+
+                                {/* No results message */}
+                                {!hasResults && !isLoading && (
+                                    <div className="text-center py-8">
+                                        <p className="text-white/40">Geen resultaten gevonden voor "{query}"</p>
+                                    </div>
+                                )}
                             </motion.div>
                         )}
                     </div>

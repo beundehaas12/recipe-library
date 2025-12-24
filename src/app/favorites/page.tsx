@@ -8,12 +8,15 @@ export default async function FavoritesPage() {
     if (!user) redirect('/');
 
     return (
-        <div className="min-h-screen bg-background pt-24 pb-12">
-            <div className="px-0 md:px-4 lg:px-20">
-                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-4">Mijn Favorieten</h1>
-                <p className="text-muted-foreground">
-                    Je opgeslagen favoriete recepten. (Coming soon)
-                </p>
+        <div className="min-h-screen bg-background text-foreground">
+            {/* Content Area - matches home-page structure */}
+            <div className="relative z-20 pb-24 bg-background max-w-[1600px] mx-auto pt-32">
+                <div className="px-4 lg:px-20">
+                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-4">Mijn Favorieten</h1>
+                    <p className="text-muted-foreground">
+                        Je opgeslagen favoriete recepten. (Coming soon)
+                    </p>
+                </div>
             </div>
         </div>
     );

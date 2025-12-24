@@ -234,7 +234,7 @@ export default function DashboardClient({
                     {filteredRecipes.length === 0 ? (
                         <div className="flex-1 flex items-center justify-center">
                             <div className="text-center">
-                                <ChefHat size={48} className="text-white/10 mx-auto mb-4" />
+                                <ChefHat size={48} className="text-white mx-auto mb-4" />
                                 <p className="text-muted-foreground">No recipes found</p>
                             </div>
                         </div>
@@ -263,7 +263,7 @@ export default function DashboardClient({
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center">
-                                                    <ChefHat size={18} className="text-white/20" />
+                                                    <ChefHat size={18} className="text-white" />
                                                 </div>
                                             )}
                                         </div>
@@ -296,7 +296,7 @@ export default function DashboardClient({
                                                 />
                                             ) : (
                                                 <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
-                                                    <ChefHat size={64} className="text-white/10" />
+                                                    <ChefHat size={64} className="text-white" />
                                                 </div>
                                             )}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
@@ -404,7 +404,7 @@ export default function DashboardClient({
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
-                                                <ChefHat size={40} className="text-white/20" />
+                                                <ChefHat size={40} className="text-white" />
                                             </div>
                                         )}
 

@@ -126,7 +126,7 @@ export default function AuthorProfilePage({ profile, recipes, collections }: Aut
                         </motion.div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
-                            <ChefHat size={48} className="text-white/10 mb-4" />
+                            <ChefHat size={48} className="text-white mb-4" />
                             <p className="text-muted-foreground">Nog geen recepten</p>
                         </div>
                     )
@@ -145,7 +145,7 @@ export default function AuthorProfilePage({ profile, recipes, collections }: Aut
                         </motion.div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
-                            <Folder size={48} className="text-white/10 mb-4" />
+                            <Folder size={48} className="text-white mb-4" />
                             <p className="text-muted-foreground">Nog geen collecties</p>
                         </div>
                     )

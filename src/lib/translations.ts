@@ -24,7 +24,7 @@ export const translations = {
     moreInfo: "Meer Info",
 
     // Recipe List
-    myCookbook: "Mijn Recepten",
+    myCookbook: "Recepten",
 
     // Recipe Detail
     prepTime: "Voorbereiding",

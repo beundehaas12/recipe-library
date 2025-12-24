@@ -21,7 +21,7 @@ export default function CollectionCard({ collection, recipeCount = 0 }: Collecti
             // Empty state pattern
             return (
                 <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
-                    <ChefHat className="text-white/10" size={48} />
+                    <ChefHat className="text-white" size={48} />
                 </div>
             );
         }
@@ -124,7 +124,7 @@ export default function CollectionCard({ collection, recipeCount = 0 }: Collecti
 
                     <div className="flex items-center gap-3 mt-2 text-xs text-white/70 font-semibold">
                         <span className="flex items-center gap-1.5">
-                            <ChefHat size={12} className="text-white/40" />
+                            <ChefHat size={12} className="text-white" />
                             {recipeCount} {recipeCount === 1 ? 'recept' : 'recepten'}
                         </span>
                     </div>

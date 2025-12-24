@@ -35,7 +35,7 @@ export default function CollectionDetailPage({ collection, recipes }: Collection
             </div>
 
             {/* Recipe Grid */}
-            <div className="max-w-[1600px] mx-auto px-0 md:px-4 lg:px-20 py-4">
+            <div className="max-w-[1600px] mx-auto px-4 lg:px-20 py-4">
                 {recipes.length > 0 ? (
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -50,7 +50,7 @@ export default function CollectionDetailPage({ collection, recipes }: Collection
                     </motion.div>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <Folder size={48} className="text-white/10 mb-4" />
+                        <Folder size={48} className="text-white mb-4" />
                         <p className="text-muted-foreground">{t.noRecipesInCollection}</p>
                     </div>
                 )}

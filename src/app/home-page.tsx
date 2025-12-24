@@ -73,7 +73,7 @@ export default function HomePage({ initialRecipes, initialCollections, user, pro
                 )}
             </AnimatePresence>
 
-            <main className="relative min-h-screen">
+            <main className={`relative ${!searchQuery ? 'min-h-screen' : ''}`}>
                 {/* Hero Section - Hide when searching */}
                 {!searchQuery && (
                     <div className="relative w-full h-[75vh] md:h-[85vh] overflow-hidden">
@@ -166,7 +166,7 @@ export default function HomePage({ initialRecipes, initialCollections, user, pro
                 )}
 
                 {/* Content Area */}
-                <div className={`relative z-20 space-y-12 pb-24 bg-background max-w-[1600px] mx-auto ${searchQuery ? 'pt-32' : 'pt-6'}`}>
+                <div className={`relative z-20 bg-background max-w-[1600px] mx-auto ${searchQuery ? 'pt-32' : 'pt-6 space-y-12 pb-24'}`}>
                     {isEmptyState ? (
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -174,7 +174,7 @@ export default function HomePage({ initialRecipes, initialCollections, user, pro
                             className="flex flex-col items-center justify-center py-20 text-center"
                         >
                             <div className="w-32 h-32 bg-gradient-to-tr from-gray-800 to-gray-900 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl border border-white/5 transform rotate-3">
-                                <ChefHat size={64} className="text-white/20" />
+                                <ChefHat size={64} className="text-white" />
                             </div>
                             <h2 className="text-4xl font-black text-white mb-4 tracking-tight">{t.welcome}</h2>
                             <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed mb-8">
@@ -191,7 +191,7 @@ export default function HomePage({ initialRecipes, initialCollections, user, pro
                             className="flex flex-col items-center justify-center py-20 text-center"
                         >
                             <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                                <Search size={40} className="text-white/20" />
+                                <Search size={40} className="text-white" />
                             </div>
                             <h3 className="text-2xl font-bold text-white mb-2">{t.noResults}</h3>
                             <p className="text-muted-foreground">{t.tryDifferentTerm}</p>
@@ -199,16 +199,18 @@ export default function HomePage({ initialRecipes, initialCollections, user, pro
                     ) : (
                         <>
                             {searchQuery && (
-                                <motion.h3
+                                <motion.div
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3 px-0 md:px-4 lg:px-20 mb-4 md:mb-8"
+                                    className="px-4 lg:px-20 mb-4 md:mb-8"
                                 >
-                                    Zoekresultaten voor <span className="text-primary">{searchQuery}</span>
-                                    <span className="text-sm font-bold text-muted-foreground/60 bg-white/5 px-2 py-1 rounded-md border border-white/5">
-                                        {displayRecipes.length}
-                                    </span>
-                                </motion.h3>
+                                    <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                                        Zoekresultaten voor <span className="text-primary">{searchQuery}</span>
+                                        <span className="text-sm font-bold text-muted-foreground/60 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                                            {displayRecipes.length}
+                                        </span>
+                                    </h3>
+                                </motion.div>
                             )}
                             <RecipeList
                                 recipes={searchQuery ? displayRecipes : recipes.slice(1)}

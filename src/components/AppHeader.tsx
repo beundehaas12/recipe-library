@@ -57,7 +57,7 @@ export default function AppHeader({
         <>
             {/* Cinematic Navbar - Transparent by default */}
             <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none px-4 lg:px-20 py-4">
-                <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between">
+                <div className="w-full flex items-center justify-between">
                     <div className="flex items-center gap-3 pointer-events-auto relative z-[5000]">
                         {isDeepPage && (
                             <BackButton className="!bg-black/40 !backdrop-blur-md !border-white/10" />
@@ -68,7 +68,7 @@ export default function AppHeader({
                                 {/* Mobile Hamburger */}
                                 <button
                                     onClick={() => setMobileMenuOpen(true)}
-                                    className="lg:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all"
+                                    className="lg:hidden w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/60 transition-all"
                                 >
                                     <Menu size={22} />
                                 </button>
@@ -90,7 +90,7 @@ export default function AppHeader({
                         {/* Search Icon (Desktop & Mobile Unified) */}
                         <button
                             onClick={() => setShowSearch(true)}
-                            className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-all active:scale-95"
+                            className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/60 transition-all active:scale-95"
                         >
                             <Search size={22} />
                         </button>

@@ -34,9 +34,22 @@ export async function getRecipes(limit = 20): Promise<Recipe[]> {
 export async function getRecipe(id: string): Promise<Recipe | null> {
     const supabase = await createClient();
 
+    // Fetch recipe details + ingredients + steps
     const { data, error } = await supabase
         .from('recipes')
-        .select('*')
+        .select(`
+            *,
+            recipe_ingredients (
+                name,
+                quantity,
+                unit,
+                order_index
+            ),
+            recipe_steps (
+                description,
+                step_number
+            )
+        `)
         .eq('id', id)
         .single();
 
@@ -45,16 +58,35 @@ export async function getRecipe(id: string): Promise<Recipe | null> {
         return null;
     }
 
+    // Map normalized data to legacy structure for UI
+    const ingredients = (data.recipe_ingredients || [])
+        .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+        .map((ing: any) => ({
+            item: ing.name,
+            amount: ing.quantity?.toString(),
+            unit: ing.unit
+        }));
+
+    const instructions = (data.recipe_steps || [])
+        .sort((a: any, b: any) => (a.step_number || 0) - (b.step_number || 0))
+        .map((step: any) => step.description);
+
+    const recipeWithData = {
+        ...data,
+        ingredients,
+        instructions
+    };
+
     // Fetch author profile
-    if (data.user_id) {
-        const profileMap = await getAuthorProfiles([data.user_id]);
+    if (recipeWithData.user_id) {
+        const profileMap = await getAuthorProfiles([recipeWithData.user_id]);
         return {
-            ...data,
-            author_profile: profileMap[data.user_id] ?? null,
+            ...recipeWithData,
+            author_profile: profileMap[recipeWithData.user_id] ?? null,
         };
     }
 
-    return data;
+    return recipeWithData;
 }
 
 /**

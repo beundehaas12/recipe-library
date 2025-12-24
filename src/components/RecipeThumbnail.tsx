@@ -87,12 +87,12 @@ export default function RecipeThumbnail({ recipe }: RecipeThumbnailProps) {
                     >
                         {recipe.prep_time && (
                             <span className="flex items-center gap-1.5">
-                                <Clock size={12} className="text-white/40" /> {recipe.prep_time}
+                                <Clock size={12} className="text-white" /> {recipe.prep_time}
                             </span>
                         )}
                         {recipe.servings && (
                             <span className="flex items-center gap-1.5">
-                                <Users size={12} className="text-white/40" /> {recipe.servings}
+                                <Users size={12} className="text-white" /> {recipe.servings}
                             </span>
                         )}
                     </motion.div>
