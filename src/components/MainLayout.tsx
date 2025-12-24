@@ -23,11 +23,7 @@ export default function MainLayout({ children, user, profile, role }: MainLayout
             />
 
             {/* Floating Menu - Desktop Only */}
-            <FloatingMenu
-                user={user}
-                profile={profile}
-                role={role}
-            />
+            <FloatingMenu />
 
             {/* Page Content */}
             {children}
