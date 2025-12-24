@@ -113,15 +113,17 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
 
     const displayRecipes = initialRecipes.length > 0 ? initialRecipes : skeletonRecipes;
 
-    // Randomized columns
+    // Deterministic columns for SSR (no Math.random to avoid hydration mismatch)
     const columnData = useMemo(() => {
         return [0, 1, 2].map((col) => {
             const durations = [180, 130, 260];
             const offsets = [0, -40, -90];
+            // Deterministic shuffle: offset recipes by column index
+            const shuffled = [...displayRecipes].slice(col).concat([...displayRecipes].slice(0, col));
             return {
                 duration: durations[col],
                 offset: offsets[col] % durations[col],
-                recipes: [...displayRecipes].sort(() => Math.random() - 0.5)
+                recipes: shuffled
             };
         });
     }, [displayRecipes]);
