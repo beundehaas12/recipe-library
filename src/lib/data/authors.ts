@@ -14,6 +14,7 @@ export async function getAuthorProfile(userId: string): Promise<AuthorProfile | 
         .single();
 
     if (error || !data) {
+        console.error('Error fetching author profile:', error);
         return null;
     }
 
@@ -30,10 +31,10 @@ export async function getAuthorRecipes(userId: string): Promise<Recipe[]> {
         .from('recipes')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'complete')
         .order('created_at', { ascending: false });
 
     if (error || !data) {
+        console.error('Error fetching author recipes:', error);
         return [];
     }
 
@@ -58,6 +59,7 @@ export async function getAuthorCollections(userId: string): Promise<Collection[]
         .order('created_at', { ascending: false });
 
     if (error || !data) {
+        console.error('Error fetching author collections:', error);
         return [];
     }
 
