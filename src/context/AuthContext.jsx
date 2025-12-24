@@ -37,14 +37,6 @@ export function AuthProvider({ children }) {
     };
 
     useEffect(() => {
-        // Timeout fallback for mobile: if auth check takes too long, stop loading
-        const timeout = setTimeout(() => {
-            if (loading) {
-                console.warn('Auth check timed out, proceeding without session');
-                setLoading(false);
-            }
-        }, 5000);
-
         // Get initial session
         supabase.auth.getSession().then(async ({ data: { session } }) => {
             const currentUser = session?.user ?? null;
@@ -72,14 +64,10 @@ export function AuthProvider({ children }) {
                     setProfile(null);
                     setPreferences(null);
                 }
-                // Do not setLoading(false) here - let getSession handle the initial load
-                // only update loading if we are explicitly handling a sign in/out interaction if needed, 
-                // but for init, getSession is the authority.
             }
         );
 
         return () => {
-            clearTimeout(timeout);
             subscription.unsubscribe();
         };
     }, []);
