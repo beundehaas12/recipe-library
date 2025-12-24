@@ -64,7 +64,7 @@ export default function AppHeader({
     // Hide header on dashboard/settings (they have their own layout)
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/settings')) return null;
 
-    const isDeepPage = pathname.startsWith('/recipe/') || pathname.startsWith('/collection/');
+    const isDeepPage = pathname.startsWith('/recipe/') || pathname.startsWith('/collection/') || pathname.startsWith('/author/');
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
