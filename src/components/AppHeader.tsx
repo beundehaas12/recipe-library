@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChefHat, Search, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
-import type { Recipe, UserProfile } from '@/types/database';
+import type { UserProfile } from '@/types/database';
 import { translations as t } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
 import BackButton from './BackButton';
@@ -16,24 +16,31 @@ interface AppHeaderProps {
     user: User;
     profile?: UserProfile | null;
     role?: 'user' | 'author' | 'admin' | null;
-    searchQuery?: string;
-    onSearchChange?: (query: string) => void;
-    searchResults?: Recipe[];
 }
 
 export default function AppHeader({
     user,
     profile,
     role,
-    searchQuery = '',
-    onSearchChange,
-    searchResults
 }: AppHeaderProps) {
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const supabase = createClient();
+
+    const searchQuery = searchParams.get('q') || '';
+
+    const handleSearch = (query: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (query) {
+            params.set('q', query);
+        } else {
+            params.delete('q');
+        }
+        router.replace(`/?${params.toString()}`); // Always search on homepage
+    };
 
     // Hide header on dashboard/settings (they have their own layout)
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/settings')) return null;
@@ -117,16 +124,11 @@ export default function AppHeader({
                                     placeholder={t.searchPlaceholder}
                                     className="input-standard !rounded-full pl-10 py-3"
                                     value={searchQuery}
-                                    onChange={(e) => {
-                                        onSearchChange?.(e.target.value);
-                                        if (pathname !== '/') {
-                                            router.push('/');
-                                        }
-                                    }}
+                                    onChange={(e) => handleSearch(e.target.value)}
                                 />
                                 {searchQuery && (
                                     <button
-                                        onClick={() => onSearchChange?.('')}
+                                        onClick={() => handleSearch('')}
                                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
                                     >
                                         <X size={16} />
@@ -136,7 +138,7 @@ export default function AppHeader({
                             <button
                                 onClick={() => {
                                     setShowMobileSearch(false);
-                                    if (!searchQuery) onSearchChange?.('');
+                                    if (!searchQuery) handleSearch('');
                                 }}
                                 className="text-white font-medium px-2"
                             >
@@ -145,41 +147,7 @@ export default function AppHeader({
                         </div>
 
                         <div className="flex-1 overflow-y-auto px-4 py-4">
-                            {searchResults && searchQuery && (
-                                <div className="space-y-4 pb-20">
-                                    {searchResults.length > 0 ? (
-                                        searchResults.map(recipe => (
-                                            <div
-                                                key={recipe.id}
-                                                onClick={() => {
-                                                    router.push(`/recipe/${recipe.id}`);
-                                                    setShowMobileSearch(false);
-                                                }}
-                                                className="flex items-center gap-4 p-3 glass-card rounded-[var(--radius-btn)] active:bg-white/10 cursor-pointer"
-                                            >
-                                                {recipe.image_url ? (
-                                                    <img src={recipe.image_url} alt={recipe.title} className="w-16 h-16 rounded-[var(--radius-btn)] object-cover" />
-                                                ) : (
-                                                    <div className="w-16 h-16 rounded-[var(--radius-btn)] bg-white/10 flex items-center justify-center">
-                                                        <ChefHat size={24} className="text-white/20" />
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <h4 className="font-bold text-white line-clamp-1">{recipe.title}</h4>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        {recipe.cuisine && <span className="text-xs text-muted-foreground uppercase">{recipe.cuisine}</span>}
-                                                        {recipe.cook_time && <span className="text-xs text-muted-foreground">• {recipe.cook_time}</span>}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-center text-muted-foreground py-10">
-                                            {t.noResults} <span className="text-primary">"{searchQuery}"</span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                            {/* Search Results logic moved to HomePage */}
                         </div>
                     </motion.div>
                 )}

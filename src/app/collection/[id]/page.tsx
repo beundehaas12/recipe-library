@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import CollectionDetailPage from './collection-detail-page';
-import MainLayout from '@/components/MainLayout';
 import type { Recipe, AuthorProfile } from '@/types/database';
 
 interface PageProps {
@@ -19,31 +18,23 @@ export default async function Page({ params }: PageProps) {
         redirect('/');
     }
 
-    // Fetch collection with recipes and user profile in parallel
-    const [{ data: collection, error }, { data: profile }, { data: roleData }] = await Promise.all([
-        supabase
-            .from('collections')
-            .select(`
+    // Fetch collection with recipes
+    const { data: collection, error } = await supabase
+        .from('collections')
+        .select(`
               *,
               recipe_collections (
                 recipe:recipes (*)
               )
             `)
-            .eq('id', id)
-            .single(),
-        supabase.from('user_profiles').select('*').eq('user_id', user.id).single(),
-        supabase.from('user_roles').select('role').eq('user_id', user.id).single(),
-    ]);
-
-    const role = (roleData?.role as 'user' | 'author' | 'admin') ?? null;
+        .eq('id', id)
+        .single();
 
     if (error || !collection) {
         return (
-            <MainLayout user={user} profile={profile} role={role}>
-                <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
-                    Collectie niet gevonden
-                </div>
-            </MainLayout>
+            <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+                Collectie niet gevonden
+            </div>
         );
     }
 
@@ -75,8 +66,6 @@ export default async function Page({ params }: PageProps) {
     }));
 
     return (
-        <MainLayout user={user} profile={profile} role={role}>
-            <CollectionDetailPage collection={collection} recipes={recipes} />
-        </MainLayout>
+        <CollectionDetailPage collection={collection} recipes={recipes} />
     );
 }

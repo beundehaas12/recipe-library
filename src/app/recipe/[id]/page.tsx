@@ -2,7 +2,6 @@ import { getRecipe } from '@/lib/data/recipes';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import RecipeDetailPage from './recipe-detail-page';
-import MainLayout from '@/components/MainLayout';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -19,28 +18,18 @@ export default async function Page({ params }: PageProps) {
         redirect('/');
     }
 
-    // Fetch recipe and user profile in parallel
-    const [recipe, { data: profile }, { data: roleData }] = await Promise.all([
-        getRecipe(id),
-        supabase.from('user_profiles').select('*').eq('user_id', user.id).single(),
-        supabase.from('user_roles').select('role').eq('user_id', user.id).single(),
-    ]);
-
-    const role = (roleData?.role as 'user' | 'author' | 'admin') ?? null;
+    // Fetch recipe
+    const recipe = await getRecipe(id);
 
     if (!recipe) {
         return (
-            <MainLayout user={user} profile={profile} role={role}>
-                <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
-                    Recept niet gevonden
-                </div>
-            </MainLayout>
+            <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+                Recept niet gevonden
+            </div>
         );
     }
 
     return (
-        <MainLayout user={user} profile={profile} role={role}>
-            <RecipeDetailPage recipe={recipe} />
-        </MainLayout>
+        <RecipeDetailPage recipe={recipe} />
     );
 }

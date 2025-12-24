@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
@@ -12,16 +12,25 @@ interface FloatingMenuProps {
     user?: User;
     profile?: UserProfile | null;
     role?: 'user' | 'author' | 'admin' | null;
-    onSearchChange?: (query: string) => void;
-    searchQuery?: string;
 }
 
-export default function FloatingMenu({ onSearchChange, searchQuery: externalQuery }: FloatingMenuProps) {
+export default function FloatingMenu({ }: FloatingMenuProps) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState(externalQuery || '');
+    const searchParams = useSearchParams();
+    const searchQuery = searchParams.get('q') || '';
     const inputRef = useRef<HTMLInputElement>(null);
     const pathname = usePathname();
     const router = useRouter();
+
+    const handleSearch = (query: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (query) {
+            params.set('q', query);
+        } else {
+            params.delete('q');
+        }
+        router.replace(`/?${params.toString()}`);
+    };
 
     useEffect(() => {
         if (isSearchOpen && inputRef.current) {
@@ -29,20 +38,14 @@ export default function FloatingMenu({ onSearchChange, searchQuery: externalQuer
         }
     }, [isSearchOpen]);
 
-    // Sync external query
-    useEffect(() => {
-        setSearchQuery(externalQuery || '');
-    }, [externalQuery]);
-
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSearchChange?.(searchQuery);
+        // handleSearch called via onChange
     };
 
     const handleCloseSearch = () => {
         setIsSearchOpen(false);
-        setSearchQuery('');
-        onSearchChange?.('');
+        handleSearch('');
     };
 
     const navItems = [
@@ -79,14 +82,7 @@ export default function FloatingMenu({ onSearchChange, searchQuery: externalQuer
                                 placeholder="Zoek recepten..."
                                 className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-white/30 h-full text-sm font-medium"
                                 value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    onSearchChange?.(e.target.value);
-                                    // Navigate to home if not already there
-                                    if (pathname !== '/') {
-                                        router.push('/');
-                                    }
-                                }}
+                                onChange={(e) => handleSearch(e.target.value)}
                             />
                             <button
                                 type="button"
