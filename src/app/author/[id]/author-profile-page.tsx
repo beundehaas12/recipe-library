@@ -6,6 +6,7 @@ import { ChefHat, BookOpen, Folder } from 'lucide-react';
 import type { Recipe, Collection, AuthorProfile } from '@/types/database';
 import RecipeThumbnail from '@/components/RecipeThumbnail';
 import CollectionCard from '@/components/CollectionCard';
+import BackButton from '@/components/BackButton';
 import { getAuthorDisplayName, getAuthorAvatarUrl } from '@/lib/authorProfileService';
 
 interface AuthorProfilePageProps {
@@ -22,6 +23,11 @@ export default function AuthorProfilePage({ profile, recipes, collections }: Aut
 
     return (
         <div className="min-h-screen bg-background pt-20 pb-24">
+            {/* Back Button */}
+            <div className="fixed top-20 left-4 z-50">
+                <BackButton />
+            </div>
+
             {/* Hero Section - Avatar + Name */}
             <div className="max-w-[1600px] mx-auto px-4 lg:px-20 py-12">
                 <div className="flex items-start gap-8">
