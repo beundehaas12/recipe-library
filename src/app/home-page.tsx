@@ -202,15 +202,16 @@ export default function HomePage({ initialRecipes, initialCollections, user, pro
                                     animate={{ opacity: 1, x: 0 }}
                                     className="text-2xl font-bold text-white mb-8 flex items-center gap-3 px-4"
                                 >
-                                    Zoekresultaten
-                                    <span className="text-primary bg-primary/10 px-3 py-1 rounded-full text-sm">
-                                        {displayRecipes.length}
+                                    Zoekresultaten voor "<span className="text-primary">{searchQuery}</span>"
+                                    <span className="text-white/40 text-base font-normal">
+                                        ({displayRecipes.length} {displayRecipes.length === 1 ? 'recept' : 'recepten'})
                                     </span>
                                 </motion.h3>
                             )}
                             <RecipeList
                                 recipes={searchQuery ? displayRecipes : recipes.slice(1)}
                                 collections={!searchQuery ? (collections ?? []) : []}
+                                searchQuery={searchQuery}
                             />
                         </>
                     )}

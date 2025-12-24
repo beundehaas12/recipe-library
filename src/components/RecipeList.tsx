@@ -115,17 +115,19 @@ export default function RecipeList({
     // -------------------------------------------------------------------------
     return (
         <div className="relative pt-4 pb-12">
-            {/* Header - Aligned with Grid */}
-            <div className="px-0 md:px-4 lg:px-20 mb-4 md:mb-8">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                        {t.myCookbook}
-                        <span className="text-sm font-bold text-muted-foreground/60 bg-white/5 px-2 py-1 rounded-md border border-white/5">
-                            {recipes.length}
-                        </span>
-                    </h2>
+            {/* Header - Hidden when showing search results */}
+            {!searchQuery && (
+                <div className="px-0 md:px-4 lg:px-20 mb-4 md:mb-8">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                            {t.myCookbook}
+                            <span className="text-sm font-bold text-muted-foreground/60 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                                {recipes.length}
+                            </span>
+                        </h2>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Grid Container - Edge-to-edge on mobile, padded on larger screens */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-0.5 md:gap-1 lg:gap-2 px-0 md:px-4 lg:px-20">
