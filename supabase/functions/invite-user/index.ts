@@ -56,7 +56,8 @@ serve(async (req: Request) => {
 
         try {
             const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-                redirectTo: redirect
+                // Redirect to callback route to exchange code, then to complete-account
+                redirectTo: `${siteUrl}/auth/callback?next=/complete-account`
             })
 
             if (!error && data?.user) {

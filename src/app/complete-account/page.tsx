@@ -25,12 +25,25 @@ function CompleteAccountContent() {
     const [success, setSuccess] = useState(false);
 
     useEffect(() => {
-        if (!token) {
-            setLoading(false);
-            return;
-        }
+        // If we have an active session (from invite link -> auth/callback -> here),
+        // we can proceed without a token.
+        const checkSession = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                // Determine email from user object
+                setTokenData({
+                    email: user.email,
+                    request_id: 'session-active'
+                });
+                setLoading(false);
+                return;
+            }
 
-        const checkToken = async () => {
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
             const result = await validateInvitationToken(token);
             if (result && result.valid) {
                 setTokenData(result);
@@ -40,8 +53,8 @@ function CompleteAccountContent() {
             setLoading(false);
         };
 
-        checkToken();
-    }, [token]);
+        checkSession();
+    }, [token, supabase.auth]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,17 +72,22 @@ function CompleteAccountContent() {
 
             addLog('Creating account...');
 
-            // For early access, we sign up the user
-            // The password provided here will be their account password
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: tokenData.email,
-                password: password,
-            });
+            // Check if we are already logged in (session-based)
+            const { data: { user } } = await supabase.auth.getUser();
 
-            if (authError) {
-                // If user already registered but not confirmed, this might happen.
-                // Or if they try to sign up with an existing email.
-                throw new Error(authError.message);
+            if (user) {
+                // Update password for existing user
+                const { error: updateError } = await supabase.auth.updateUser({
+                    password: password
+                });
+                if (updateError) throw updateError;
+            } else {
+                // Token-based signups (Legacy / Direct)
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: tokenData.email,
+                    password: password,
+                });
+                if (authError) throw new Error(authError.message);
             }
 
             addLog('Completing early access...');
