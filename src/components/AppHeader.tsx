@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChefHat, Search, LogOut, X, Menu, Compass, Calendar, ShoppingBasket, Heart } from 'lucide-react';
 import Link from 'next/link';
@@ -30,16 +30,35 @@ export default function AppHeader({
     const searchParams = useSearchParams();
     const supabase = createClient();
 
-    const searchQuery = searchParams.get('q') || '';
+    // Initial value from URL, but managed locally for performance
+    const initialQuery = searchParams.get('q') || '';
+    const [localQuery, setLocalQuery] = useState(initialQuery);
 
-    const handleSearch = (query: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (query) {
-            params.set('q', query);
-        } else {
-            params.delete('q');
-        }
-        router.replace(`/?${params.toString()}`); // Always search on homepage
+    // Sync local state if URL changes externally (e.g. back button)
+    useEffect(() => {
+        setLocalQuery(initialQuery);
+    }, [initialQuery]);
+
+    // Debounce search updates to URL
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            // Only update URL if it's different to avoid loops
+            if (localQuery !== initialQuery) {
+                const params = new URLSearchParams(searchParams.toString());
+                if (localQuery) {
+                    params.set('q', localQuery);
+                } else {
+                    params.delete('q');
+                }
+                router.replace(`/?${params.toString()}`);
+            }
+        }, 300); // 300ms delay
+
+        return () => clearTimeout(timer);
+    }, [localQuery, router, searchParams, initialQuery]);
+
+    const handleSearchChange = (val: string) => {
+        setLocalQuery(val);
     };
 
     // Hide header on dashboard/settings (they have their own layout)
@@ -123,12 +142,12 @@ export default function AppHeader({
                                     type="text"
                                     placeholder={t.searchPlaceholder}
                                     className="input-standard !rounded-full pl-10 py-3"
-                                    value={searchQuery}
-                                    onChange={(e) => handleSearch(e.target.value)}
+                                    value={localQuery}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
                                 />
-                                {searchQuery && (
+                                {localQuery && (
                                     <button
-                                        onClick={() => handleSearch('')}
+                                        onClick={() => handleSearchChange('')}
                                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
                                     >
                                         <X size={16} />
@@ -138,7 +157,7 @@ export default function AppHeader({
                             <button
                                 onClick={() => {
                                     setShowMobileSearch(false);
-                                    if (!searchQuery) handleSearch('');
+                                    if (!localQuery) handleSearchChange('');
                                 }}
                                 className="text-white font-medium px-2"
                             >

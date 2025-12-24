@@ -17,19 +17,38 @@ interface FloatingMenuProps {
 export default function FloatingMenu({ }: FloatingMenuProps) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const searchParams = useSearchParams();
-    const searchQuery = searchParams.get('q') || '';
     const inputRef = useRef<HTMLInputElement>(null);
     const pathname = usePathname();
     const router = useRouter();
 
-    const handleSearch = (query: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (query) {
-            params.set('q', query);
-        } else {
-            params.delete('q');
-        }
-        router.replace(`/?${params.toString()}`);
+    // Initial value from URL
+    const initialQuery = searchParams.get('q') || '';
+    const [localQuery, setLocalQuery] = useState(initialQuery);
+
+    // Sync local state if URL changes externally
+    useEffect(() => {
+        setLocalQuery(initialQuery);
+    }, [initialQuery]);
+
+    // Debounce search updates to URL
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (localQuery !== initialQuery) {
+                const params = new URLSearchParams(searchParams.toString());
+                if (localQuery) {
+                    params.set('q', localQuery);
+                } else {
+                    params.delete('q');
+                }
+                router.replace(`/?${params.toString()}`);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [localQuery, router, searchParams, initialQuery]);
+
+    const handleSearchChange = (val: string) => {
+        setLocalQuery(val);
     };
 
     useEffect(() => {
@@ -45,7 +64,8 @@ export default function FloatingMenu({ }: FloatingMenuProps) {
 
     const handleCloseSearch = () => {
         setIsSearchOpen(false);
-        handleSearch('');
+        setIsSearchOpen(false);
+        handleSearchChange('');
     };
 
     const navItems = [
@@ -81,8 +101,8 @@ export default function FloatingMenu({ }: FloatingMenuProps) {
                                 type="text"
                                 placeholder="Zoek recepten..."
                                 className="flex-1 bg-transparent border-none text-white focus:outline-none placeholder:text-white/30 h-full text-sm font-medium"
-                                value={searchQuery}
-                                onChange={(e) => handleSearch(e.target.value)}
+                                value={localQuery}
+                                onChange={(e) => handleSearchChange(e.target.value)}
                             />
                             <button
                                 type="button"
