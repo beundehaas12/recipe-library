@@ -34,9 +34,11 @@ export default function HomePage({ initialRecipes, initialCollections, user, pro
         return recipesData?.pages.flat() ?? initialRecipes;
     }, [recipesData, initialRecipes]);
 
-    // Display logic
+    // Display logic - show empty while actively searching to prevent stale results
     const displayRecipes = useMemo(() => {
         if (!searchQuery.trim()) return recipes;
+        // If actively searching with a query but no results yet, show nothing (loading)
+        if (isSearching && (!searchResults || searchResults.length === 0)) return [];
         if (searchResults && searchResults.length > 0) return searchResults;
         // Local filter as fallback while searching
         const query = searchQuery.toLowerCase();
@@ -45,11 +47,11 @@ export default function HomePage({ initialRecipes, initialCollections, user, pro
             recipe.description?.toLowerCase().includes(query) ||
             recipe.author?.toLowerCase().includes(query)
         );
-    }, [searchQuery, searchResults, recipes]);
+    }, [searchQuery, searchResults, recipes, isSearching]);
 
     const heroRecipe = !searchQuery && recipes.length > 0 ? recipes[0] : null;
     const isEmptyState = recipes.length === 0 && !searchQuery;
-    const isNoResults = searchQuery && displayRecipes.length === 0;
+    const isNoResults = searchQuery && displayRecipes.length === 0 && !isSearching;
 
     return (
         <div className="min-h-screen bg-background text-foreground pb-20 selection:bg-primary selection:text-white">
