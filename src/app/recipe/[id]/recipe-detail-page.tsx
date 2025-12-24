@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { ChefHat, Clock, Users } from 'lucide-react';
+import Link from 'next/link';
 import type { Recipe } from '@/types/database';
 import { translations as t } from '@/lib/translations';
 import { getAuthorDisplayName, getAuthorAvatarUrl } from '@/lib/authorProfileService';
@@ -63,23 +64,25 @@ export default function RecipeDetailPage({ recipe }: RecipeDetailPageProps) {
 
                         {/* Author Info */}
                         {(recipe.author_profile || recipe.author) && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                className="flex items-center gap-3 mt-4"
-                            >
-                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/20 bg-white/10">
-                                    <img
-                                        src={getAuthorAvatarUrl(recipe.author_profile, { id: recipe.user_id })}
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <span className="text-white/80 font-medium">
-                                    {getAuthorDisplayName(recipe.author_profile) || recipe.author || 'Unknown Chef'}
-                                </span>
-                            </motion.div>
+                            <Link href={`/author/${recipe.user_id}`}>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="flex items-center gap-3 mt-4 cursor-pointer group"
+                                >
+                                    <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 group-hover:border-primary transition-colors">
+                                        <img
+                                            src={getAuthorAvatarUrl(recipe.author_profile, { id: recipe.user_id })}
+                                            alt=""
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    <span className="text-white/80 font-medium group-hover:text-primary transition-colors">
+                                        {getAuthorDisplayName(recipe.author_profile) || recipe.author || 'Unknown Chef'}
+                                    </span>
+                                </motion.div>
+                            </Link>
                         )}
                     </div>
                 </div>

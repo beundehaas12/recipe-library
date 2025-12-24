@@ -51,6 +51,7 @@ export interface AuthorProfile {
     first_name?: string;
     last_name?: string;
     avatar_url?: string;
+    bio?: string;
 }
 
 export interface UserProfile {
