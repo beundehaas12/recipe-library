@@ -25,6 +25,11 @@ export default function AppHeader({
     role,
 }: AppHeaderProps) {
     const [showSearch, setShowSearch] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const pathname = usePathname();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const supabase = createClient();
 
     // Initial value from URL
     const initialQuery = searchParams.get('q') || '';
