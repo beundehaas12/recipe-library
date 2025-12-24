@@ -1,80 +1,66 @@
+import { Skeleton } from "@/components/ui/skeleton"
+
 export default function Loading() {
     return (
         <div className="min-h-screen bg-background">
             {/* Hero Image Skeleton */}
-            <div className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden bg-zinc-900 animate-pulse">
-                {/* Gradient Overlays */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
-
-                {/* Title Section Skeleton */}
-                <div className="absolute bottom-0 left-0 right-0 z-20 pb-8 px-6 lg:px-20">
+            <div className="relative w-full h-[60vh] md:h-[70vh] bg-zinc-900/50">
+                <div className="absolute bottom-0 left-0 right-0 pb-8 px-6 lg:px-20">
                     <div className="max-w-[1200px] mx-auto">
-                        {/* Cuisine tag skeleton */}
-                        <div className="w-24 h-6 bg-white/10 rounded-md animate-pulse mb-4" />
-                        {/* Title skeleton */}
-                        <div className="w-3/4 h-12 md:h-16 bg-white/10 rounded-lg animate-pulse mb-2" />
-                        <div className="w-1/2 h-12 md:h-16 bg-white/10 rounded-lg animate-pulse mb-4" />
-                        {/* Author skeleton */}
+                        <Skeleton className="h-6 w-24 mb-4 rounded-md bg-white/10" />
+                        <Skeleton className="h-12 md:h-20 w-3/4 mb-4 bg-white/10" />
                         <div className="flex items-center gap-3 mt-4">
-                            <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse" />
-                            <div className="w-32 h-4 bg-white/10 rounded animate-pulse" />
+                            <Skeleton className="w-10 h-10 rounded-full bg-white/10" />
+                            <Skeleton className="h-5 w-32 bg-white/10" />
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Content Section Skeleton */}
+            {/* Content Skeleton */}
             <div className="max-w-[1200px] mx-auto px-6 lg:px-20 py-12">
-                {/* Meta Info Skeleton */}
-                <div className="flex flex-wrap gap-6 mb-12">
+                {/* Meta Info */}
+                <div className="flex gap-6 mb-12">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-white/5 animate-pulse" />
+                        <Skeleton className="w-12 h-12 rounded-2xl bg-white/10" />
                         <div>
-                            <div className="w-16 h-3 bg-white/10 rounded animate-pulse mb-2" />
-                            <div className="w-20 h-4 bg-white/10 rounded animate-pulse" />
+                            <Skeleton className="h-3 w-16 mb-1 bg-white/10" />
+                            <Skeleton className="h-4 w-12 bg-white/10" />
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-white/5 animate-pulse" />
+                        <Skeleton className="w-12 h-12 rounded-2xl bg-white/10" />
                         <div>
-                            <div className="w-16 h-3 bg-white/10 rounded animate-pulse mb-2" />
-                            <div className="w-20 h-4 bg-white/10 rounded animate-pulse" />
+                            <Skeleton className="h-3 w-16 mb-1 bg-white/10" />
+                            <Skeleton className="h-4 w-12 bg-white/10" />
                         </div>
                     </div>
                 </div>
 
-                {/* Description Skeleton */}
-                <div className="mb-12 space-y-3">
-                    <div className="w-full h-4 bg-white/5 rounded animate-pulse" />
-                    <div className="w-5/6 h-4 bg-white/5 rounded animate-pulse" />
-                    <div className="w-4/6 h-4 bg-white/5 rounded animate-pulse" />
-                </div>
+                <Skeleton className="h-4 w-full max-w-3xl mb-2 bg-white/10" />
+                <Skeleton className="h-4 w-3/4 max-w-3xl mb-12 bg-white/10" />
 
                 <div className="grid lg:grid-cols-[1fr_2fr] gap-12">
                     {/* Ingredients Skeleton */}
                     <div>
-                        <div className="w-32 h-6 bg-white/10 rounded animate-pulse mb-6" />
+                        <Skeleton className="h-8 w-40 mb-6 bg-white/10" />
                         <div className="space-y-3">
                             {Array.from({ length: 8 }).map((_, i) => (
-                                <div key={i} className="flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-primary/30" />
-                                    <div className="flex-1 h-4 bg-white/5 rounded animate-pulse" style={{ width: `${60 + Math.random() * 40}%` }} />
-                                </div>
+                                <Skeleton key={i} className="h-4 w-full bg-white/5" />
                             ))}
                         </div>
                     </div>
 
                     {/* Instructions Skeleton */}
                     <div>
-                        <div className="w-32 h-6 bg-white/10 rounded animate-pulse mb-6" />
+                        <Skeleton className="h-8 w-40 mb-6 bg-white/10" />
                         <div className="space-y-6">
                             {Array.from({ length: 5 }).map((_, i) => (
                                 <div key={i} className="flex gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-primary/10 animate-pulse flex-shrink-0" />
-                                    <div className="flex-1 space-y-2 pt-1">
-                                        <div className="w-full h-4 bg-white/5 rounded animate-pulse" />
-                                        <div className="w-5/6 h-4 bg-white/5 rounded animate-pulse" />
+                                    <Skeleton className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
+                                    <div className="space-y-2 w-full">
+                                        <Skeleton className="h-4 w-full bg-white/5" />
+                                        <Skeleton className="h-4 w-5/6 bg-white/5" />
                                     </div>
                                 </div>
                             ))}
