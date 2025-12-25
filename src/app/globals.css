@@ -117,7 +117,12 @@
    Base Styles
    ============================================ */
 
-/* Note: Removed global * border-color rule that was causing dark borders on light theme */
+/* Base Styles - Reset border color to theme variable instead of currentColor */
+*,
+::after,
+::before {
+  border-color: hsl(var(--border));
+}
 
 body {
   background: hsl(var(--background));
