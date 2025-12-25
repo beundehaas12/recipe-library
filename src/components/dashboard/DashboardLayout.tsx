@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { ChefHat, Search, Bell, ChevronLeft, Plus, Camera, Link as LinkIcon, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { ChefHat, Search, Bell, ChevronLeft, X } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { User } from '@supabase/supabase-js';
@@ -37,18 +37,12 @@ export default function DashboardLayout({
     onUpload,
     onUrlSubmit
 }: DashboardLayoutProps) {
-    const [showAddMenu, setShowAddMenu] = useState(false);
     const [showUrlModal, setShowUrlModal] = useState(false);
     const [urlInputValue, setUrlInputValue] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const supabase = createClient();
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = () => setShowAddMenu(false);
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, []);
+
 
     const handleUrlSubmit = () => {
         if (urlInputValue && onUrlSubmit) {
@@ -91,58 +85,6 @@ export default function DashboardLayout({
                         <Bell size={20} />
                     </button>
 
-                    {/* Toevoegen Button with Dropdown */}
-                    <div className="relative">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setShowAddMenu(!showAddMenu);
-                            }}
-                            className="flex items-center gap-2 px-3 py-2 bg-primary text-black rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-primary/90 transition-colors"
-                        >
-                            <Plus size={16} />
-                            <span>Toevoegen</span>
-                        </button>
-
-                        <AnimatePresence>
-                            {showAddMenu && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    transition={{ duration: 0.1 }}
-                                    className="absolute top-full right-0 mt-2 w-52 bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden py-2 z-50"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <button
-                                        onClick={() => {
-                                            setShowAddMenu(false);
-                                            fileInputRef.current?.click();
-                                        }}
-                                        className="w-full text-left px-4 py-2.5 hover:bg-white/10 text-zinc-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
-                                    >
-                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
-                                            <Camera size={16} />
-                                        </div>
-                                        <span>Media</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShowAddMenu(false);
-                                            setShowUrlModal(true);
-                                        }}
-                                        className="w-full text-left px-4 py-2.5 hover:bg-white/10 text-zinc-200 flex items-center gap-3 transition-colors text-sm font-semibold group/item"
-                                    >
-                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover/item:bg-primary/20 group-hover/item:text-primary transition-colors">
-                                            <LinkIcon size={16} />
-                                        </div>
-                                        <span>URL</span>
-                                    </button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
                     {/* Hidden file input */}
                     <input
                         type="file"
@@ -168,6 +110,8 @@ export default function DashboardLayout({
                     collections={collections}
                     onCreateCollection={onCreateCollection}
                     isAdmin={isAdmin}
+                    onShowUrlModal={() => setShowUrlModal(true)}
+                    onMediaUpload={() => fileInputRef.current?.click()}
                 />
 
                 {/* Content Area */}
