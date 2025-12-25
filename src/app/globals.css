@@ -82,9 +82,7 @@
    Base Styles
    ============================================ */
 
-* {
-  border-color: hsl(var(--border) / 0.5);
-}
+/* Note: Removed global * border-color rule that was causing dark borders on light theme */
 
 body {
   background: hsl(var(--background));
