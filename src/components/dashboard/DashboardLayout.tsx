@@ -147,7 +147,7 @@ export default function DashboardLayout({
                 />
 
                 {/* Content Area */}
-                <div className="flex-1 flex min-w-0 bg-background relative min-h-0 z-0">
+                <div className={`flex-1 flex min-w-0 relative min-h-0 z-0 ${currentTheme === 'light' ? 'bg-zinc-50' : 'bg-zinc-950'}`}>
                     {children}
                 </div>
             </div>
