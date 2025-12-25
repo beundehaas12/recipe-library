@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ChefHat, Eye, EyeOff, ArrowRight, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import type { Recipe } from '@/types/database';
+import RecipeSlideshow from '@/components/RecipeSlideshow';
 
 export default function InviteAcceptPage() {
     const router = useRouter();
@@ -16,6 +18,25 @@ export default function InviteAcceptPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [userEmail, setUserEmail] = useState('');
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
+
+    // Fetch recipes with images for slideshow
+    useEffect(() => {
+        const fetchRecipes = async () => {
+            const { data } = await supabase
+                .from('recipes')
+                .select('*')
+                .not('image_url', 'is', null)
+                .neq('image_url', '')
+                .limit(20)
+                .order('created_at', { ascending: false });
+
+            if (data) {
+                setRecipes(data);
+            }
+        };
+        fetchRecipes();
+    }, [supabase]);
 
     useEffect(() => {
         const processInvite = async () => {
@@ -284,11 +305,8 @@ export default function InviteAcceptPage() {
                 )}
             </div>
 
-            {/* Right Side: Visual */}
-            <div className="hidden md:flex w-1/2 h-screen relative overflow-hidden items-center justify-center bg-zinc-50 border-l border-zinc-100">
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
-                <div className="w-96 h-96 bg-primary/10 rounded-full blur-[100px]" />
-            </div>
+            {/* Right Side: Scrolling Recipe Cards (50%) */}
+            <RecipeSlideshow recipes={recipes} />
         </div>
     );
 }

@@ -54,6 +54,7 @@ export default function UsersClient({
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [invitingId, setInvitingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
     const supabase = createClient();
 
@@ -162,6 +163,8 @@ export default function UsersClient({
             onFilterChange={setActiveFilter}
             collections={collections}
             isAdmin={true}
+            currentTheme={theme}
+            onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         >
             <div className="flex-1 flex flex-col h-full overflow-hidden">
                 {/* Header */}
@@ -189,8 +192,8 @@ export default function UsersClient({
                     <button
                         onClick={() => setActiveTab('users')}
                         className={`px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${activeTab === 'users'
-                                ? 'bg-white/10 text-white'
-                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                            ? 'bg-white/10 text-white'
+                            : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
                             }`}
                     >
                         <Users size={14} />
@@ -199,8 +202,8 @@ export default function UsersClient({
                     <button
                         onClick={() => setActiveTab('waitlist')}
                         className={`px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${activeTab === 'waitlist'
-                                ? 'bg-white/10 text-white'
-                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                            ? 'bg-white/10 text-white'
+                            : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
                             }`}
                     >
                         <UserPlus size={14} />
@@ -374,8 +377,8 @@ function WaitlistTable({
                             </div>
                             <div className="col-span-2">
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${w.status === 'pending'
-                                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                    : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                                     }`}>
                                     {w.status === 'pending' ? <Clock size={10} /> : <CheckCircle size={10} />}
                                     {w.status === 'pending' ? 'Pending' : 'Invited'}
