@@ -36,16 +36,26 @@ export default function Sidebar({
         <div className="w-64 bg-zinc-950 border-r border-white/10 flex flex-col h-full">
             {/* Dashboard Button - No Title */}
             <div className="p-4 pb-2">
-                <button
-                    onClick={() => onFilterChange('overview')}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeFilter === 'overview'
-                        ? 'bg-white/10 text-white font-semibold shadow-sm'
-                        : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
-                        }`}
-                >
-                    <Home size={18} className={activeFilter === 'overview' ? "text-primary" : "text-zinc-500"} />
-                    Dashboard
-                </button>
+                {pathname === '/dashboard' ? (
+                    <button
+                        onClick={() => onFilterChange('overview')}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeFilter === 'overview'
+                            ? 'bg-white/10 text-white font-semibold shadow-sm'
+                            : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                            }`}
+                    >
+                        <Home size={18} className={activeFilter === 'overview' ? "text-primary" : "text-zinc-500"} />
+                        Dashboard
+                    </button>
+                ) : (
+                    <Link
+                        href="/dashboard"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                    >
+                        <Home size={18} className="text-zinc-500" />
+                        Dashboard
+                    </Link>
+                )}
             </div>
 
             {/* Recepten Management Section */}
@@ -105,16 +115,26 @@ export default function Sidebar({
                     </div>
 
                     {/* Alle recepten */}
-                    <button
-                        onClick={() => onFilterChange('all')}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeFilter === 'all'
-                            ? 'bg-white/10 text-white font-semibold shadow-sm'
-                            : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
-                            }`}
-                    >
-                        <LayoutGrid size={18} className={activeFilter === 'all' ? "text-primary" : "text-zinc-500"} />
-                        Alle recepten
-                    </button>
+                    {pathname === '/dashboard' ? (
+                        <button
+                            onClick={() => onFilterChange('all')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeFilter === 'all'
+                                ? 'bg-white/10 text-white font-semibold shadow-sm'
+                                : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                                }`}
+                        >
+                            <LayoutGrid size={18} className={activeFilter === 'all' ? "text-primary" : "text-zinc-500"} />
+                            Alle recepten
+                        </button>
+                    ) : (
+                        <Link
+                            href="/dashboard"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                        >
+                            <LayoutGrid size={18} className="text-zinc-500" />
+                            Alle recepten
+                        </Link>
+                    )}
 
                     {/* Collections (Collapsible) */}
                     <div>
@@ -166,16 +186,26 @@ export default function Sidebar({
                     </div>
 
                     {/* Processing */}
-                    <button
-                        onClick={() => onFilterChange('drafts')}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeFilter === 'drafts'
-                            ? 'bg-white/10 text-white font-semibold shadow-sm'
-                            : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
-                            }`}
-                    >
-                        <Clock size={18} className={activeFilter === 'drafts' ? "text-primary" : "text-zinc-500"} />
-                        Processing
-                    </button>
+                    {pathname === '/dashboard' ? (
+                        <button
+                            onClick={() => onFilterChange('drafts')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeFilter === 'drafts'
+                                ? 'bg-white/10 text-white font-semibold shadow-sm'
+                                : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                                }`}
+                        >
+                            <Clock size={18} className={activeFilter === 'drafts' ? "text-primary" : "text-zinc-500"} />
+                            Processing
+                        </button>
+                    ) : (
+                        <Link
+                            href="/dashboard"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                        >
+                            <Clock size={18} className="text-zinc-500" />
+                            Processing
+                        </Link>
+                    )}
                 </div>
             </div>
 
