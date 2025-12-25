@@ -1,4 +1,4 @@
-import { getRecipes, getCollections } from '@/lib/data/recipes';
+import { getRecipes, getRecipesWithImages, getCollections } from '@/lib/data/recipes';
 import { createClient } from '@/lib/supabase/server';
 import HomePage from './home-page';
 import LoginPage from './login-page';
@@ -7,16 +7,17 @@ export default async function Page() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch recipes for both login (display) and home page
+  // If not authenticated, show login with recipes that have images
+  if (!user) {
+    const recipesWithImages = await getRecipesWithImages(20);
+    return <LoginPage initialRecipes={recipesWithImages} />;
+  }
+
+  // Fetch recipes and collections for authenticated users
   const [recipes, collections] = await Promise.all([
     getRecipes(20),
     getCollections(),
   ]);
-
-  // If not authenticated, show login with recipes for display
-  if (!user) {
-    return <LoginPage initialRecipes={recipes} />;
-  }
 
   // Fetch user profile and role
   const [{ data: profile }, { data: roleData }] = await Promise.all([

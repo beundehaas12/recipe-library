@@ -2,6 +2,28 @@ import { createClient } from '@/lib/supabase/server';
 import type { Recipe, Collection, AuthorProfile } from '@/types/database';
 
 /**
+ * Fetch recipes with images for slideshow display
+ */
+export async function getRecipesWithImages(limit = 20): Promise<Recipe[]> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('recipes')
+        .select('*')
+        .not('image_url', 'is', null)
+        .neq('image_url', '')
+        .range(0, limit - 1)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching recipes with images:', error);
+        return [];
+    }
+
+    return data ?? [];
+}
+
+/**
  * Fetch initial recipes for SSR (first page only)
  */
 export async function getRecipes(limit = 20): Promise<Recipe[]> {

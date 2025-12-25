@@ -22,6 +22,8 @@ interface DashboardLayoutProps {
     isAdmin?: boolean;
     onUpload?: (files: FileList) => void;
     onUrlSubmit?: (url: string) => void;
+    currentTheme: 'dark' | 'light';
+    onThemeToggle: () => void;
 }
 
 export default function DashboardLayout({
@@ -35,11 +37,12 @@ export default function DashboardLayout({
     onCreateCollection,
     isAdmin = false,
     onUpload,
-    onUrlSubmit
+    onUrlSubmit,
+    currentTheme,
+    onThemeToggle
 }: DashboardLayoutProps) {
     const [showUrlModal, setShowUrlModal] = useState(false);
     const [urlInputValue, setUrlInputValue] = useState('');
-    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const supabase = createClient();
 
@@ -54,17 +57,17 @@ export default function DashboardLayout({
     };
 
     return (
-        <div className={`h-screen flex flex-col overflow-hidden relative ${theme === 'light'
-            ? 'bg-zinc-100 text-zinc-900'
+        <div className={`h-screen flex flex-col overflow-hidden relative transition-colors duration-300 ${currentTheme === 'light'
+            ? 'bg-zinc-50 text-zinc-900'
             : 'bg-black text-foreground'
             }`}>
             {/* Dashboard Toolbar (Finder-style) */}
-            <div className={`h-14 border-b flex items-center justify-between px-4 shrink-0 ${theme === 'light'
+            <div className={`h-14 border-b flex items-center justify-between px-4 shrink-0 ${currentTheme === 'light'
                 ? 'bg-white border-zinc-200'
                 : 'bg-zinc-950 border-white/10'
                 }`}>
                 <div className="flex items-center gap-4">
-                    <Link href="/" className={`p-2 rounded-lg transition-colors ${theme === 'light'
+                    <Link href="/" className={`p-2 rounded-lg transition-colors ${currentTheme === 'light'
                         ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'
                         : 'hover:bg-white/10 text-muted-foreground hover:text-white'
                         }`}>
@@ -74,7 +77,7 @@ export default function DashboardLayout({
                         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                             <ChefHat size={18} className="text-black" />
                         </div>
-                        <h1 className={`font-bold tracking-tight ${theme === 'light' ? 'text-zinc-900' : 'text-white'}`}>Author Studio</h1>
+                        <h1 className={`font-bold tracking-tight ${currentTheme === 'light' ? 'text-zinc-900' : 'text-white'}`}>Author Studio</h1>
                     </div>
                 </div>
 
@@ -84,7 +87,7 @@ export default function DashboardLayout({
                         <input
                             type="text"
                             placeholder="Search recipes..."
-                            className={`w-full border rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-display ${theme === 'light'
+                            className={`w-full border rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-display ${currentTheme === 'light'
                                 ? 'bg-zinc-100 border-zinc-200 text-zinc-900 placeholder:text-zinc-400'
                                 : 'bg-zinc-900 border-white/10 text-white'
                                 }`}
@@ -95,18 +98,18 @@ export default function DashboardLayout({
                 <div className="flex items-center gap-2">
                     {/* Theme Toggle */}
                     <button
-                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                        className={`p-2 rounded-lg transition-colors relative ${theme === 'light'
+                        onClick={onThemeToggle}
+                        className={`p-2 rounded-lg transition-colors relative ${currentTheme === 'light'
                             ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'
                             : 'hover:bg-white/10 text-muted-foreground hover:text-white'
                             }`}
-                        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                        title={currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                     >
-                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                        {currentTheme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
 
                     {/* Notifications (placeholder) */}
-                    <button className={`p-2 rounded-lg transition-colors relative ${theme === 'light'
+                    <button className={`p-2 rounded-lg transition-colors relative ${currentTheme === 'light'
                         ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'
                         : 'hover:bg-white/10 text-muted-foreground hover:text-white'
                         }`}>
@@ -123,7 +126,7 @@ export default function DashboardLayout({
                         multiple
                     />
 
-                    <div className={`w-px h-6 mx-2 ${theme === 'light' ? 'bg-zinc-200' : 'bg-white/10'}`} />
+                    <div className={`w-px h-6 mx-2 ${currentTheme === 'light' ? 'bg-zinc-200' : 'bg-white/10'}`} />
 
                     {/* User Menu Dropdown */}
                     <UserMenu user={user} profile={profile} role={role} />
@@ -140,7 +143,7 @@ export default function DashboardLayout({
                     isAdmin={isAdmin}
                     onShowUrlModal={() => setShowUrlModal(true)}
                     onMediaUpload={() => fileInputRef.current?.click()}
-                    theme={theme}
+                    theme={currentTheme}
                 />
 
                 {/* Content Area */}

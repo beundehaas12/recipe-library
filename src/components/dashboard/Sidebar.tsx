@@ -35,16 +35,17 @@ export default function Sidebar({
     const [showToevoegenMenu, setShowToevoegenMenu] = useState(false);
 
     // Theme-aware styling helpers
+    // Theme-aware styling helpers
     const buttonActive = theme === 'light'
-        ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-sm'
-        : 'bg-white/10 text-white font-semibold shadow-sm';
+        ? 'bg-primary/10 text-black font-semibold shadow-sm ring-1 ring-primary/20'
+        : 'bg-white/10 text-white font-semibold shadow-sm border border-white/5';
     const buttonInactive = theme === 'light'
-        ? 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+        ? 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'
         : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200';
-    const iconActive = 'text-primary';
-    const iconInactive = 'text-zinc-500';
+    const iconActive = theme === 'light' ? 'text-primary-600' : 'text-primary';
+    const iconInactive = 'text-zinc-400';
     const sectionTitle = theme === 'light'
-        ? 'text-zinc-500'
+        ? 'text-zinc-400 font-semibold'
         : 'text-muted-foreground';
 
     return (

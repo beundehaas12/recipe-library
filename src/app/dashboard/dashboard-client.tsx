@@ -26,6 +26,7 @@ export default function DashboardClient({
     initialCollections
 }: DashboardClientProps) {
     const [activeFilter, setActiveFilter] = useState('overview');
+    const [theme, setTheme] = useState<'dark' | 'light'>('light');
     const [viewMode, setViewMode] = useState<'split' | 'grid'>('split');
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(initialRecipes[0] || null);
     const [recipes] = useState(initialRecipes);
@@ -51,6 +52,14 @@ export default function DashboardClient({
     // Show overview/stats page
     const showOverview = activeFilter === 'overview';
 
+    // Theme helpers
+    const cardClass = theme === 'light'
+        ? 'bg-white border-zinc-200 shadow-sm'
+        : 'bg-zinc-900 border-white/10';
+    const textPrimary = theme === 'light' ? 'text-zinc-900' : 'text-white';
+    const textSecondary = theme === 'light' ? 'text-zinc-500' : 'text-muted-foreground';
+    const bgSecondary = theme === 'light' ? 'bg-zinc-100' : 'bg-zinc-800';
+
     return (
         <DashboardLayout
             user={user}
@@ -60,85 +69,87 @@ export default function DashboardClient({
             onFilterChange={setActiveFilter}
             collections={collections}
             isAdmin={isAdmin}
+            currentTheme={theme}
+            onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         >
             {showOverview ? (
                 /* OVERVIEW / STATS DASHBOARD */
                 <div className="flex-1 overflow-y-auto p-6">
-                    <h1 className="text-2xl font-black text-white mb-6">Dashboard</h1>
+                    <h1 className={`text-2xl font-black mb-6 ${textPrimary}`}>Dashboard</h1>
 
                     {/* Main Stats Grid */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-5">
+                        <div className={`border rounded-xl p-5 ${cardClass}`}>
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center">
                                     <LayoutGrid size={22} className="text-primary" />
                                 </div>
                             </div>
-                            <span className="text-3xl font-black text-white">{recipes.length}</span>
-                            <p className="text-sm text-muted-foreground mt-1">Total Recipes</p>
+                            <span className={`text-3xl font-black ${textPrimary}`}>{recipes.length}</span>
+                            <p className={`text-sm mt-1 ${textSecondary}`}>Total Recipes</p>
                         </div>
 
-                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-5">
+                        <div className={`border rounded-xl p-5 ${cardClass}`}>
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-11 h-11 rounded-lg bg-yellow-500/10 flex items-center justify-center">
                                     <Clock size={22} className="text-yellow-400" />
                                 </div>
                             </div>
-                            <span className="text-3xl font-black text-white">
+                            <span className={`text-3xl font-black ${textPrimary}`}>
                                 {recipes.filter(r => r.status === 'processing').length}
                             </span>
-                            <p className="text-sm text-muted-foreground mt-1">Processing</p>
+                            <p className={`text-sm mt-1 ${textSecondary}`}>Processing</p>
                         </div>
 
-                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-5">
+                        <div className={`border rounded-xl p-5 ${cardClass}`}>
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-11 h-11 rounded-lg bg-green-500/10 flex items-center justify-center">
                                     <ChefHat size={22} className="text-green-400" />
                                 </div>
                             </div>
-                            <span className="text-3xl font-black text-white">
+                            <span className={`text-3xl font-black ${textPrimary}`}>
                                 {recipes.filter(r => r.status === 'complete').length}
                             </span>
-                            <p className="text-sm text-muted-foreground mt-1">Published</p>
+                            <p className={`text-sm mt-1 ${textSecondary}`}>Published</p>
                         </div>
 
-                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-5">
+                        <div className={`border rounded-xl p-5 ${cardClass}`}>
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-11 h-11 rounded-lg bg-purple-500/10 flex items-center justify-center">
                                     <ImageIcon size={22} className="text-purple-400" />
                                 </div>
                             </div>
-                            <span className="text-3xl font-black text-white">{collections.length}</span>
-                            <p className="text-sm text-muted-foreground mt-1">Collections</p>
+                            <span className={`text-3xl font-black ${textPrimary}`}>{collections.length}</span>
+                            <p className={`text-sm mt-1 ${textSecondary}`}>Collections</p>
                         </div>
                     </div>
 
                     {/* Secondary Stats */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                         {/* Recipe Status Breakdown */}
-                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-5">
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Recipe Status</h3>
+                        <div className={`border rounded-xl p-5 ${cardClass}`}>
+                            <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${textPrimary}`}>Recipe Status</h3>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-green-500" />
-                                        <span className="text-sm text-white/80">Published</span>
+                                        <span className={`text-sm ${textSecondary}`}>Published</span>
                                     </div>
-                                    <span className="text-sm font-bold text-white">{recipes.filter(r => r.status === 'complete').length}</span>
+                                    <span className={`text-sm font-bold ${textPrimary}`}>{recipes.filter(r => r.status === 'complete').length}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                                        <span className="text-sm text-white/80">Processing</span>
+                                        <span className={`text-sm ${textSecondary}`}>Processing</span>
                                     </div>
-                                    <span className="text-sm font-bold text-white">{recipes.filter(r => r.status === 'processing').length}</span>
+                                    <span className={`text-sm font-bold ${textPrimary}`}>{recipes.filter(r => r.status === 'processing').length}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-zinc-500" />
-                                        <span className="text-sm text-white/80">Draft</span>
+                                        <span className={`text-sm ${textSecondary}`}>Draft</span>
                                     </div>
-                                    <span className="text-sm font-bold text-white">{recipes.filter(r => !r.status || r.status === 'draft').length}</span>
+                                    <span className={`text-sm font-bold ${textPrimary}`}>{recipes.filter(r => !r.status || r.status === 'draft').length}</span>
                                 </div>
                             </div>
                             {/* Progress bar */}
@@ -155,43 +166,43 @@ export default function DashboardClient({
                         </div>
 
                         {/* Quick Actions */}
-                        <div className="bg-zinc-900 border border-white/10 rounded-xl p-5">
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Quick Actions</h3>
+                        <div className={`border rounded-xl p-5 ${cardClass}`}>
+                            <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${textPrimary}`}>Quick Actions</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setActiveFilter('all')}
-                                    className="p-4 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-left transition-colors"
+                                    className={`p-4 rounded-lg text-left transition-colors ${theme === 'light' ? 'bg-zinc-50 hover:bg-zinc-100' : 'bg-zinc-800 hover:bg-zinc-700'}`}
                                 >
                                     <LayoutGrid size={20} className="text-primary mb-2" />
-                                    <span className="text-sm font-bold text-white block">View All</span>
-                                    <span className="text-xs text-muted-foreground">Browse recipes</span>
+                                    <span className={`text-sm font-bold block ${textPrimary}`}>View All</span>
+                                    <span className={`text-xs ${textSecondary}`}>Browse recipes</span>
                                 </button>
                                 <button
                                     onClick={() => setActiveFilter('drafts')}
-                                    className="p-4 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-left transition-colors"
+                                    className={`p-4 rounded-lg text-left transition-colors ${theme === 'light' ? 'bg-zinc-50 hover:bg-zinc-100' : 'bg-zinc-800 hover:bg-zinc-700'}`}
                                 >
                                     <Clock size={20} className="text-yellow-400 mb-2" />
-                                    <span className="text-sm font-bold text-white block">Processing</span>
-                                    <span className="text-xs text-muted-foreground">Review queue</span>
+                                    <span className={`text-sm font-bold block ${textPrimary}`}>Processing</span>
+                                    <span className={`text-xs ${textSecondary}`}>Review queue</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     {/* Collections Overview */}
-                    <div className="bg-zinc-900 border border-white/10 rounded-xl p-5">
-                        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Collections Overview</h3>
+                    <div className={`border rounded-xl p-5 ${cardClass}`}>
+                        <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${textPrimary}`}>Collections Overview</h3>
                         {collections.length === 0 ? (
                             <p className="text-sm text-muted-foreground">No collections yet</p>
                         ) : (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                 {collections.map((collection) => (
-                                    <div key={collection.id} className="p-3 bg-zinc-800 rounded-lg">
+                                    <div key={collection.id} className={`p-3 rounded-lg ${theme === 'light' ? 'bg-zinc-50' : 'bg-zinc-800'}`}>
                                         <div className="flex items-center gap-2 mb-1">
                                             <ImageIcon size={14} className="text-purple-400" />
-                                            <span className="text-sm font-bold text-white truncate">{collection.name}</span>
+                                            <span className={`text-sm font-bold truncate ${textPrimary}`}>{collection.name}</span>
                                         </div>
-                                        <span className="text-xs text-muted-foreground">{collection.recipe_count || 0} recipes</span>
+                                        <span className={`text-xs ${textSecondary}`}>{collection.recipe_count || 0} recipes</span>
                                     </div>
                                 ))}
                             </div>
@@ -202,28 +213,32 @@ export default function DashboardClient({
                 /* RECIPE LIST - FULL WIDTH */
                 <div className="flex-1 flex flex-col h-full overflow-hidden">
                     {/* Compact Header */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 flex-shrink-0">
-                        <h2 className="font-bold text-white">
+                    <div className={`flex items-center justify-between px-4 py-3 border-b flex-shrink-0 ${theme === 'light' ? 'bg-white border-zinc-200' : 'border-white/5'}`}>
+                        <h2 className={`font-bold ${textPrimary}`}>
                             {activeFilter === 'all' ? 'All Recipes' :
                                 activeFilter === 'drafts' ? 'Processing' :
                                     activeFilter === 'recent' ? 'Recently Added' : 'Recipes'}
-                            <span className="ml-2 text-muted-foreground text-sm font-normal">
+                            <span className={`ml-2 text-sm font-normal ${textSecondary}`}>
                                 ({filteredRecipes.length})
                             </span>
                         </h2>
 
                         {/* View Toggle */}
-                        <div className="flex items-center bg-white/5 rounded-lg p-1 border border-white/10">
+                        <div className={`flex items-center rounded-lg p-1 border ${theme === 'light' ? 'bg-zinc-100 border-zinc-200' : 'bg-white/5 border-white/10'}`}>
                             <button
                                 onClick={() => setViewMode('split')}
-                                className={`p-2 rounded-md transition-colors ${viewMode === 'split' ? 'bg-primary text-black' : 'text-white/50 hover:text-white'}`}
+                                className={`p-2 rounded-md transition-colors ${viewMode === 'split'
+                                    ? (theme === 'light' ? 'bg-white text-zinc-900 shadow-sm' : 'bg-primary text-black')
+                                    : (theme === 'light' ? 'text-zinc-500 hover:text-zinc-900' : 'text-white/50 hover:text-white')}`}
                                 title="Split View"
                             >
                                 <PanelLeftClose size={16} />
                             </button>
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary text-black' : 'text-white/50 hover:text-white'}`}
+                                className={`p-2 rounded-md transition-colors ${viewMode === 'grid'
+                                    ? (theme === 'light' ? 'bg-white text-zinc-900 shadow-sm' : 'bg-primary text-black')
+                                    : (theme === 'light' ? 'text-zinc-500 hover:text-zinc-900' : 'text-white/50 hover:text-white')}`}
                                 title="Grid View"
                             >
                                 <Grid3X3 size={16} />
@@ -242,14 +257,14 @@ export default function DashboardClient({
                         /* SPLIT VIEW - FULL HEIGHT */
                         <div className="flex-1 flex overflow-hidden">
                             {/* Left: Recipe List */}
-                            <div className="w-72 flex-shrink-0 border-r border-white/5 overflow-y-auto">
+                            <div className={`w-72 flex-shrink-0 border-r overflow-y-auto ${theme === 'light' ? 'bg-white border-zinc-200' : 'border-white/5'}`}>
                                 {filteredRecipes.map((recipe) => (
                                     <button
                                         key={recipe.id}
                                         onClick={() => setSelectedRecipe(recipe)}
-                                        className={`w-full flex items-center gap-3 p-3 text-left transition-colors border-b border-white/5 ${selectedRecipe?.id === recipe.id
-                                            ? 'bg-primary/10 border-l-2 border-l-primary'
-                                            : 'hover:bg-white/5'
+                                        className={`w-full flex items-center gap-3 p-3 text-left transition-colors border-b ${theme === 'light' ? 'border-zinc-100' : 'border-white/5'} ${selectedRecipe?.id === recipe.id
+                                            ? (theme === 'light' ? 'bg-primary/5 border-l-2 border-l-primary' : 'bg-primary/10 border-l-2 border-l-primary')
+                                            : (theme === 'light' ? 'hover:bg-zinc-50' : 'hover:bg-white/5')
                                             }`}
                                     >
                                         <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 relative">
@@ -268,7 +283,7 @@ export default function DashboardClient({
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-bold text-white text-sm truncate">{recipe.title}</h3>
+                                            <h3 className={`font-bold text-sm truncate ${textPrimary}`}>{recipe.title}</h3>
                                             <span className={`text-[10px] font-bold ${recipe.status === 'processing' ? 'text-yellow-400' :
                                                 recipe.status === 'complete' ? 'text-green-400' :
                                                     'text-white/40'
@@ -326,7 +341,7 @@ export default function DashboardClient({
                                         {/* Content */}
                                         <div className="flex-1 overflow-y-auto p-6">
                                             {selectedRecipe.description && (
-                                                <p className="text-muted-foreground mb-6">{selectedRecipe.description}</p>
+                                                <p className={`mb-6 ${textSecondary}`}>{selectedRecipe.description}</p>
                                             )}
 
                                             {/* Meta */}
@@ -334,17 +349,17 @@ export default function DashboardClient({
                                                 {selectedRecipe.prep_time && (
                                                     <div className="flex items-center gap-2 text-sm">
                                                         <Clock size={16} className="text-primary" />
-                                                        <span className="text-white">{selectedRecipe.prep_time}</span>
+                                                        <span className={textPrimary}>{selectedRecipe.prep_time}</span>
                                                     </div>
                                                 )}
                                                 {selectedRecipe.servings && (
                                                     <div className="flex items-center gap-2 text-sm">
                                                         <Users size={16} className="text-primary" />
-                                                        <span className="text-white">{selectedRecipe.servings} servings</span>
+                                                        <span className={textPrimary}>{selectedRecipe.servings} servings</span>
                                                     </div>
                                                 )}
                                                 {selectedRecipe.cuisine && (
-                                                    <span className="text-sm text-white/60 bg-white/5 px-3 py-1 rounded-full">
+                                                    <span className={`text-sm px-3 py-1 rounded-full ${theme === 'light' ? 'bg-zinc-100 text-zinc-600' : 'bg-white/5 text-white/60'}`}>
                                                         {selectedRecipe.cuisine}
                                                     </span>
                                                 )}
@@ -353,10 +368,10 @@ export default function DashboardClient({
                                             {/* Ingredients */}
                                             {selectedRecipe.ingredients && selectedRecipe.ingredients.length > 0 && (
                                                 <div className="mb-6">
-                                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Ingredients</h3>
+                                                    <h3 className={`text-sm font-bold uppercase tracking-wider mb-3 ${textPrimary}`}>Ingredients</h3>
                                                     <ul className="space-y-2">
                                                         {selectedRecipe.ingredients.map((ing, i) => (
-                                                            <li key={i} className="text-sm text-white/80 flex items-start gap-2">
+                                                            <li key={i} className={`text-sm flex items-start gap-2 ${theme === 'light' ? 'text-zinc-700' : 'text-white/80'}`}>
                                                                 <span className="text-primary">•</span>
                                                                 {typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.item || ''}`.trim()}
                                                             </li>
@@ -369,7 +384,7 @@ export default function DashboardClient({
                                             {selectedRecipe.tags && selectedRecipe.tags.length > 0 && (
                                                 <div className="flex flex-wrap gap-2">
                                                     {selectedRecipe.tags.map((tag, i) => (
-                                                        <span key={i} className="text-xs bg-white/5 text-white/60 px-2 py-1 rounded-full">
+                                                        <span key={i} className={`text-xs px-2 py-1 rounded-full ${theme === 'light' ? 'bg-zinc-100 text-zinc-500' : 'bg-white/5 text-white/60'}`}>
                                                             #{tag}
                                                         </span>
                                                     ))}
@@ -392,7 +407,7 @@ export default function DashboardClient({
                                     <Link
                                         key={recipe.id}
                                         href={`/recipe/${recipe.id}`}
-                                        className="group relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-white/10"
+                                        className={`group relative aspect-[2/3] rounded-xl overflow-hidden ${cardClass}`}
                                     >
                                         {recipe.image_url ? (
                                             <Image
@@ -438,7 +453,8 @@ export default function DashboardClient({
                         </div>
                     )}
                 </div>
-            )}
-        </DashboardLayout>
+            )
+            }
+        </DashboardLayout >
     );
 }
