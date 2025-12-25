@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import type { Recipe, Collection, UserProfile, AuthorProfile } from '@/types/database';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { LayoutGrid, Clock, Users, Plus, ImageIcon, Loader2, FolderOpen, Heart, ShoppingBag, ChefHat, PanelLeftClose, Grid3X3, ExternalLink, ThumbsUp, MessageCircle, Share2, BarChart2, List, Columns } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -91,17 +90,7 @@ export default function DashboardClient({
     const showOverview = activeFilter === 'overview';
 
     return (
-        <DashboardLayout
-            user={user}
-            profile={profile}
-            role={role}
-            activeFilter={activeFilter}
-            onFilterChange={handleFilterChange}
-            collections={collections}
-            isAdmin={isAdmin}
-            authorProfile={authorProfile}
-        // Add handlers here if needed
-        >
+        <div className="flex flex-col">
             {/* V4 Header: Title & Tabs */}
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-6">
@@ -360,6 +349,6 @@ export default function DashboardClient({
                     )}
                 </div>
             )}
-        </DashboardLayout>
+        </div>
     );
 }

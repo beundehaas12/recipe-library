@@ -3,31 +3,27 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Search, Bell, ArrowLeft, ChevronDown, Settings, LogOut, ChefHat } from 'lucide-react';
+import { ChefHat, Bell, ChevronDown, ArrowLeft, Plus, Settings, LogOut, User, Search, Menu, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { getAvatarUrl, getUserDisplayName } from '@/lib/profileService';
 import Sidebar from '@/components/dashboard/Sidebar';
-import type { User } from '@supabase/supabase-js';
+import SearchOverlay from '@/components/SearchOverlay';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { Collection, UserProfile, AuthorProfile } from '@/types/database';
 import './dashboard-theme.css';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
-    user: User;
+    user: SupabaseUser;
     profile: UserProfile | null;
     authorProfile?: AuthorProfile | null;
     role: 'user' | 'author' | 'admin' | null;
-    activeFilter: string;
-    onFilterChange: (filter: string) => void;
     collections: Collection[];
     onCreateCollection?: () => void;
     isAdmin?: boolean;
-    onShowAddMenu?: () => void;
-    onShowUrlModal?: () => void;
-    onMediaUpload?: () => void;
     currentTheme?: 'dark' | 'light';
     onThemeToggle?: () => void;
-
+    pendingWaitlistCount?: number;
 }
 
 export default function DashboardLayout({
@@ -36,21 +32,18 @@ export default function DashboardLayout({
     profile,
     authorProfile,
     role,
-    activeFilter,
-    onFilterChange,
-    collections,
+    collections = [],
     onCreateCollection,
     isAdmin = false,
-    onShowAddMenu,
-    onShowUrlModal,
-    onMediaUpload,
     currentTheme = 'light',
-    onThemeToggle
+    onThemeToggle,
+    pendingWaitlistCount = 0
 }: DashboardLayoutProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [pendingWaitlistCount, setPendingWaitlistCount] = useState(0);
+    const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+
     const profileRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const supabase = createClient();
@@ -65,24 +58,6 @@ export default function DashboardLayout({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    // Fetch pending waitlist count for admins
-    useEffect(() => {
-        if (!isAdmin) return;
-
-        const fetchPending = async () => {
-            const { count } = await supabase
-                .from('early_access_requests')
-                .select('*', { count: 'exact', head: true })
-                .eq('status', 'pending');
-            setPendingWaitlistCount(count || 0);
-        };
-
-        fetchPending();
-
-        // Optional: Subscribe to changes?
-        // keeping it simple for now (fetch on mount)
-    }, [isAdmin, supabase]);
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
@@ -228,19 +203,13 @@ export default function DashboardLayout({
                     <Sidebar
                         user={user}
                         profile={profile}
-                        activeFilter={activeFilter}
-                        onFilterChange={onFilterChange}
                         collections={collections}
                         onCreateCollection={onCreateCollection}
                         isAdmin={isAdmin}
                         pendingWaitlistCount={pendingWaitlistCount}
-                        onShowAddMenu={onShowAddMenu}
-                        onShowUrlModal={onShowUrlModal}
-                        onMediaUpload={onMediaUpload}
-
-                        theme="light"
                         isCollapsed={isCollapsed}
                         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+                        onShowUrlModal={() => setIsUrlModalOpen(true)}
                     />
                 </div>
 
@@ -251,6 +220,11 @@ export default function DashboardLayout({
                     </div>
                 </main>
             </div>
+            {/* Modals */}
+            <SearchOverlay
+                isOpen={isUrlModalOpen}
+                onClose={() => setIsUrlModalOpen(false)}
+            />
         </div>
     );
 }

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import type { Recipe, Collection, UserProfile } from '@/types/database';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Users, Shield, Search, CheckCircle, ChevronDown, UserPlus, Clock, Mail, Trash2, BadgeCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { inviteWaitlistUser, deleteWaitlistEntry } from '@/app/actions/invite';
@@ -133,17 +132,7 @@ export default function UsersClient({
     const getUserInitials = (u: UserWithRole) => u.first_name ? `${u.first_name?.[0] || ''}${u.last_name?.[0] || ''}`.toUpperCase() : '?';
 
     return (
-        <DashboardLayout
-            user={user}
-            profile={profile}
-            role={role}
-            activeFilter="users"
-            onFilterChange={() => { }}
-            collections={collections}
-            isAdmin={true}
-            currentTheme={theme}
-            onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'light')} // Force light
-        >
+        <>
             {/* V4 Title Section */}
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-6">
@@ -224,7 +213,7 @@ export default function UsersClient({
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

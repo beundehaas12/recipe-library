@@ -96,7 +96,7 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
     };
 
     return (
-        <div className="h-screen w-screen bg-background flex flex-col md:flex-row overflow-hidden fixed inset-0">
+        <div className="light h-screen w-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden fixed inset-0">
             {/* Left Side: Login Form (50%) */}
             <div className="w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 bg-background text-foreground">
                 {/* Brand Section */}

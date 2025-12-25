@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutGrid, Clock, FolderOpen, Users, User, Home, Plus, Camera, Link as LinkIcon, ChevronDown, Rocket, Settings, LogOut, CheckCircle2, Library, PanelLeftClose } from 'lucide-react';
 import type { Collection, UserProfile } from '@/types/database';
@@ -10,9 +10,6 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface SidebarProps {
     user?: SupabaseUser;
-    profile?: UserProfile | null;
-    activeFilter: string;
-    onFilterChange: (filter: string) => void;
     collections?: Collection[];
     onCreateCollection?: () => void;
     isAdmin?: boolean;
@@ -44,6 +41,13 @@ export default function Sidebar({
     pendingWaitlistCount = 0
 }: SidebarProps) {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const currentView = searchParams.get('view');
+
+    // Overview is active if pathname is /dashboard AND view is empty or 'overview'
+    // Other items usually match specific routes or views
+    const isOverview = pathname === '/dashboard' && (!currentView || currentView === 'overview');
+
     const [showToevoegenMenu, setShowToevoegenMenu] = useState(false);
 
     // Monochrome Design - No Blue
@@ -99,7 +103,7 @@ export default function Sidebar({
                 {/* Overview Above Title */}
                 <NavItem
                     href="/dashboard"
-                    active={pathname === '/dashboard' && (activeFilter === 'overview' || !activeFilter)}
+                    active={isOverview}
                     icon={LayoutGrid}
                     label="Overview"
                 />
@@ -110,7 +114,7 @@ export default function Sidebar({
 
                 <NavItem
                     href="/dashboard?view=all"
-                    active={pathname === '/dashboard' && activeFilter === 'all'}
+                    active={pathname === '/dashboard' && currentView === 'all'}
                     icon={FolderOpen}
                     label="All Recipes"
                 />
@@ -158,7 +162,7 @@ export default function Sidebar({
                 {!isCollapsed && <div className="text-xs font-semibold text-zinc-400 px-4 mb-2 mt-6 uppercase tracking-wider">Workspace</div>}
                 <NavItem
                     href="/dashboard?view=drafts"
-                    active={pathname === '/dashboard' && activeFilter === 'drafts'}
+                    active={pathname === '/dashboard' && currentView === 'drafts'}
                     icon={Clock}
                     label="Processing"
                 />

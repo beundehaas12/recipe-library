@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import type { UserProfile, Collection } from '@/types/database';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { UserCircle } from 'lucide-react';
 
 interface ProfileClientProps {
@@ -32,44 +31,32 @@ export default function ProfileClient({
     const labelClass = theme === 'light' ? 'text-zinc-500' : 'text-white/60';
 
     return (
-        <DashboardLayout
-            user={user}
-            profile={profile}
-            role={role}
-            activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-            collections={collections}
-            isAdmin={role === 'admin'}
-            currentTheme={theme}
-            onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        >
-            <div className="w-full max-w-4xl">
-                <div className="flex items-center gap-3 mb-8">
-                    <div>
-                        <h1 className={`text-3xl font-bold ${textPrimary}`}>Author Profile</h1>
-                        <p className={textSecondary}>
-                            Manage your public author profile.
-                        </p>
-                    </div>
-                </div>
-
-                <div className={`border rounded-2xl p-6 space-y-6 ${cardClass}`}>
-                    <div>
-                        <label className={`block text-sm font-medium mb-2 ${labelClass}`}>First Name</label>
-                        <p className={`text-lg font-medium ${textPrimary}`}>{authorProfile?.first_name || '-'}</p>
-                    </div>
-
-                    <div>
-                        <label className={`block text-sm font-medium mb-2 ${labelClass}`}>Last Name</label>
-                        <p className={`text-lg font-medium ${textPrimary}`}>{authorProfile?.last_name || '-'}</p>
-                    </div>
-
-                    <div>
-                        <label className={`block text-sm font-medium mb-2 ${labelClass}`}>Bio</label>
-                        <p className={`text-lg ${textPrimary}`}>{authorProfile?.bio || '-'}</p>
-                    </div>
+        <div className="w-full max-w-4xl">
+            <div className="flex items-center gap-3 mb-8">
+                <div>
+                    <h1 className={`text-3xl font-bold ${textPrimary}`}>Author Profile</h1>
+                    <p className={textSecondary}>
+                        Manage your public author profile.
+                    </p>
                 </div>
             </div>
-        </DashboardLayout>
+
+            <div className={`border rounded-2xl p-6 space-y-6 ${cardClass}`}>
+                <div>
+                    <label className={`block text-sm font-medium mb-2 ${labelClass}`}>First Name</label>
+                    <p className={`text-lg font-medium ${textPrimary}`}>{authorProfile?.first_name || '-'}</p>
+                </div>
+
+                <div>
+                    <label className={`block text-sm font-medium mb-2 ${labelClass}`}>Last Name</label>
+                    <p className={`text-lg font-medium ${textPrimary}`}>{authorProfile?.last_name || '-'}</p>
+                </div>
+
+                <div>
+                    <label className={`block text-sm font-medium mb-2 ${labelClass}`}>Bio</label>
+                    <p className={`text-lg ${textPrimary}`}>{authorProfile?.bio || '-'}</p>
+                </div>
+            </div>
+        </div>
     );
 }
