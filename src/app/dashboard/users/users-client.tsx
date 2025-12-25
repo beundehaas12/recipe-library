@@ -260,7 +260,7 @@ function UsersTable({ users, updatingId, onRoleChange, getUserDisplayName, getUs
                             <RoleDropdown currentRole={u.role} onRoleChange={(r: string) => onRoleChange(u.user_id, r)} updating={updatingId === u.user_id} />
                         </td>
                         <td className="px-6 py-4 text-right text-zinc-400 text-xs">
-                            {new Date(u.created_at).toLocaleDateString()}
+                            {new Date(u.created_at).toLocaleDateString('en-GB')}
                         </td>
                     </tr>
                 ))}
