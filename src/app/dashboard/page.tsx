@@ -39,6 +39,13 @@ export default async function DashboardPage() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
+    // Fetch author profile
+    const { data: authorProfile } = await supabase
+        .from('author_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
     return (
         <DashboardClient
             user={user}
@@ -47,6 +54,7 @@ export default async function DashboardPage() {
             isAdmin={isAdmin}
             initialRecipes={recipes ?? []}
             initialCollections={collections ?? []}
+            authorProfile={authorProfile}
         />
     );
 }

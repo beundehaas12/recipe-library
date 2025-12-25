@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
-import type { Recipe, Collection, UserProfile } from '@/types/database';
+import type { Recipe, Collection, UserProfile, AuthorProfile } from '@/types/database';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { LayoutGrid, Clock, Users, Plus, ImageIcon, Loader2, FolderOpen, Heart, ShoppingBag, ChefHat, PanelLeftClose, Grid3X3, ExternalLink, ThumbsUp, MessageCircle, Share2, BarChart2 } from 'lucide-react';
+import { LayoutGrid, Clock, Users, Plus, ImageIcon, Loader2, FolderOpen, Heart, ShoppingBag, ChefHat, PanelLeftClose, Grid3X3, ExternalLink, ThumbsUp, MessageCircle, Share2, BarChart2, List, Columns } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -15,6 +16,7 @@ interface DashboardClientProps {
     isAdmin: boolean;
     initialRecipes: Recipe[];
     initialCollections: Collection[];
+    authorProfile?: AuthorProfile | null;
 }
 
 export default function DashboardClient({
@@ -23,10 +25,42 @@ export default function DashboardClient({
     role,
     isAdmin,
     initialRecipes,
-    initialCollections
+    initialCollections,
+    authorProfile
 }: DashboardClientProps) {
-    const [activeFilter, setActiveFilter] = useState('overview');
-    const [viewMode, setViewMode] = useState<'split' | 'grid'>('grid'); // Default to grid for V4
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const viewParam = searchParams.get('view');
+
+    const [activeFilter, setActiveFilter] = useState(viewParam || 'overview');
+    const [viewMode, setViewMode] = useState<'split' | 'grid'>('grid');
+    const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+
+    // Auto-select first recipe in split view if none selected
+    useEffect(() => {
+        if (viewMode === 'split' && !selectedRecipe && initialRecipes.length > 0) {
+            setSelectedRecipe(initialRecipes[0]);
+        }
+    }, [viewMode, selectedRecipe, initialRecipes]);
+
+
+    // Sync activeFilter with URL param
+    useEffect(() => {
+        if (viewParam) {
+            setActiveFilter(viewParam);
+        } else {
+            setActiveFilter('overview');
+        }
+    }, [viewParam]);
+
+    const handleFilterChange = (filter: string) => {
+        setActiveFilter(filter);
+        if (filter === 'overview') {
+            router.push('/dashboard');
+        } else {
+            router.push(`/dashboard?view=${filter}`);
+        }
+    };
 
     // V4: Stats Cards Component - Monochrome
     const StatCard = ({ icon: Icon, label, value, subtext }: any) => (
@@ -62,34 +96,55 @@ export default function DashboardClient({
             profile={profile}
             role={role}
             activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
+            onFilterChange={handleFilterChange}
             collections={collections}
             isAdmin={isAdmin}
+            authorProfile={authorProfile}
         // Add handlers here if needed
         >
             {/* V4 Header: Title & Tabs */}
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-red-200 shadow-lg">
-                            <ChefHat size={24} />
-                        </div>
+                        {/* Icon Removed per user request */}
                         <div>
                             <h1 className="text-2xl font-bold text-zinc-900">
                                 {activeFilter === 'overview' ? 'Kitchen Overview' :
                                     activeFilter === 'all' ? 'All Recipes' :
-                                        activeFilter === 'drafts' ? 'Processing' : 'Dashboard'}
+                                        activeFilter === 'drafts' ? 'Processing' :
+                                            activeFilter === 'collections' ? 'Collections' : 'Dashboard'}
                             </h1>
                             <p className="text-zinc-400 text-sm">
                                 {activeFilter === 'overview' ? 'Manage your culinary collection.' :
                                     activeFilter === 'all' ? 'View and manage all your recipes.' :
-                                        activeFilter === 'drafts' ? 'Recipes currently being digitized.' : ''}
+                                        activeFilter === 'collections' ? 'Organize your recipes into collections.' :
+                                            activeFilter === 'drafts' ? 'Recipes currently being digitized.' : ''}
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm">
-                        <span className="px-3 py-1 text-xs font-bold text-green-600 bg-green-50 rounded-md">Status: Active</span>
-                        <span className="px-3 py-1 text-xs text-zinc-400">Updated: Today</span>
+                    <div className="flex items-center gap-2">
+                        {activeFilter === 'all' && (
+                            <div className="flex bg-zinc-100 p-1 rounded-lg mr-2">
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
+                                    title="Grid View"
+                                >
+                                    <LayoutGrid size={16} />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('split')}
+                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'split' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
+                                    title="Split View"
+                                >
+                                    <Columns size={16} />
+                                </button>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm">
+                            <span className="px-3 py-1 text-xs font-bold text-green-600 bg-green-50 rounded-md">Status: Active</span>
+                            <span className="px-3 py-1 text-xs text-zinc-400">Updated: Today</span>
+                        </div>
                     </div>
                 </div>
 
@@ -183,36 +238,126 @@ export default function DashboardClient({
                         </div>
                     </div>
                 </div>
-            ) : (
-                /* RECIPE GRID LIST */
+            ) : activeFilter === 'collections' ? (
+                /* COLLECTIONS GRID */
                 <div className="bg-white p-8 rounded-2xl shadow-sm min-h-[500px]">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filteredRecipes.map(recipe => (
-                            <div key={recipe.id} className="group bg-white rounded-2xl p-3 hover:shadow-xl hover:shadow-zinc-200/50 transition-all cursor-pointer">
-                                <div className="aspect-square bg-zinc-100 rounded-xl overflow-hidden relative mb-3">
-                                    {recipe.image_url ? (
-                                        <Image src={recipe.image_url} alt={recipe.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-zinc-300">
-                                            <ImageIcon size={32} />
-                                        </div>
-                                    )}
-                                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
-                                        <Heart size={14} className="text-zinc-400 hover:text-red-500 transition-colors" />
+                        {collections.map(collection => (
+                            <div
+                                key={collection.id}
+                                onClick={() => router.push(`/collection/${collection.id}`)}
+                                className="group bg-white border border-zinc-100 rounded-2xl p-4 hover:shadow-lg hover:border-zinc-200 transition-all cursor-pointer"
+                            >
+                                <div className="aspect-video bg-zinc-100 rounded-xl overflow-hidden relative mb-4">
+                                    <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                                        <FolderOpen size={32} />
                                     </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-zinc-900 truncate mb-1">{recipe.title}</h3>
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-xs text-zinc-500">By {recipe.author || 'Chef'}</p>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${recipe.status === 'complete' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                            {recipe.status || 'Draft'}
-                                        </span>
-                                    </div>
-                                </div>
+                                <h3 className="font-bold text-zinc-900 truncate mb-1">{collection.name}</h3>
+                                <p className="text-xs text-zinc-500">{collection.description || 'No description'}</p>
                             </div>
                         ))}
                     </div>
+                </div>
+            ) : (
+                /* RECIPE GRID / SPLIT VIEW */
+                <div className="bg-white p-6 rounded-2xl shadow-sm min-h-[500px]">
+                    {viewMode === 'split' ? (
+                        <div className="flex h-[600px] gap-6">
+                            {/* Left: Compact List */}
+                            <div className="w-1/3 overflow-y-auto pr-2 space-y-2">
+                                {filteredRecipes.map(recipe => (
+                                    <div
+                                        key={recipe.id}
+                                        onClick={() => setSelectedRecipe(recipe)}
+                                        className={`p-3 rounded-xl cursor-pointer transition-all flex items-center gap-3 ${selectedRecipe?.id === recipe.id ? 'bg-zinc-900 text-white shadow-md' : 'hover:bg-zinc-50 text-zinc-900'}`}
+                                    >
+                                        <div className={`w-12 h-12 rounded-lg bg-zinc-100 flex-shrink-0 relative overflow-hidden ${selectedRecipe?.id === recipe.id ? 'ring-1 ring-white/20' : ''}`}>
+                                            {recipe.image_url ? (
+                                                <Image src={recipe.image_url} alt={recipe.title} fill className="object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center"><ChefHat size={16} className={selectedRecipe?.id === recipe.id ? 'text-zinc-500' : 'text-zinc-300'} /></div>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="text-sm font-bold truncate">{recipe.title}</h4>
+                                            <p className={`text-xs ${selectedRecipe?.id === recipe.id ? 'text-zinc-400' : 'text-zinc-500'}`}>By {recipe.author || 'Chef'}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Right: Preview Detail */}
+                            <div className="flex-1 bg-zinc-50 rounded-2xl p-8 overflow-y-auto border border-zinc-100">
+                                {selectedRecipe ? (
+                                    <div className="max-w-2xl mx-auto">
+                                        <div className="aspect-video bg-zinc-200 rounded-2xl overflow-hidden relative mb-6 shadow-sm">
+                                            {selectedRecipe.image_url ? (
+                                                <Image src={selectedRecipe.image_url} alt={selectedRecipe.title} fill className="object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-zinc-400"><ImageIcon size={48} /></div>
+                                            )}
+                                        </div>
+                                        <h2 className="text-2xl font-bold text-zinc-900 mb-2">{selectedRecipe.title}</h2>
+                                        <div className="flex items-center gap-4 text-zinc-500 text-sm mb-6">
+                                            <span>{selectedRecipe.author || 'Chef'}</span>
+                                            <span>•</span>
+                                            <span>{selectedRecipe.cook_time || '30 mins'}</span>
+                                            <span>•</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedRecipe.status === 'complete' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {selectedRecipe.status || 'Draft'}
+                                            </span>
+                                        </div>
+                                        <div className="prose prose-zinc max-w-none">
+                                            <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-400 mb-2">Description</h3>
+                                            <p className="text-zinc-600 mb-6">{selectedRecipe.description || 'No description available.'}</p>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <button onClick={() => router.push(`/recipe/${selectedRecipe.id}`)} className="flex items-center justify-center gap-2 w-full py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-black transition-colors">
+                                                    Full Details <ExternalLink size={16} />
+                                                </button>
+                                                <button className="flex items-center justify-center gap-2 w-full py-3 bg-white border border-zinc-200 text-zinc-900 rounded-xl font-bold hover:bg-zinc-50 transition-colors">
+                                                    Edit Recipe
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center text-zinc-400">
+                                        Select a recipe to view details
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredRecipes.map(recipe => (
+                                <div key={recipe.id} className="group bg-white rounded-2xl p-3 hover:shadow-xl hover:shadow-zinc-200/50 transition-all cursor-pointer">
+                                    <div className="aspect-square bg-zinc-100 rounded-xl overflow-hidden relative mb-3">
+                                        {recipe.image_url ? (
+                                            <Image src={recipe.image_url} alt={recipe.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                                                <ImageIcon size={32} />
+                                            </div>
+                                        )}
+                                        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                                            <Heart size={14} className="text-zinc-400 hover:text-red-500 transition-colors" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-zinc-900 truncate mb-1">{recipe.title}</h3>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs text-zinc-500">By {recipe.author || 'Chef'}</p>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${recipe.status === 'complete' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {recipe.status || 'Draft'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </DashboardLayout>

@@ -96,16 +96,16 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
     };
 
     return (
-        <div className="h-screen w-screen bg-white flex flex-col md:flex-row overflow-hidden fixed inset-0">
+        <div className="h-screen w-screen bg-background flex flex-col md:flex-row overflow-hidden fixed inset-0">
             {/* Left Side: Login Form (50%) */}
-            <div className="w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 bg-white">
+            <div className="w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 bg-background text-foreground">
                 {/* Brand Section */}
                 <div className="absolute top-8 left-8 md:top-12 md:left-12 flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
                         <ChefHat size={20} className="text-primary-foreground" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-black tracking-tighter text-zinc-900 leading-none">
+                        <h1 className="text-xl font-black tracking-tighter text-foreground leading-none">
                             Forkify
                         </h1>
                     </div>
@@ -118,10 +118,10 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
                     className="w-full max-w-sm space-y-8"
                 >
                     <div className="space-y-2">
-                        <h2 className="text-4xl font-black text-zinc-900 tracking-tight">
+                        <h2 className="text-4xl font-black text-foreground tracking-tight">
                             Welkom bij Forkify
                         </h2>
-                        <p className="text-zinc-500 text-sm">
+                        <p className="text-muted-foreground text-sm">
                             Log in om door te gaan
                         </p>
                     </div>
@@ -136,7 +136,7 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full h-14 px-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                                className="w-full h-14 px-4 bg-secondary/50 border border-border rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                             />
                         </div>
 
@@ -153,7 +153,7 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     minLength={6}
-                                    className="w-full h-14 px-4 pr-12 bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                                    className="w-full h-14 px-4 pr-12 bg-secondary/50 border border-border rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                                 />
                                 <button
                                     type="button"
@@ -193,7 +193,7 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
                     </form>
 
                     {/* Waitlist Section */}
-                    <div className="pt-8 border-t border-zinc-100 flex flex-col gap-4">
+                    <div className="pt-8 border-t border-border flex flex-col gap-4">
                         <div className="space-y-3">
                             <p className="text-zinc-500 text-xs font-medium leading-relaxed">
                                 Geen account? Forkify is momenteel alleen op uitnodiging.
@@ -208,7 +208,7 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
                                         value={waitlistFirstName}
                                         onChange={(e) => setWaitlistFirstName(e.target.value)}
                                         required
-                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
+                                        className="flex-1 h-10 px-3 bg-secondary/50 border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-all"
                                     />
                                     <input
                                         type="text"
@@ -216,7 +216,7 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
                                         value={waitlistLastName}
                                         onChange={(e) => setWaitlistLastName(e.target.value)}
                                         required
-                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
+                                        className="flex-1 h-10 px-3 bg-secondary/50 border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-all"
                                     />
                                 </div>
                                 <div className="flex gap-2">

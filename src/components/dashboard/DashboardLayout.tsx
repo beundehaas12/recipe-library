@@ -3,17 +3,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Search, Bell, ArrowLeft, ChevronDown, Settings, LogOut } from 'lucide-react';
+import { Menu, Search, Bell, ArrowLeft, ChevronDown, Settings, LogOut, ChefHat } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { getAvatarUrl, getUserDisplayName } from '@/lib/profileService';
 import Sidebar from '@/components/dashboard/Sidebar';
 import type { User } from '@supabase/supabase-js';
-import type { Collection, UserProfile } from '@/types/database';
+import type { Collection, UserProfile, AuthorProfile } from '@/types/database';
+import './dashboard-theme.css';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
     user: User;
     profile: UserProfile | null;
+    authorProfile?: AuthorProfile | null;
     role: 'user' | 'author' | 'admin' | null;
     activeFilter: string;
     onFilterChange: (filter: string) => void;
@@ -25,12 +27,14 @@ interface DashboardLayoutProps {
     onMediaUpload?: () => void;
     currentTheme?: 'dark' | 'light';
     onThemeToggle?: () => void;
+
 }
 
 export default function DashboardLayout({
     children,
     user,
     profile,
+    authorProfile,
     role,
     activeFilter,
     onFilterChange,
@@ -44,6 +48,7 @@ export default function DashboardLayout({
     onThemeToggle
 }: DashboardLayoutProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
@@ -72,19 +77,15 @@ export default function DashboardLayout({
     // V4 Layout: Grey Background, White Top Bar, Floating Content
     // Uses .light-theme class to activate light CSS variables from globals.css
     // V4 Layout: Full Width Header + Sidebar/Content Split
-    // Uses .light-theme class to activate light CSS variables from globals.css
+    // Uses .dashboard-theme class to activate light CSS variables from dashboard-theme.css
     return (
-        <div className="light-theme flex flex-col h-screen bg-[#F8FAFC] font-sans text-zinc-900 overflow-hidden">
+        <div className="dashboard-theme flex flex-col h-screen bg-[#F8FAFC] font-sans text-zinc-900 overflow-hidden">
             {/* 1. TOP HEADER (Full Width) */}
-            <header className="h-16 bg-white flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-50 shadow-sm relative">
+            <header className="h-16 bg-white flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-50 relative border-b border-zinc-100">
                 {/* Left: Logo, Back, Title, Author Switcher */}
+                {/* Left: Move Back to App to start, Reuse Logo, Rename Title */}
                 <div className="flex items-center gap-4">
-                    {/* Original Logo (Icon) */}
-                    <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white shadow-green-200/50 shadow-lg">
-                        <Menu size={18} className="text-white" />
-                    </div>
-
-                    {/* Back Button */}
+                    {/* Back Button (Moved to Start) */}
                     <a href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-50 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 transition-colors text-xs font-bold ring-1 ring-zinc-900/5">
                         <ArrowLeft size={14} />
                         <span>Back to App</span>
@@ -92,16 +93,30 @@ export default function DashboardLayout({
 
                     <div className="h-6 w-px bg-zinc-100 mx-2"></div>
 
-                    {/* App Title */}
-                    <h1 className="font-bold text-zinc-900 text-sm hidden md:block">Forkify Auteurs dashboard</h1>
+                    {/* Official Forkify Logo (Reused Green Style) */}
+                    <div className="flex items-center gap-2">
+                        <div className="bg-green-600/10 text-green-600 p-2 rounded-full">
+                            <ChefHat size={22} />
+                        </div>
+                        <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Forkify</h1>
+                    </div>
 
-                    {/* Author Switcher (Mock) */}
+                    <div className="h-6 w-px bg-zinc-100 mx-2"></div>
+
+                    {/* Dashboard Title */}
+                    <h1 className="font-bold text-zinc-900 text-sm hidden md:block">Auteurs Dashboard</h1>
+
+                    {/* Author Switcher (Real Data) */}
                     <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-zinc-50 transition-colors ml-2 group">
-                        <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 text-xs font-bold">
-                            {profile?.first_name?.[0] || 'A'}
+                        <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 text-xs font-bold overflow-hidden ring-2 ring-white shadow-sm">
+                            {authorProfile?.avatar_url ? (
+                                <img src={authorProfile.avatar_url} alt="Author" className="w-full h-full object-cover" />
+                            ) : (
+                                <span>{authorProfile?.pen_name?.[0] || authorProfile?.first_name?.[0] || profile?.first_name?.[0] || 'A'}</span>
+                            )}
                         </div>
                         <span className="text-xs font-medium text-zinc-600 group-hover:text-zinc-900">
-                            {profile?.first_name || 'Author'}
+                            {authorProfile?.pen_name || authorProfile?.first_name || profile?.first_name || 'Author'}
                         </span>
                         <ChevronDown size={12} className="text-zinc-400 group-hover:text-zinc-600" />
                     </button>
@@ -202,7 +217,10 @@ export default function DashboardLayout({
                         onShowAddMenu={onShowAddMenu}
                         onShowUrlModal={onShowUrlModal}
                         onMediaUpload={onMediaUpload}
+
                         theme="light"
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
                     />
                 </div>
 

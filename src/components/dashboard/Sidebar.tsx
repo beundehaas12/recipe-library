@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, Clock, FolderOpen, Users, User, Home, Plus, Camera, Link as LinkIcon, ChevronDown, Rocket, Settings, LogOut, CheckCircle2 } from 'lucide-react';
+import { LayoutGrid, Clock, FolderOpen, Users, User, Home, Plus, Camera, Link as LinkIcon, ChevronDown, Rocket, Settings, LogOut, CheckCircle2, Library, PanelLeftClose } from 'lucide-react';
 import type { Collection, UserProfile } from '@/types/database';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -19,7 +19,10 @@ interface SidebarProps {
     onShowAddMenu?: () => void;
     onShowUrlModal?: () => void;
     onMediaUpload?: () => void;
+
     theme?: 'dark' | 'light';
+    isCollapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
 export default function Sidebar({
@@ -33,10 +36,12 @@ export default function Sidebar({
     onShowAddMenu,
     onShowUrlModal,
     onMediaUpload,
-    theme = 'light' // Default to light for this design
+
+    theme = 'light', // Default to light for this design
+    isCollapsed = false,
+    onToggleCollapse
 }: SidebarProps) {
     const pathname = usePathname();
-    const [collectionsExpanded, setCollectionsExpanded] = useState(true);
     const [showToevoegenMenu, setShowToevoegenMenu] = useState(false);
 
     // Monochrome Design - No Blue
@@ -44,39 +49,73 @@ export default function Sidebar({
     const inactiveClass = "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50";
 
     const NavItem = ({ active, onClick, icon: Icon, label, href }: any) => {
+        const content = (
+            <>
+                <Icon size={20} className={`shrink-0 w-5 h-5 ${active ? "text-zinc-900" : "text-zinc-400"}`} />
+                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">{label}</span>}
+                {isCollapsed && (
+                    <div className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 bg-zinc-900 text-white text-xs font-bold px-3 py-1.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100]">
+                        {label}
+                        {/* Little arrow pointing left */}
+                        <div className="absolute left-0 top-1/2 -translate-x-[4px] -translate-y-1/2 w-2 h-2 bg-zinc-900 rotate-45"></div>
+                    </div>
+                )}
+            </>
+        );
+
+        const className = `relative group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${active ? activeClass : inactiveClass} ${isCollapsed ? 'justify-center' : ''}`;
+
         if (href) {
             return (
-                <Link href={href} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${active ? activeClass : inactiveClass}`}>
-                    <Icon size={20} className={active ? "text-zinc-900" : "text-zinc-400"} />
-                    {label}
+                <Link href={href} className={className}>
+                    {content}
                 </Link>
             );
         }
         return (
-            <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${active ? activeClass : inactiveClass}`}>
-                <Icon size={20} className={active ? "text-zinc-900" : "text-zinc-400"} />
-                {label}
+            <button onClick={onClick} className={`w-full ${className}`}>
+                {content}
             </button>
         );
     };
 
     return (
-        <div className="w-[280px] flex flex-col h-full bg-white shadow-sm flex-shrink-0">
-            {/* 2. Navigation */}
-            <div className="flex-1 overflow-y-auto px-4 space-y-1 mt-6">
-                <div className="text-xs font-semibold text-zinc-400 px-4 mb-2 mt-2 uppercase tracking-wider">Main Menu</div>
 
+        <div className={`${isCollapsed ? 'w-20' : 'w-[280px]'} flex flex-col h-full bg-white border-r border-zinc-100 flex-shrink-0 relative`}>
+            <button
+                onClick={onToggleCollapse}
+                className={`p-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors z-50 flex items-center justify-center ${isCollapsed ? 'mx-auto mt-4 mb-2' : 'absolute top-3 right-3'}`}
+            >
+                <PanelLeftClose size={20} className={`shrink-0 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* 2. Navigation */}
+            <div className={`flex-1 px-4 space-y-1 mt-6 ${isCollapsed ? 'overflow-visible' : 'overflow-y-auto'}`}>
+                {/* Overview Above Title */}
                 <NavItem
-                    active={pathname === '/dashboard' && activeFilter === 'overview'}
-                    onClick={() => onFilterChange('overview')}
+                    href="/dashboard"
+                    active={pathname === '/dashboard' && (activeFilter === 'overview' || !activeFilter)}
                     icon={LayoutGrid}
                     label="Overview"
                 />
+
+                {/* Main Menu Title (Renamed) */}
+                {/* Main Menu Title (Renamed) */}
+                {!isCollapsed && <div className="text-xs font-semibold text-zinc-400 px-4 mb-2 mt-6 uppercase tracking-wider">Receptenbeheer</div>}
+
                 <NavItem
+                    href="/dashboard?view=all"
                     active={pathname === '/dashboard' && activeFilter === 'all'}
-                    onClick={() => onFilterChange('all')}
                     icon={FolderOpen}
                     label="All Recipes"
+                />
+
+                {/* Collections (Simplified to Button) */}
+                <NavItem
+                    href="/dashboard?view=collections"
+                    active={pathname === '/dashboard' && activeFilter === 'collections'}
+                    icon={Library}
+                    label="Collections"
                 />
 
                 {/* Toevoegen Dropdown Trigger */}
@@ -85,12 +124,13 @@ export default function Sidebar({
                         onClick={() => setShowToevoegenMenu(!showToevoegenMenu)}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${inactiveClass} justify-between`}
                     >
-                        <div className="flex items-center gap-3">
-                            <Plus size={20} className="text-zinc-400" />
-                            <span>Add New</span>
+                        <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center w-full' : ''}`}>
+                            <Plus size={20} className="text-zinc-400 shrink-0" />
+                            {!isCollapsed && <span>Add New</span>}
                         </div>
-                        <ChevronDown size={14} className={`transition-transform ${showToevoegenMenu ? 'rotate-180' : ''}`} />
+                        {!isCollapsed && <ChevronDown size={14} className={`transition-transform ${showToevoegenMenu ? 'rotate-180' : ''}`} />}
                     </button>
+                    {/* Simplified Add Menu Logic for collapsed? Or keep it simple */}
                     <AnimatePresence>
                         {showToevoegenMenu && (
                             <motion.div
@@ -110,10 +150,10 @@ export default function Sidebar({
                     </AnimatePresence>
                 </div>
 
-                <div className="text-xs font-semibold text-zinc-400 px-4 mb-2 mt-6 uppercase tracking-wider">Workspace</div>
+                {!isCollapsed && <div className="text-xs font-semibold text-zinc-400 px-4 mb-2 mt-6 uppercase tracking-wider">Workspace</div>}
                 <NavItem
+                    href="/dashboard?view=drafts"
                     active={pathname === '/dashboard' && activeFilter === 'drafts'}
-                    onClick={() => onFilterChange('drafts')}
                     icon={Clock}
                     label="Processing"
                 />
@@ -131,20 +171,8 @@ export default function Sidebar({
                     icon={Settings}
                     label="Settings"
                 />
-            </div>
 
-            {/* 3. Bottom Pro Card */}
-            <div className="p-4 mt-auto">
-                <div className="bg-zinc-900 rounded-2xl p-5 text-white shadow-lg shadow-zinc-900/10 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-10">
-                        <Rocket size={60} />
-                    </div>
-                    <h3 className="font-bold text-lg mb-1 relative z-10">Upgrade to Pro</h3>
-                    <p className="text-zinc-400 text-xs mb-4 relative z-10 opacity-90">Get unlimited recipes and AI features.</p>
-                    <button className="w-full bg-white text-zinc-900 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-zinc-100 transition-colors relative z-10">
-                        Upgrade Now
-                    </button>
-                </div>
+
             </div>
         </div>
     );

@@ -43,35 +43,30 @@ export default function ProfileClient({
             currentTheme={theme}
             onThemeToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         >
-            <div className="flex-1 overflow-y-auto p-8">
-                <div className="max-w-2xl mx-auto">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className={`p-3 rounded-xl ${theme === 'light' ? 'bg-primary/10 text-primary-dark' : 'bg-primary/10 text-primary'}`}>
-                            <UserCircle size={32} />
-                        </div>
-                        <div>
-                            <h1 className={`text-3xl font-black ${textPrimary}`}>Author Profile</h1>
-                            <p className={textSecondary}>
-                                Manage your public author profile.
-                            </p>
-                        </div>
+            <div className="w-full max-w-4xl">
+                <div className="flex items-center gap-3 mb-8">
+                    <div>
+                        <h1 className={`text-3xl font-bold ${textPrimary}`}>Author Profile</h1>
+                        <p className={textSecondary}>
+                            Manage your public author profile.
+                        </p>
+                    </div>
+                </div>
+
+                <div className={`border rounded-2xl p-6 space-y-6 ${cardClass}`}>
+                    <div>
+                        <label className={`block text-sm font-medium mb-2 ${labelClass}`}>First Name</label>
+                        <p className={`text-lg font-medium ${textPrimary}`}>{authorProfile?.first_name || '-'}</p>
                     </div>
 
-                    <div className={`border rounded-2xl p-6 space-y-6 ${cardClass}`}>
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${labelClass}`}>First Name</label>
-                            <p className={`text-lg font-medium ${textPrimary}`}>{authorProfile?.first_name || '-'}</p>
-                        </div>
+                    <div>
+                        <label className={`block text-sm font-medium mb-2 ${labelClass}`}>Last Name</label>
+                        <p className={`text-lg font-medium ${textPrimary}`}>{authorProfile?.last_name || '-'}</p>
+                    </div>
 
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${labelClass}`}>Last Name</label>
-                            <p className={`text-lg font-medium ${textPrimary}`}>{authorProfile?.last_name || '-'}</p>
-                        </div>
-
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${labelClass}`}>Bio</label>
-                            <p className={`text-lg ${textPrimary}`}>{authorProfile?.bio || '-'}</p>
-                        </div>
+                    <div>
+                        <label className={`block text-sm font-medium mb-2 ${labelClass}`}>Bio</label>
+                        <p className={`text-lg ${textPrimary}`}>{authorProfile?.bio || '-'}</p>
                     </div>
                 </div>
             </div>
