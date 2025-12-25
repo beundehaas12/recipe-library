@@ -56,8 +56,6 @@ export default function Sidebar({
                 {isCollapsed && (
                     <div className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 bg-zinc-900 text-white text-xs font-bold px-3 py-1.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100]">
                         {label}
-                        {/* Little arrow pointing left */}
-                        <div className="absolute left-0 top-1/2 -translate-x-[4px] -translate-y-1/2 w-2 h-2 bg-zinc-900 rotate-45"></div>
                     </div>
                 )}
             </>
@@ -90,7 +88,7 @@ export default function Sidebar({
             </button>
 
             {/* 2. Navigation */}
-            <div className={`flex-1 px-4 space-y-1 mt-6 ${isCollapsed ? 'overflow-visible' : 'overflow-y-auto'}`}>
+            <div className={`flex-1 px-4 space-y-1 mt-16 ${isCollapsed ? 'overflow-visible' : 'overflow-y-auto'}`}>
                 {/* Overview Above Title */}
                 <NavItem
                     href="/dashboard"
