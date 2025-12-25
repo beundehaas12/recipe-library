@@ -23,29 +23,75 @@ export default function InviteAcceptPage() {
                 // Get the hash from URL (contains access_token, refresh_token, type)
                 const hash = window.location.hash;
                 console.log('[invite-accept] Processing, hash present:', !!hash);
+                console.log('[invite-accept] Full URL:', window.location.href);
 
                 if (hash && (hash.includes('access_token') || hash.includes('type=invite') || hash.includes('type=recovery'))) {
                     console.log('[invite-accept] Token detected in URL');
 
-                    // Wait a bit for Supabase to auto-process the hash tokens
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Parse the hash parameters
+                    const hashParams = new URLSearchParams(hash.substring(1));
+                    const accessToken = hashParams.get('access_token');
+                    const refreshToken = hashParams.get('refresh_token');
+                    const tokenType = hashParams.get('type');
+                    const errorCode = hashParams.get('error_code');
+                    const errorDescription = hashParams.get('error_description');
 
-                    // Now check the session - it should be the invited user
-                    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                    console.log('[invite-accept] Token type:', tokenType);
+                    console.log('[invite-accept] Error code:', errorCode);
+                    console.log('[invite-accept] Error description:', errorDescription);
 
-                    if (sessionError) {
-                        console.error('[invite-accept] Session error:', sessionError);
-                        setError('Kon uitnodiging niet verifiëren.');
+                    // Check for error in URL first
+                    if (errorCode || errorDescription) {
+                        console.error('[invite-accept] Error in URL:', errorCode, errorDescription);
+                        let errorMessage = 'Uitnodiging verlopen of ongeldig.';
+                        if (errorDescription?.includes('expired')) {
+                            errorMessage = 'Deze uitnodiging is verlopen. Vraag een nieuwe uitnodiging aan.';
+                        } else if (errorDescription?.includes('used')) {
+                            errorMessage = 'Deze uitnodiging is al gebruikt. Probeer in te loggen.';
+                        }
+                        setError(errorMessage);
                         setStatus('error');
                         return;
                     }
 
+                    // If we have tokens, try to set the session explicitly
+                    if (accessToken && refreshToken) {
+                        console.log('[invite-accept] Setting session with tokens');
+                        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                            access_token: accessToken,
+                            refresh_token: refreshToken,
+                        });
+
+                        if (sessionError) {
+                            console.error('[invite-accept] setSession error:', sessionError);
+                            let errorMessage = 'Kon uitnodiging niet verifiëren.';
+                            if (sessionError.message?.includes('expired') || sessionError.message?.includes('invalid')) {
+                                errorMessage = 'Deze uitnodiging is verlopen of ongeldig. Vraag een nieuwe uitnodiging aan.';
+                            }
+                            setError(errorMessage);
+                            setStatus('error');
+                            return;
+                        }
+
+                        if (sessionData.session) {
+                            console.log('[invite-accept] Session established for:', sessionData.session.user.email);
+                            setUserEmail(sessionData.session.user.email || '');
+                            setStatus('ready');
+
+                            // Clear the hash from URL for cleaner look
+                            window.history.replaceState(null, '', window.location.pathname);
+                            return;
+                        }
+                    }
+
+                    // Fallback: wait for Supabase to auto-process and check session
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    const { data: { session } } = await supabase.auth.getSession();
+
                     if (session) {
-                        console.log('[invite-accept] Session for:', session.user.email);
+                        console.log('[invite-accept] Session found after wait:', session.user.email);
                         setUserEmail(session.user.email || '');
                         setStatus('ready');
-
-                        // Clear the hash from URL for cleaner look
                         window.history.replaceState(null, '', window.location.pathname);
                         return;
                     }
@@ -61,7 +107,7 @@ export default function InviteAcceptPage() {
                     }
                 });
 
-                // Fallback: check again after a bit more time
+                // Fallback: check again after more time
                 setTimeout(async () => {
                     const { data: { session } } = await supabase.auth.getSession();
                     if (session) {
@@ -71,7 +117,7 @@ export default function InviteAcceptPage() {
                         setError('Uitnodiging verlopen of ongeldig. Vraag een nieuwe uitnodiging aan.');
                         setStatus('error');
                     }
-                }, 3000);
+                }, 5000);
 
                 return () => subscription.unsubscribe();
             } catch (err) {
@@ -140,7 +186,11 @@ export default function InviteAcceptPage() {
                         <h2 className="text-2xl font-black text-zinc-900 tracking-tight">Oeps!</h2>
                         <p className="text-zinc-500">{error}</p>
                         <button
-                            onClick={() => router.push('/')}
+                            onClick={async () => {
+                                // Sign out any stale session before redirecting to login
+                                await supabase.auth.signOut();
+                                router.push('/');
+                            }}
                             className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-black transition-all"
                         >
                             Naar login
