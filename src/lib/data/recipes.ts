@@ -20,7 +20,14 @@ export async function getRecipesWithImages(limit = 20): Promise<Recipe[]> {
         return [];
     }
 
-    return data ?? [];
+    // Fetch author profiles
+    const userIds = [...new Set((data ?? []).map((r) => r.user_id).filter(Boolean))];
+    const profileMap = await getAuthorProfiles(userIds);
+
+    return (data ?? []).map((r) => ({
+        ...r,
+        author_profile: profileMap[r.user_id] ?? null,
+    }));
 }
 
 /**
