@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ChefHat, Eye, EyeOff, ArrowRight, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
@@ -15,60 +15,63 @@ export default function InviteAcceptPage() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [userEmail, setUserEmail] = useState('');
 
     useEffect(() => {
         const processInvite = async () => {
             try {
                 // Get the hash from URL (contains access_token, refresh_token, type)
                 const hash = window.location.hash;
-                console.log('[invite-accept] Hash:', hash);
+                console.log('[invite-accept] Processing, hash present:', !!hash);
 
-                // Sign out any existing session FIRST (important for admin testing)
-                console.log('[invite-accept] Signing out existing session...');
-                await supabase.auth.signOut();
+                if (hash && (hash.includes('access_token') || hash.includes('type=invite') || hash.includes('type=recovery'))) {
+                    console.log('[invite-accept] Token detected in URL');
 
-                // If there's a hash with tokens, Supabase will auto-process it
-                if (hash && hash.includes('access_token')) {
-                    console.log('[invite-accept] Waiting for Supabase to process tokens...');
+                    // Wait a bit for Supabase to auto-process the hash tokens
+                    await new Promise(resolve => setTimeout(resolve, 1000));
 
-                    // Wait for Supabase to process the tokens
-                    await new Promise(resolve => setTimeout(resolve, 500));
-
-                    // Check if we have a session now
+                    // Now check the session - it should be the invited user
                     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
                     if (sessionError) {
                         console.error('[invite-accept] Session error:', sessionError);
-                        setError('Kon uitnodiging niet verifiëren. Probeer de link opnieuw.');
+                        setError('Kon uitnodiging niet verifiëren.');
                         setStatus('error');
                         return;
                     }
 
                     if (session) {
-                        console.log('[invite-accept] Session established for:', session.user.email);
+                        console.log('[invite-accept] Session for:', session.user.email);
+                        setUserEmail(session.user.email || '');
                         setStatus('ready');
+
+                        // Clear the hash from URL for cleaner look
+                        window.history.replaceState(null, '', window.location.pathname);
                         return;
                     }
                 }
 
-                // Listen for auth changes
+                // No hash or no session - listen for auth changes
                 const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-                    console.log('[invite-accept] Auth event:', event, session?.user?.email);
+                    console.log('[invite-accept] Auth event:', event);
 
-                    if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'TOKEN_REFRESHED') {
-                        if (session) {
-                            setStatus('ready');
-                        }
+                    if ((event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') && session) {
+                        setUserEmail(session.user.email || '');
+                        setStatus('ready');
                     }
                 });
 
-                // Fallback timeout
-                setTimeout(() => {
-                    if (status === 'loading') {
+                // Fallback: check again after a bit more time
+                setTimeout(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session) {
+                        setUserEmail(session.user.email || '');
+                        setStatus('ready');
+                    } else if (status === 'loading') {
                         setError('Uitnodiging verlopen of ongeldig. Vraag een nieuwe uitnodiging aan.');
                         setStatus('error');
                     }
-                }, 5000);
+                }, 3000);
 
                 return () => subscription.unsubscribe();
             } catch (err) {
@@ -95,7 +98,7 @@ export default function InviteAcceptPage() {
 
             setStatus('success');
 
-            // Redirect to dashboard after short delay
+            // Redirect to home/dashboard after short delay
             setTimeout(() => {
                 router.push('/');
             }, 2000);
@@ -107,10 +110,11 @@ export default function InviteAcceptPage() {
         }
     };
 
+    // Render as a full-page overlay to hide any underlying layout
     return (
-        <div className="min-h-screen w-screen bg-white flex flex-col md:flex-row overflow-hidden">
+        <div className="fixed inset-0 z-[9999] bg-white flex flex-col md:flex-row overflow-hidden">
             {/* Left Side: Content */}
-            <div className="w-full md:w-1/2 min-h-screen flex flex-col items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 bg-white">
+            <div className="w-full md:w-1/2 min-h-screen flex flex-col items-center justify-center p-8 md:p-12 lg:p-20 relative bg-white">
                 {/* Brand */}
                 <div className="absolute top-8 left-8 md:top-12 md:left-12 flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
@@ -165,14 +169,18 @@ export default function InviteAcceptPage() {
                                 Welkom bij Forkify
                             </h2>
                             <p className="text-zinc-500 text-sm">
-                                Stel een wachtwoord in om je account te activeren.
+                                {userEmail ? (
+                                    <>Stel een wachtwoord in voor <strong>{userEmail}</strong></>
+                                ) : (
+                                    'Stel een wachtwoord in om je account te activeren.'
+                                )}
                             </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest ml-1">
-                                    Wachtwoord
+                                    Nieuw wachtwoord
                                 </label>
                                 <div className="relative">
                                     <input
@@ -182,6 +190,7 @@ export default function InviteAcceptPage() {
                                         required
                                         minLength={6}
                                         placeholder="••••••••"
+                                        autoFocus
                                         className="w-full h-14 px-4 pr-12 bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                                     />
                                     <button
