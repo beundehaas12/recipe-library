@@ -32,7 +32,6 @@ export default async function UsersPage() {
         { data: userRoles },
         { data: recipes },
         { data: collections },
-        { data: earlyAccessRequests },
         { data: authUsers }
     ] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('user_id', user.id).single(),
@@ -40,7 +39,6 @@ export default async function UsersPage() {
         adminSupabase.from('user_roles').select('*').order('created_at', { ascending: false }),
         supabase.from('recipes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
         supabase.from('collections').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-        adminSupabase.from('early_access_requests').select('*').order('created_at', { ascending: false }),
         // Fetch auth users to get emails
         adminSupabase.auth.admin.listUsers(),
     ]);
@@ -71,7 +69,6 @@ export default async function UsersPage() {
             users={users}
             recipes={recipes ?? []}
             collections={collections ?? []}
-            earlyAccessRequests={earlyAccessRequests ?? []}
         />
     );
 }
