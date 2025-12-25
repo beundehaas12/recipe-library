@@ -30,7 +30,7 @@ export default function DashboardClient({
 
     // V4: Stats Cards Component - Monochrome
     const StatCard = ({ icon: Icon, label, value, subtext }: any) => (
-        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-zinc-50/50 flex flex-col justify-between h-40 group hover:border-zinc-100 transition-colors">
+        <div className="bg-white p-6 rounded-2xl shadow-sm flex flex-col justify-between h-40 group transition-all hover:shadow-md">
             <div className="w-10 h-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-500 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
                 <Icon size={20} />
             </div>
@@ -79,14 +79,14 @@ export default function DashboardClient({
                             <p className="text-zinc-400 text-sm">Manage your culinary collection.</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-zinc-50 shadow-sm">
+                    <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm">
                         <span className="px-3 py-1 text-xs font-bold text-green-600 bg-green-50 rounded-md">Status: Active</span>
                         <span className="px-3 py-1 text-xs text-zinc-400">Updated: Today</span>
                     </div>
                 </div>
 
                 {/* Tabs - No Underlines */}
-                <div className="flex items-center gap-8 border-b border-zinc-50">
+                <div className="flex items-center gap-8 border-b border-transparent">
                     <button
                         onClick={() => setActiveFilter('overview')}
                         className={`pb-4 text-sm transition-colors ${activeFilter === 'overview' ? 'text-zinc-900 font-bold' : 'text-zinc-400 font-medium hover:text-zinc-600'}`}
@@ -142,7 +142,7 @@ export default function DashboardClient({
                     {/* 2. Main Content Cards */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Big Chart Area (Placeholder) */}
-                        <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-zinc-50/50 min-h-[400px]">
+                        <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm min-h-[400px]">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h3 className="text-lg font-bold text-zinc-900">Recipe Analytics</h3>
@@ -154,7 +154,7 @@ export default function DashboardClient({
                                 </div>
                             </div>
                             {/* Visual Chart Placeholder - Monochrome */}
-                            <div className="w-full h-64 bg-zinc-50/50 rounded-xl flex items-end justify-between px-8 py-4 gap-4 border border-zinc-50">
+                            <div className="w-full h-64 bg-zinc-50/50 rounded-xl flex items-end justify-between px-8 py-4 gap-4">
                                 {[40, 60, 45, 70, 50, 80, 65, 85, 90, 75, 60, 95].map((h, i) => (
                                     <div key={i} className="w-full bg-zinc-200 rounded-t-lg relative group hover:bg-zinc-800 transition-colors" style={{ height: `${h}%` }}>
                                         <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded transition-opacity">
@@ -166,7 +166,7 @@ export default function DashboardClient({
                         </div>
 
                         {/* Right Side List (Influencer/Recent) */}
-                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-zinc-50/50">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-bold text-zinc-900">Recent Activity</h3>
                                 <button className="text-zinc-900 text-sm font-bold hover:underline">+ Add New</button>
@@ -196,10 +196,10 @@ export default function DashboardClient({
                 </div>
             ) : (
                 /* RECIPE GRID LIST */
-                <div className="bg-white p-8 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-zinc-50/50 min-h-[500px]">
+                <div className="bg-white p-8 rounded-2xl shadow-sm min-h-[500px]">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredRecipes.map(recipe => (
-                            <div key={recipe.id} className="group bg-white border border-zinc-50 rounded-2xl p-3 hover:shadow-xl hover:shadow-zinc-200/50 hover:border-zinc-300 transition-all cursor-pointer">
+                            <div key={recipe.id} className="group bg-white rounded-2xl p-3 hover:shadow-xl hover:shadow-zinc-200/50 transition-all cursor-pointer">
                                 <div className="aspect-square bg-zinc-100 rounded-xl overflow-hidden relative mb-3">
                                     {recipe.image_url ? (
                                         <Image src={recipe.image_url} alt={recipe.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />

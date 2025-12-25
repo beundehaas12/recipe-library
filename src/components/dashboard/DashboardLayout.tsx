@@ -70,7 +70,7 @@ export default function DashboardLayout({
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
                 {/* TOP HEADER */}
-                <header className="h-20 bg-white border-b border-zinc-100/50 flex items-center justify-between px-8 flex-shrink-0 z-10 sticky top-0">
+                <header className="h-20 bg-white flex items-center justify-between px-8 flex-shrink-0 z-10 sticky top-0 shadow-sm">
                     <div className="flex items-center gap-4 flex-1">
                         <button className="md:hidden p-2 text-zinc-500" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
                             <Menu size={24} />
@@ -81,7 +81,7 @@ export default function DashboardLayout({
                             <input
                                 type="text"
                                 placeholder="Search something..."
-                                className="w-full pl-12 pr-4 py-3 bg-zinc-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-zinc-200 placeholder:text-zinc-400 transition-all hover:bg-zinc-100 focus:bg-white text-zinc-600 outline-none"
+                                className="w-full pl-12 pr-4 py-3 bg-zinc-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-zinc-100 placeholder:text-zinc-400 transition-all hover:bg-zinc-100 focus:bg-white text-zinc-600 outline-none"
                             />
                         </div>
                     </div>

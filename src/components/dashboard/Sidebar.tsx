@@ -61,7 +61,7 @@ export default function Sidebar({
     };
 
     return (
-        <div className="w-[280px] flex flex-col h-full bg-white border-r border-zinc-100/50 flex-shrink-0">
+        <div className="w-[280px] flex flex-col h-full bg-white shadow-sm flex-shrink-0">
             {/* 1. Header: User Profile */}
             <div className="p-6 pb-2">
                 <div className="flex items-center gap-3 mb-8">
