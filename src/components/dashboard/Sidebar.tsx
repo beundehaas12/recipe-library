@@ -35,18 +35,20 @@ export default function Sidebar({
     const [showToevoegenMenu, setShowToevoegenMenu] = useState(false);
 
     // Theme-aware styling helpers
-    // Theme-aware styling helpers
+    // Theme-aware styling helpers - ULTRA MINIMALIST
     const buttonActive = theme === 'light'
-        ? 'bg-primary/10 text-black font-semibold shadow-sm ring-1 ring-primary/20'
-        : 'bg-white/10 text-white font-semibold shadow-sm border border-white/5';
+        ? 'text-zinc-900 font-medium'
+        : 'text-white font-medium';
     const buttonInactive = theme === 'light'
-        ? 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'
-        : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200';
-    const iconActive = theme === 'light' ? 'text-primary-600' : 'text-primary';
-    const iconInactive = 'text-zinc-400';
+        ? 'text-zinc-500 hover:text-zinc-900'
+        : 'text-zinc-400 hover:text-zinc-200';
+    const iconActive = theme === 'light' ? 'text-zinc-900' : 'text-white';
+    const iconInactive = 'text-zinc-400 group-hover:text-zinc-600 transition-colors';
+
+    // Minimalist section titles
     const sectionTitle = theme === 'light'
-        ? 'text-zinc-400 font-semibold'
-        : 'text-muted-foreground';
+        ? 'text-zinc-400 font-medium text-[11px] uppercase tracking-wider'
+        : 'text-muted-foreground font-medium text-[11px] uppercase tracking-wider';
 
     return (
         <div className={`w-64 border-r flex flex-col h-full ${theme === 'light'

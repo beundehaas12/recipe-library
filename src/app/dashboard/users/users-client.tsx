@@ -299,8 +299,8 @@ function UsersTable({
     const bgHover = theme === 'light' ? 'hover:bg-zinc-50' : 'hover:bg-white/5';
 
     return (
-        <div className={`border rounded-xl overflow-hidden ${theme === 'light' ? 'bg-white shadow-sm border-zinc-200' : 'bg-zinc-900/50 border-white/5'}`}>
-            <div className={`grid grid-cols-12 gap-4 px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b ${borderClass} ${bgHeader}`}>
+        <div className={`border rounded-2xl overflow-hidden ${theme === 'light' ? 'bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)] border-zinc-100' : 'bg-zinc-900/50 border-white/5'}`}>
+            <div className={`grid grid-cols-12 gap-4 px-6 py-4 text-xs font-medium ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'} border-b ${borderClass} ${bgHeader}`}>
                 <div className="col-span-3">Name</div>
                 <div className="col-span-4">Email</div>
                 <div className="col-span-3">Role</div>
@@ -371,8 +371,8 @@ function WaitlistTable({
     const bgHover = theme === 'light' ? 'hover:bg-zinc-50' : 'hover:bg-white/5';
 
     return (
-        <div className={`border rounded-xl overflow-hidden ${theme === 'light' ? 'bg-white shadow-sm border-zinc-200' : 'bg-zinc-900/50 border-white/5'}`}>
-            <div className={`grid grid-cols-12 gap-4 px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b ${borderClass} ${bgHeader}`}>
+        <div className={`border rounded-2xl overflow-hidden ${theme === 'light' ? 'bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)] border-zinc-100' : 'bg-zinc-900/50 border-white/5'}`}>
+            <div className={`grid grid-cols-12 gap-4 px-6 py-4 text-xs font-medium ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'} border-b ${borderClass} ${bgHeader}`}>
                 <div className="col-span-3">Naam</div>
                 <div className="col-span-4">Email</div>
                 <div className="col-span-2">Status</div>

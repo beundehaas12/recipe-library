@@ -6,7 +6,7 @@ import Image from 'next/image';
 import type { User } from '@supabase/supabase-js';
 import type { Recipe, Collection, UserProfile } from '@/types/database';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { ChefHat, Clock, LayoutGrid, ImageIcon, PanelLeftClose, Grid3X3, Users, ExternalLink } from 'lucide-react';
+import { LayoutGrid, Clock, Users, Plus, ImageIcon, Loader2, FolderOpen, Heart, ShoppingBag, ChefHat, PanelLeftClose, Grid3X3, ExternalLink } from 'lucide-react';
 
 interface DashboardClientProps {
     user: User;
@@ -53,12 +53,13 @@ export default function DashboardClient({
     const showOverview = activeFilter === 'overview';
 
     // Theme helpers
+    // Theme helpers - Minimalist
     const cardClass = theme === 'light'
-        ? 'bg-white border-zinc-200 shadow-sm'
-        : 'bg-zinc-900 border-white/10';
+        ? 'bg-white border border-zinc-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
+        : 'bg-zinc-900 border-white/5';
     const textPrimary = theme === 'light' ? 'text-zinc-900' : 'text-white';
     const textSecondary = theme === 'light' ? 'text-zinc-500' : 'text-muted-foreground';
-    const bgSecondary = theme === 'light' ? 'bg-zinc-100' : 'bg-zinc-800';
+    const bgSecondary = theme === 'light' ? 'bg-zinc-50' : 'bg-zinc-800';
 
     return (
         <DashboardLayout
@@ -74,31 +75,33 @@ export default function DashboardClient({
         >
             {showOverview ? (
                 /* OVERVIEW / STATS DASHBOARD */
-                <div className="flex-1 overflow-y-auto p-6">
-                    <h1 className={`text-2xl font-black mb-6 ${textPrimary}`}>Dashboard</h1>
+                <div className="flex-1 overflow-y-auto p-8">
+                    <h1 className={`text-xl font-medium tracking-tight mb-8 ${textPrimary}`}>Dashboard</h1>
 
                     {/* Main Stats Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div className={`border rounded-xl p-5 ${cardClass}`}>
+                    <div className="grid grid-cols-4 gap-6 mb-8">
+                        {/* Total Recipes */}
+                        <div className={`rounded-2xl p-6 ${cardClass}`}>
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center">
                                     <LayoutGrid size={22} className="text-primary" />
                                 </div>
                             </div>
-                            <span className={`text-3xl font-black ${textPrimary}`}>{recipes.length}</span>
-                            <p className={`text-sm mt-1 ${textSecondary}`}>Total Recipes</p>
+                            <span className={`text-3xl font-medium tracking-tight block ${textPrimary}`}>{recipes.length}</span>
+                            <span className={`text-sm ${textSecondary}`}>Total Recipes</span>
                         </div>
 
-                        <div className={`border rounded-xl p-5 ${cardClass}`}>
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-11 h-11 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                                    <Clock size={22} className="text-yellow-400" />
+                        {/* Processing */}
+                        <div className={`rounded-2xl p-6 ${cardClass}`}>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className={`p-2 rounded-lg ${bgSecondary}`}>
+                                    <Clock className={theme === 'light' ? 'text-zinc-900' : 'text-white'} size={20} />
                                 </div>
                             </div>
-                            <span className={`text-3xl font-black ${textPrimary}`}>
-                                {recipes.filter(r => r.status === 'processing').length}
+                            <span className={`text-3xl font-medium tracking-tight block ${textPrimary}`}>
+                                {recipes.filter(r => r.status === 'draft').length}
                             </span>
-                            <p className={`text-sm mt-1 ${textSecondary}`}>Processing</p>
+                            <span className={`text-sm ${textSecondary}`}>Processing</span>
                         </div>
 
                         <div className={`border rounded-xl p-5 ${cardClass}`}>
@@ -119,11 +122,53 @@ export default function DashboardClient({
                                     <ImageIcon size={22} className="text-purple-400" />
                                 </div>
                             </div>
-                            <span className={`text-3xl font-black ${textPrimary}`}>{collections.length}</span>
-                            <p className={`text-sm mt-1 ${textSecondary}`}>Collections</p>
+                            <span className={`text-3xl font-medium tracking-tight block ${textPrimary}`}>{collections.length}</span>
+                            <span className={`text-sm ${textSecondary}`}>Collections</span>
                         </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-6 mb-8">
+                        {/* Recipe Status */}
+                        <div className={`rounded-2xl p-6 ${cardClass}`}>
+                            <h3 className={`text-sm font-medium uppercase tracking-wider mb-6 ${textSecondary}`}>Recipe Status</h3>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                        <span className={`text-sm ${textPrimary}`}>Published</span>
+                                    </div>
+                                    <span className={`font-medium ${textPrimary}`}>{recipes.filter(r => r.status === 'complete').length}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-amber-500" />
+                                        <span className={`text-sm ${textPrimary}`}>Processing</span>
+                                    </div>
+                                    <span className={`font-medium ${textPrimary}`}>{recipes.filter(r => r.status === 'processing').length}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recent Collections */}
+                        <div className={`rounded-2xl p-6 ${cardClass}`}>
+                            <h3 className={`text-sm font-medium uppercase tracking-wider mb-6 ${textSecondary}`}>Collections Overview</h3>
+                            <div className="space-y-3">
+                                {collections.slice(0, 3).map(c => (
+                                    <div key={c.id} className={`flex items-center justify-between p-3 rounded-xl transition-colors ${theme === 'light' ? 'hover:bg-zinc-50' : 'hover:bg-white/5'}`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${bgSecondary}`}>
+                                                <FolderOpen size={16} className={theme === 'light' ? 'text-zinc-900' : 'text-white'} />
+                                            </div>
+                                            <div>
+                                                <p className={`text-sm font-medium ${textPrimary}`}>{c.name}</p>
+                                                <p className={`text-xs ${textSecondary}`}>{c.recipe_count || 0} recipes</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                     {/* Secondary Stats */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                         {/* Recipe Status Breakdown */}
