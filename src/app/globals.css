@@ -76,10 +76,10 @@
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  /* LIGHT BORDER - the key fix! */
-  --border: 240 6% 90%;
-  --input: 240 6% 90%;
-  --ring: 240 5% 65%;
+  /* LIGHT BORDER - Extremely Light (Zinc-50 equivalent) */
+  --border: 240 5% 96%;
+  --input: 240 5% 96%;
+  --ring: 240 5% 84%;
 }
 
 /* Tailwind v4 theme customization */

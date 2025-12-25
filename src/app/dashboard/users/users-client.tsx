@@ -240,7 +240,7 @@ function UsersTable({ users, updatingId, onRoleChange, getUserDisplayName, getUs
                     <th className="px-6 py-4 text-right">Joined</th>
                 </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-50">
+            <tbody className="divide-y divide-transparent">
                 {users.map((u: any) => (
                     <tr key={u.user_id} className="hover:bg-zinc-50/50 transition-colors">
                         <td className="px-6 py-4">
@@ -284,8 +284,8 @@ function RoleDropdown({ currentRole, onRoleChange, updating }: any) {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${currentRole === 'admin' ? 'bg-zinc-900 text-white border-transparent' :
-                    currentRole === 'author' ? 'bg-zinc-100 text-zinc-900 border-zinc-200' :
-                        'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300'
+                    currentRole === 'author' ? 'bg-zinc-50 text-zinc-900 border-zinc-100' :
+                        'bg-white text-zinc-600 border-zinc-100 hover:border-zinc-200'
                     }`}
             >
                 {currentRole === 'admin' && <Shield size={10} />}
