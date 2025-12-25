@@ -62,29 +62,8 @@ export default function Sidebar({
 
     return (
         <div className="w-[280px] flex flex-col h-full bg-white shadow-sm flex-shrink-0">
-            {/* 1. Header: User Profile */}
-            <div className="p-6 pb-2">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-zinc-100 ring-2 ring-white shadow-sm">
-                        {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-zinc-400">
-                                <User size={20} />
-                            </div>
-                        )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-zinc-900 truncate text-sm">{profile?.first_name || 'Chef'} {profile?.last_name}</h3>
-                        <p className="text-xs text-zinc-400 truncate">{user?.email}</p>
-                    </div>
-                </div>
-
-
-            </div>
-
             {/* 2. Navigation */}
-            <div className="flex-1 overflow-y-auto px-4 space-y-1">
+            <div className="flex-1 overflow-y-auto px-4 space-y-1 mt-6">
                 <div className="text-xs font-semibold text-zinc-400 px-4 mb-2 mt-2 uppercase tracking-wider">Main Menu</div>
 
                 <NavItem
