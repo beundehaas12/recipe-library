@@ -88,7 +88,7 @@ export default function Sidebar({
             </button>
 
             {/* 2. Navigation */}
-            <div className={`flex-1 px-4 space-y-1 mt-16 ${isCollapsed ? 'overflow-visible' : 'overflow-y-auto'}`}>
+            <div className={`flex-1 px-4 space-y-1 ${isCollapsed ? 'mt-2 overflow-visible' : 'mt-14 overflow-y-auto'}`}>
                 {/* Overview Above Title */}
                 <NavItem
                     href="/dashboard"
