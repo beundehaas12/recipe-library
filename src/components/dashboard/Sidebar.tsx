@@ -10,6 +10,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface SidebarProps {
     user?: SupabaseUser;
+    profile?: UserProfile | null;
     collections?: Collection[];
     onCreateCollection?: () => void;
     isAdmin?: boolean;
@@ -26,8 +27,6 @@ interface SidebarProps {
 export default function Sidebar({
     user,
     profile,
-    activeFilter,
-    onFilterChange,
     collections = [],
     onCreateCollection,
     isAdmin = false,
@@ -122,7 +121,7 @@ export default function Sidebar({
                 {/* Collections (Simplified to Button) */}
                 <NavItem
                     href="/dashboard?view=collections"
-                    active={pathname === '/dashboard' && activeFilter === 'collections'}
+                    active={pathname === '/dashboard' && currentView === 'collections'}
                     icon={Library}
                     label="Collections"
                 />
