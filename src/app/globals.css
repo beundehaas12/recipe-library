@@ -38,9 +38,9 @@
   --destructive-foreground: 0 0% 98%;
 
   /* BORDERS - EXPLICITLY LIGHT */
-  --border: 240 5.9% 90%;
-  /* Zinc-200 (#e4e4e7) - Clean, visible but soft */
-  --input: 240 5.9% 90%;
+  --border: 240 4.8% 95.9%;
+  /* Zinc-100 (#f4f4f5) - Extremely subtle */
+  --input: 240 4.8% 95.9%;
   --ring: 240 5.9% 10%;
   /* Black ring for focus */
 
