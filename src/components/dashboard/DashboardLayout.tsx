@@ -76,11 +76,11 @@ export default function DashboardLayout({
                         </button>
                         {/* Search Bar - Visual Placeholder */}
                         <div className="relative w-full max-w-xl hidden md:block">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" size={20} />
                             <input
                                 type="text"
                                 placeholder="Search something..."
-                                className="w-full pl-12 pr-4 py-3 bg-zinc-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-100 placeholder:text-zinc-400 transition-all hover:bg-zinc-100 focus:bg-white"
+                                className="w-full pl-12 pr-4 py-3 bg-zinc-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-zinc-200 placeholder:text-zinc-400 transition-all hover:bg-zinc-100 focus:bg-white text-zinc-600 outline-none"
                             />
                         </div>
                     </div>
@@ -96,7 +96,7 @@ export default function DashboardLayout({
                                 <p className="text-sm font-bold text-zinc-900 leading-none">Joxy Inc.</p>
                                 <p className="text-xs text-zinc-400 mt-1">Brand</p>
                             </div>
-                            <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-white font-bold shadow-green-200 shadow-lg">
+                            <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-white font-bold shadow-lg shadow-zinc-200">
                                 J
                             </div>
                         </div>

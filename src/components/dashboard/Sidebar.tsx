@@ -80,17 +80,7 @@ export default function Sidebar({
                     </div>
                 </div>
 
-                {/* Search / Filter (Visual Placeholder from design) */}
-                <div className="relative mb-6">
-                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                        <Home size={16} className="text-zinc-300" />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border-none rounded-xl text-sm text-zinc-600 focus:ring-2 focus:ring-blue-100 placeholder:text-zinc-400"
-                    />
-                </div>
+
             </div>
 
             {/* 2. Navigation */}
