@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, Search, Bell, ArrowLeft, ChevronDown, Settings, LogOut } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { getAvatarUrl, getUserDisplayName } from '@/lib/profileService';
+import Sidebar from '@/components/dashboard/Sidebar';
 import type { User } from '@supabase/supabase-js';
 import type { Collection, UserProfile } from '@/types/database';
-import Sidebar from '@/components/dashboard/Sidebar';
-import { Menu, Search, Bell, ArrowLeft, ChevronDown } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -40,6 +44,30 @@ export default function DashboardLayout({
     onThemeToggle
 }: DashboardLayoutProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const profileRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
+    const supabase = createClient();
+
+    // Close on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+                setIsProfileOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        router.push('/');
+        router.refresh();
+    };
+
+    const displayName = getUserDisplayName(profile) || user?.email?.split('@')[0] || 'User';
+    const avatarUrl = getAvatarUrl(profile, user);
 
     // V4 Layout: Grey Background, White Top Bar, Floating Content
     // Uses .light-theme class to activate light CSS variables from globals.css
@@ -88,24 +116,68 @@ export default function DashboardLayout({
 
                     <div className="h-6 w-px bg-zinc-100"></div>
 
-                    {/* Fishbowl Profile */}
-                    <div className="pl-1 pr-4 py-1 bg-zinc-50 rounded-full flex items-center gap-3 border border-zinc-100 hover:border-zinc-200 transition-colors cursor-pointer group">
-                        <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 font-bold overflow-hidden ring-2 ring-white shadow-sm">
-                            {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                                <span className="text-xs">{profile?.first_name?.[0] || 'U'}</span>
+                    {/* Fishbowl Profile & Dropdown */}
+                    <div className="relative" ref={profileRef}>
+                        <button
+                            onClick={() => setIsProfileOpen(!isProfileOpen)}
+                            className={`pl-1 pr-4 py-1 bg-zinc-50 rounded-full flex items-center gap-3 border border-zinc-100 transition-all cursor-pointer group hover:border-zinc-200 ${isProfileOpen ? 'ring-2 ring-zinc-100 border-zinc-200' : ''}`}
+                        >
+                            <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-zinc-500 font-bold overflow-hidden ring-2 ring-white shadow-sm">
+                                <img src={avatarUrl} alt="User" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="text-left hidden sm:block">
+                                <p className="text-xs font-bold text-zinc-900 leading-none group-hover:text-zinc-900 transition-colors">
+                                    {displayName}
+                                </p>
+                                <p className="text-[10px] text-zinc-400 mt-0.5 font-medium uppercase tracking-wider">
+                                    {role || 'Admin'}
+                                </p>
+                            </div>
+                            <ChevronDown size={14} className={`text-zinc-400 group-hover:text-zinc-600 ml-1 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        <AnimatePresence>
+                            {isProfileOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                    transition={{ duration: 0.1 }}
+                                    className="absolute right-0 top-full mt-2 w-56 bg-white border border-zinc-100 rounded-xl shadow-xl overflow-hidden z-[60] flex flex-col py-1"
+                                >
+                                    <div className="px-4 py-3 border-b border-zinc-50">
+                                        <p className="text-sm font-bold text-zinc-900 truncate">
+                                            {displayName}
+                                        </p>
+                                        <p className="text-xs text-zinc-400 truncate">
+                                            {user?.email}
+                                        </p>
+                                    </div>
+
+                                    <a
+                                        href="/dashboard/profile"
+                                        onClick={() => setIsProfileOpen(false)}
+                                        className="px-4 py-2 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 flex items-center gap-2 transition-colors"
+                                    >
+                                        <Settings size={16} />
+                                        Settings
+                                    </a>
+
+                                    <div className="h-px bg-zinc-50 my-1" />
+
+                                    <button
+                                        onClick={() => {
+                                            setIsProfileOpen(false);
+                                            handleSignOut();
+                                        }}
+                                        className="px-4 py-2 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors text-left w-full"
+                                    >
+                                        <LogOut size={16} />
+                                        Sign Out
+                                    </button>
+                                </motion.div>
                             )}
-                        </div>
-                        <div className="text-left hidden sm:block">
-                            <p className="text-xs font-bold text-zinc-900 leading-none group-hover:text-zinc-900 transition-colors">
-                                {profile?.first_name || 'User'} {profile?.last_name || ''}
-                            </p>
-                            <p className="text-[10px] text-zinc-400 mt-0.5 font-medium uppercase tracking-wider">
-                                {role || 'Admin'}
-                            </p>
-                        </div>
-                        <ChevronDown size={14} className="text-zinc-400 group-hover:text-zinc-600 ml-1" />
+                        </AnimatePresence>
                     </div>
                 </div>
             </header>
