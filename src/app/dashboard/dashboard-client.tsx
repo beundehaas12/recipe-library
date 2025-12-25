@@ -75,8 +75,16 @@ export default function DashboardClient({
                             <ChefHat size={24} />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-zinc-900">Kitchen Overview</h1>
-                            <p className="text-zinc-400 text-sm">Manage your culinary collection.</p>
+                            <h1 className="text-2xl font-bold text-zinc-900">
+                                {activeFilter === 'overview' ? 'Kitchen Overview' :
+                                    activeFilter === 'all' ? 'All Recipes' :
+                                        activeFilter === 'drafts' ? 'Processing' : 'Dashboard'}
+                            </h1>
+                            <p className="text-zinc-400 text-sm">
+                                {activeFilter === 'overview' ? 'Manage your culinary collection.' :
+                                    activeFilter === 'all' ? 'View and manage all your recipes.' :
+                                        activeFilter === 'drafts' ? 'Recipes currently being digitized.' : ''}
+                            </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm">
@@ -86,26 +94,7 @@ export default function DashboardClient({
                 </div>
 
                 {/* Tabs - No Underlines */}
-                <div className="flex items-center gap-8 border-b border-transparent">
-                    <button
-                        onClick={() => setActiveFilter('overview')}
-                        className={`pb-4 text-sm transition-colors ${activeFilter === 'overview' ? 'text-zinc-900 font-bold' : 'text-zinc-400 font-medium hover:text-zinc-600'}`}
-                    >
-                        Overview
-                    </button>
-                    <button
-                        onClick={() => setActiveFilter('all')}
-                        className={`pb-4 text-sm transition-colors ${activeFilter === 'all' ? 'text-zinc-900 font-bold' : 'text-zinc-400 font-medium hover:text-zinc-600'}`}
-                    >
-                        All Recipes
-                    </button>
-                    <button
-                        onClick={() => setActiveFilter('drafts')}
-                        className={`pb-4 text-sm transition-colors ${activeFilter === 'drafts' ? 'text-zinc-900 font-bold' : 'text-zinc-400 font-medium hover:text-zinc-600'}`}
-                    >
-                        Processing
-                    </button>
-                </div>
+                {/* Tabs Removed - Controlled by Sidebar */}
             </div>
 
             {/* CONTENT AREA */}
