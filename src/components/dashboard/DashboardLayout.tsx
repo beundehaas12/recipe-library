@@ -50,6 +50,7 @@ export default function DashboardLayout({
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [pendingWaitlistCount, setPendingWaitlistCount] = useState(0);
     const profileRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const supabase = createClient();
@@ -64,6 +65,24 @@ export default function DashboardLayout({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Fetch pending waitlist count for admins
+    useEffect(() => {
+        if (!isAdmin) return;
+
+        const fetchPending = async () => {
+            const { count } = await supabase
+                .from('early_access_requests')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'pending');
+            setPendingWaitlistCount(count || 0);
+        };
+
+        fetchPending();
+
+        // Optional: Subscribe to changes?
+        // keeping it simple for now (fetch on mount)
+    }, [isAdmin, supabase]);
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
@@ -214,6 +233,7 @@ export default function DashboardLayout({
                         collections={collections}
                         onCreateCollection={onCreateCollection}
                         isAdmin={isAdmin}
+                        pendingWaitlistCount={pendingWaitlistCount}
                         onShowAddMenu={onShowAddMenu}
                         onShowUrlModal={onShowUrlModal}
                         onMediaUpload={onMediaUpload}

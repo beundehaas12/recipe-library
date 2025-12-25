@@ -23,6 +23,7 @@ interface SidebarProps {
     theme?: 'dark' | 'light';
     isCollapsed?: boolean;
     onToggleCollapse?: () => void;
+    pendingWaitlistCount?: number;
 }
 
 export default function Sidebar({
@@ -39,7 +40,8 @@ export default function Sidebar({
 
     theme = 'light', // Default to light for this design
     isCollapsed = false,
-    onToggleCollapse
+    onToggleCollapse,
+    pendingWaitlistCount = 0
 }: SidebarProps) {
     const pathname = usePathname();
     const [showToevoegenMenu, setShowToevoegenMenu] = useState(false);
@@ -48,10 +50,15 @@ export default function Sidebar({
     const activeClass = "bg-zinc-100 text-zinc-900 font-bold";
     const inactiveClass = "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50";
 
-    const NavItem = ({ active, onClick, icon: Icon, label, href }: any) => {
+    const NavItem = ({ active, onClick, icon: Icon, label, href, hasBadge }: any) => {
         const content = (
             <>
-                <Icon size={20} className={`shrink-0 w-5 h-5 ${active ? "text-zinc-900" : "text-zinc-400"}`} />
+                <div className="relative">
+                    <Icon size={20} className={`shrink-0 w-5 h-5 ${active ? "text-zinc-900" : "text-zinc-400"}`} />
+                    {hasBadge && (
+                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                    )}
+                </div>
                 {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">{label}</span>}
                 {isCollapsed && (
                     <div className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 bg-zinc-900 text-white text-xs font-bold px-3 py-1.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100]">
@@ -161,6 +168,7 @@ export default function Sidebar({
                         active={pathname === '/dashboard/users'}
                         icon={Users}
                         label="Team"
+                        hasBadge={pendingWaitlistCount > 0}
                     />
                 )}
                 <NavItem
