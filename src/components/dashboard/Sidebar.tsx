@@ -51,8 +51,8 @@ export default function Sidebar({
         : 'text-muted-foreground font-medium text-[11px] uppercase tracking-wider';
 
     return (
-        <div className={`w-64 border-r flex flex-col h-full ${theme === 'light'
-            ? 'bg-white border-zinc-200'
+        <div className={`w-[260px] flex flex-col h-full py-6 pr-4 ${theme === 'light'
+            ? 'bg-white'
             : 'bg-zinc-950 border-white/10'
             }`}>
             {/* Dashboard Button - No Title */}
