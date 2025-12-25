@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ChefHat, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { ChefHat, Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import type { Recipe } from '@/types/database';
@@ -22,6 +22,14 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Waitlist states
+    const [waitlistFirstName, setWaitlistFirstName] = useState('');
+    const [waitlistLastName, setWaitlistLastName] = useState('');
+    const [waitlistEmail, setWaitlistEmail] = useState('');
+    const [waitlistLoading, setWaitlistLoading] = useState(false);
+    const [waitlistMessage, setWaitlistMessage] = useState('');
+    const [waitlistError, setWaitlistError] = useState(false);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -36,6 +44,54 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
             setError(message === 'Invalid login credentials' ? 'Ongeldige inloggegevens' : message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleWaitlistSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setWaitlistMessage('');
+        setWaitlistError(false);
+        setWaitlistLoading(true);
+
+        try {
+            // Check if already on waitlist
+            const { data: existing } = await supabase
+                .from('waitlist')
+                .select('status')
+                .eq('email', waitlistEmail.toLowerCase().trim())
+                .single();
+
+            if (existing) {
+                if (existing.status === 'pending') {
+                    setWaitlistMessage('Je staat al op de wachtlijst! We nemen zo snel mogelijk contact op.');
+                } else if (existing.status === 'invited') {
+                    setWaitlistMessage('Je bent al uitgenodigd! Check je email voor de uitnodiging.');
+                }
+                return;
+            }
+
+            // Add to waitlist
+            const { error } = await supabase
+                .from('waitlist')
+                .insert({
+                    email: waitlistEmail.toLowerCase().trim(),
+                    first_name: waitlistFirstName.trim(),
+                    last_name: waitlistLastName.trim(),
+                    status: 'pending'
+                });
+
+            if (error) throw error;
+
+            setWaitlistMessage('Je staat op de lijst! 🎉 We sturen je een email zodra je toegang hebt.');
+            setWaitlistEmail('');
+            setWaitlistFirstName('');
+            setWaitlistLastName('');
+        } catch (err) {
+            console.error('Waitlist error:', err);
+            setWaitlistMessage('Er is iets misgegaan. Probeer het opnieuw.');
+            setWaitlistError(true);
+        } finally {
+            setWaitlistLoading(false);
         }
     };
 
@@ -161,6 +217,63 @@ export default function LoginPage({ initialRecipes = [] }: LoginPageProps) {
                             )}
                         </button>
                     </form>
+
+                    {/* Waitlist Section */}
+                    <div className="pt-8 border-t border-zinc-100 flex flex-col gap-4">
+                        <div className="space-y-3">
+                            <p className="text-zinc-500 text-xs font-medium leading-relaxed">
+                                Geen account? Forkify is momenteel alleen op uitnodiging.
+                                Meld je aan voor de wachtlijst.
+                            </p>
+
+                            <form onSubmit={handleWaitlistSubmit} className="space-y-2" autoComplete="off">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Voornaam"
+                                        value={waitlistFirstName}
+                                        onChange={(e) => setWaitlistFirstName(e.target.value)}
+                                        required
+                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Achternaam"
+                                        value={waitlistLastName}
+                                        onChange={(e) => setWaitlistLastName(e.target.value)}
+                                        required
+                                        className="flex-1 h-10 px-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300" size={14} />
+                                        <input
+                                            type="email"
+                                            placeholder="E-mailadres"
+                                            value={waitlistEmail}
+                                            onChange={(e) => setWaitlistEmail(e.target.value)}
+                                            required
+                                            className="w-full h-10 pl-9 pr-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-primary transition-all"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={waitlistLoading}
+                                        className="px-4 h-10 bg-zinc-900 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider hover:bg-black transition-all disabled:opacity-50 whitespace-nowrap"
+                                    >
+                                        {waitlistLoading ? '...' : 'Aanmelden'}
+                                    </button>
+                                </div>
+                            </form>
+
+                            {waitlistMessage && (
+                                <p className={`text-[10px] font-bold text-left px-1 ${waitlistError ? 'text-red-600' : 'text-emerald-600'}`}>
+                                    {waitlistMessage}
+                                </p>
+                            )}
+                        </div>
+                    </div>
                 </motion.div>
             </div>
 

@@ -32,7 +32,8 @@ export default async function UsersPage() {
         { data: userRoles },
         { data: recipes },
         { data: collections },
-        { data: authUsers }
+        { data: authUsers },
+        { data: waitlist }
     ] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('user_id', user.id).single(),
         adminSupabase.from('user_profiles').select('*').order('created_at', { ascending: false }),
@@ -41,6 +42,8 @@ export default async function UsersPage() {
         supabase.from('collections').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
         // Fetch auth users to get emails
         adminSupabase.auth.admin.listUsers(),
+        // Fetch waitlist (using admin to bypass RLS)
+        adminSupabase.from('waitlist').select('*').order('created_at', { ascending: false }),
     ]);
 
     // Create a map of user_id to email from auth users
@@ -69,6 +72,7 @@ export default async function UsersPage() {
             users={users}
             recipes={recipes ?? []}
             collections={collections ?? []}
+            waitlist={waitlist ?? []}
         />
     );
 }
