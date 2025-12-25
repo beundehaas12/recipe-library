@@ -144,9 +144,9 @@ export default function InviteAcceptPage() {
 
             setStatus('success');
 
-            // Redirect to home/dashboard after short delay
+            // Redirect to home/dashboard after short delay (full reload to clear cached data)
             setTimeout(() => {
-                router.push('/');
+                window.location.href = '/';
             }, 2000);
         } catch (err) {
             console.error('[invite-accept] Error:', err);
