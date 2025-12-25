@@ -17,10 +17,33 @@ export async function inviteWaitlistUser(waitlistId: string, email: string) {
     try {
         // Check if user already exists in auth
         const { data: existingUsers } = await adminSupabase.auth.admin.listUsers();
-        const existingUser = existingUsers?.users?.find(u => u.email === email.toLowerCase());
+        const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
 
         if (existingUser) {
-            return { success: false, error: 'User already exists' };
+            // User exists - check if confirmed
+            if (existingUser.email_confirmed_at) {
+                // Already a full user, can't invite again
+                return { success: false, error: 'Deze gebruiker heeft al een account. Ze kunnen inloggen.' };
+            }
+
+            // User exists but unconfirmed - resend invite
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+            const { error: resendError } = await adminSupabase.auth.admin.inviteUserByEmail(email, {
+                redirectTo: `${siteUrl}/invite-accept`,
+            });
+
+            if (resendError) {
+                // If invite fails, try password reset as fallback
+                await adminSupabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${siteUrl}/invite-accept`,
+                });
+            }
+
+            // Update waitlist status
+            const supabase = await createClient();
+            await supabase.from('waitlist').update({ status: 'invited' }).eq('id', waitlistId);
+
+            return { success: true, message: 'Uitnodiging opnieuw verzonden' };
         }
 
         // Send invite using Supabase's built-in flow
