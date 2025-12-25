@@ -28,10 +28,10 @@ export default function DashboardClient({
     const [activeFilter, setActiveFilter] = useState('overview');
     const [viewMode, setViewMode] = useState<'split' | 'grid'>('grid'); // Default to grid for V4
 
-    // V4: Stats Cards Component
+    // V4: Stats Cards Component - Monochrome
     const StatCard = ({ icon: Icon, label, value, subtext }: any) => (
-        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-zinc-100/50 flex flex-col justify-between h-40 group hover:border-blue-100 transition-colors">
-            <div className="w-10 h-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-zinc-100/50 flex flex-col justify-between h-40 group hover:border-zinc-200 transition-colors">
+            <div className="w-10 h-10 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-500 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
                 <Icon size={20} />
             </div>
             <div>
@@ -85,28 +85,25 @@ export default function DashboardClient({
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex items-center gap-8 border-b border-zinc-200">
+                {/* Tabs - No Underlines */}
+                <div className="flex items-center gap-8 border-b border-zinc-100">
                     <button
                         onClick={() => setActiveFilter('overview')}
-                        className={`pb-4 text-sm font-medium transition-colors relative ${activeFilter === 'overview' ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
+                        className={`pb-4 text-sm transition-colors ${activeFilter === 'overview' ? 'text-zinc-900 font-bold' : 'text-zinc-400 font-medium hover:text-zinc-600'}`}
                     >
                         Overview
-                        {activeFilter === 'overview' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900 rounded-t-full" />}
                     </button>
                     <button
                         onClick={() => setActiveFilter('all')}
-                        className={`pb-4 text-sm font-medium transition-colors relative ${activeFilter === 'all' ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
+                        className={`pb-4 text-sm transition-colors ${activeFilter === 'all' ? 'text-zinc-900 font-bold' : 'text-zinc-400 font-medium hover:text-zinc-600'}`}
                     >
                         All Recipes
-                        {activeFilter === 'all' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900 rounded-t-full" />}
                     </button>
                     <button
                         onClick={() => setActiveFilter('drafts')}
-                        className={`pb-4 text-sm font-medium transition-colors relative ${activeFilter === 'drafts' ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
+                        className={`pb-4 text-sm transition-colors ${activeFilter === 'drafts' ? 'text-zinc-900 font-bold' : 'text-zinc-400 font-medium hover:text-zinc-600'}`}
                     >
                         Processing
-                        {activeFilter === 'drafts' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900 rounded-t-full" />}
                     </button>
                 </div>
             </div>
@@ -156,15 +153,13 @@ export default function DashboardClient({
                                     <span className="px-3 py-1 rounded-lg bg-zinc-50 text-zinc-500 text-xs font-bold">30 Days</span>
                                 </div>
                             </div>
-                            {/* Visual Chart Placeholder */}
-                            <div className="w-full h-64 bg-zinc-50 rounded-xl flex items-end justify-between px-8 py-4 gap-4">
+                            {/* Visual Chart Placeholder - Monochrome */}
+                            <div className="w-full h-64 bg-zinc-50/50 rounded-xl flex items-end justify-between px-8 py-4 gap-4 border border-zinc-100">
                                 {[40, 60, 45, 70, 50, 80, 65, 85, 90, 75, 60, 95].map((h, i) => (
-                                    <div key={i} className="w-full bg-blue-100 rounded-t-lg relative group active:bg-blue-600 transition-colors" style={{ height: `${h}%` }}>
+                                    <div key={i} className="w-full bg-zinc-200 rounded-t-lg relative group hover:bg-zinc-800 transition-colors" style={{ height: `${h}%` }}>
                                         <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded transition-opacity">
                                             {h}
                                         </div>
-                                        {/* Top accent */}
-                                        <div className="absolute top-0 w-full h-2 bg-blue-500 rounded-t-lg opacity-20 group-hover:opacity-100 transition-opacity"></div>
                                     </div>
                                 ))}
                             </div>
@@ -174,7 +169,7 @@ export default function DashboardClient({
                         <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-zinc-100/50">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-bold text-zinc-900">Recent Activity</h3>
-                                <button className="text-blue-600 text-sm font-bold">+ Add New</button>
+                                <button className="text-zinc-900 text-sm font-bold hover:underline">+ Add New</button>
                             </div>
                             <div className="space-y-4">
                                 {recipes.slice(0, 5).map(recipe => (
@@ -190,7 +185,7 @@ export default function DashboardClient({
                                             <h4 className="text-sm font-bold text-zinc-900 truncate">{recipe.title}</h4>
                                             <p className="text-xs text-zinc-400">Recipe</p>
                                         </div>
-                                        <div className="text-zinc-400 font-bold text-sm group-hover:text-blue-600">
+                                        <div className="text-zinc-400 font-bold text-sm group-hover:text-zinc-900">
                                             →
                                         </div>
                                     </div>
@@ -204,7 +199,7 @@ export default function DashboardClient({
                 <div className="bg-white p-8 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-zinc-100/50 min-h-[500px]">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredRecipes.map(recipe => (
-                            <div key={recipe.id} className="group bg-white border border-zinc-100 rounded-2xl p-3 hover:shadow-xl hover:shadow-zinc-200/50 hover:border-blue-100 transition-all cursor-pointer">
+                            <div key={recipe.id} className="group bg-white border border-zinc-100 rounded-2xl p-3 hover:shadow-xl hover:shadow-zinc-200/50 hover:border-zinc-300 transition-all cursor-pointer">
                                 <div className="aspect-square bg-zinc-100 rounded-xl overflow-hidden relative mb-3">
                                     {recipe.image_url ? (
                                         <Image src={recipe.image_url} alt={recipe.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />

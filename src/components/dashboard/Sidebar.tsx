@@ -39,22 +39,22 @@ export default function Sidebar({
     const [collectionsExpanded, setCollectionsExpanded] = useState(true);
     const [showToevoegenMenu, setShowToevoegenMenu] = useState(false);
 
-    // Justinus Design Colors
-    const activeClass = "bg-blue-50 text-blue-600 shadow-sm";
+    // Monochrome Design - No Blue
+    const activeClass = "bg-zinc-100 text-zinc-900 font-bold";
     const inactiveClass = "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50";
 
     const NavItem = ({ active, onClick, icon: Icon, label, href }: any) => {
         if (href) {
             return (
                 <Link href={href} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${active ? activeClass : inactiveClass}`}>
-                    <Icon size={20} className={active ? "text-blue-600" : "text-zinc-400"} />
+                    <Icon size={20} className={active ? "text-zinc-900" : "text-zinc-400"} />
                     {label}
                 </Link>
             );
         }
         return (
             <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${active ? activeClass : inactiveClass}`}>
-                <Icon size={20} className={active ? "text-blue-600" : "text-zinc-400"} />
+                <Icon size={20} className={active ? "text-zinc-900" : "text-zinc-400"} />
                 {label}
             </button>
         );
@@ -130,10 +130,10 @@ export default function Sidebar({
                                 exit={{ opacity: 0, height: 0 }}
                                 className="overflow-hidden pl-4 pr-2 space-y-1"
                             >
-                                <button onClick={() => { setShowToevoegenMenu(false); onMediaUpload?.(); }} className="w-full text-left px-4 py-2 text-sm text-zinc-500 hover:text-blue-600 flex items-center gap-2">
+                                <button onClick={() => { setShowToevoegenMenu(false); onMediaUpload?.(); }} className="w-full text-left px-4 py-2 text-sm text-zinc-500 hover:text-zinc-900 flex items-center gap-2">
                                     <Camera size={16} /> Media
                                 </button>
-                                <button onClick={() => { setShowToevoegenMenu(false); onShowUrlModal?.(); }} className="w-full text-left px-4 py-2 text-sm text-zinc-500 hover:text-blue-600 flex items-center gap-2">
+                                <button onClick={() => { setShowToevoegenMenu(false); onShowUrlModal?.(); }} className="w-full text-left px-4 py-2 text-sm text-zinc-500 hover:text-zinc-900 flex items-center gap-2">
                                     <LinkIcon size={16} /> URL
                                 </button>
                             </motion.div>
@@ -166,13 +166,13 @@ export default function Sidebar({
 
             {/* 3. Bottom Pro Card */}
             <div className="p-4 mt-auto">
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden">
+                <div className="bg-zinc-900 rounded-2xl p-5 text-white shadow-lg shadow-zinc-900/10 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-3 opacity-10">
                         <Rocket size={60} />
                     </div>
                     <h3 className="font-bold text-lg mb-1 relative z-10">Upgrade to Pro</h3>
-                    <p className="text-blue-100 text-xs mb-4 relative z-10 opacity-90">Get unlimited recipes and AI features.</p>
-                    <button className="w-full bg-white text-blue-600 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-blue-50 transition-colors relative z-10">
+                    <p className="text-zinc-400 text-xs mb-4 relative z-10 opacity-90">Get unlimited recipes and AI features.</p>
+                    <button className="w-full bg-white text-zinc-900 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-zinc-100 transition-colors relative z-10">
                         Upgrade Now
                     </button>
                 </div>
