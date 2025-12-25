@@ -42,8 +42,9 @@ export default function DashboardLayout({
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     // V4 Layout: Grey Background, White Top Bar, Floating Content
+    // Uses .light-theme class to activate light CSS variables from globals.css
     return (
-        <div className="flex h-screen bg-[#F8FAFC] font-sans text-zinc-900">
+        <div className="light-theme flex h-screen bg-[#F8FAFC] font-sans text-zinc-900">
             {/* Mobile Overlay */}
             {!isSidebarOpen && (
                 <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsSidebarOpen(true)} />

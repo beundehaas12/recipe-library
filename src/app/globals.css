@@ -47,6 +47,41 @@
   --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ============================================
+   Light Theme Override (Dashboard)
+   ============================================ */
+.light-theme,
+[data-theme="light"] {
+  --background: 0 0% 98%;
+  --foreground: 240 10% 4%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 4%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 4%;
+
+  --primary: 142 60% 45%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 240 6% 10%;
+
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 46%;
+
+  --accent: 240 5% 96%;
+  --accent-foreground: 240 6% 10%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* LIGHT BORDER - the key fix! */
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 240 5% 65%;
+}
+
 /* Tailwind v4 theme customization */
 @theme inline {
   --color-background: hsl(var(--background));
