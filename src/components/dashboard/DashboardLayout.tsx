@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { ChefHat, Search, Bell, ChevronLeft, X } from 'lucide-react';
+import { ChefHat, Search, Bell, ChevronLeft, X, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { User } from '@supabase/supabase-js';
@@ -39,6 +39,7 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
     const [showUrlModal, setShowUrlModal] = useState(false);
     const [urlInputValue, setUrlInputValue] = useState('');
+    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const supabase = createClient();
 
@@ -53,18 +54,27 @@ export default function DashboardLayout({
     };
 
     return (
-        <div className="h-screen bg-black text-foreground flex flex-col overflow-hidden relative">
+        <div className={`h-screen flex flex-col overflow-hidden relative ${theme === 'light'
+            ? 'bg-zinc-100 text-zinc-900'
+            : 'bg-black text-foreground'
+            }`}>
             {/* Dashboard Toolbar (Finder-style) */}
-            <div className="h-14 bg-zinc-950 border-b border-white/10 flex items-center justify-between px-4 shrink-0">
+            <div className={`h-14 border-b flex items-center justify-between px-4 shrink-0 ${theme === 'light'
+                ? 'bg-white border-zinc-200'
+                : 'bg-zinc-950 border-white/10'
+                }`}>
                 <div className="flex items-center gap-4">
-                    <Link href="/" className="p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors">
+                    <Link href="/" className={`p-2 rounded-lg transition-colors ${theme === 'light'
+                        ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'
+                        : 'hover:bg-white/10 text-muted-foreground hover:text-white'
+                        }`}>
                         <ChevronLeft size={20} />
                     </Link>
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                             <ChefHat size={18} className="text-black" />
                         </div>
-                        <h1 className="font-bold text-white tracking-tight">Author Studio</h1>
+                        <h1 className={`font-bold tracking-tight ${theme === 'light' ? 'text-zinc-900' : 'text-white'}`}>Author Studio</h1>
                     </div>
                 </div>
 
@@ -74,14 +84,32 @@ export default function DashboardLayout({
                         <input
                             type="text"
                             placeholder="Search recipes..."
-                            className="w-full bg-zinc-900 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-display"
+                            className={`w-full border rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-display ${theme === 'light'
+                                ? 'bg-zinc-100 border-zinc-200 text-zinc-900 placeholder:text-zinc-400'
+                                : 'bg-zinc-900 border-white/10 text-white'
+                                }`}
                         />
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {/* Theme Toggle */}
+                    <button
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        className={`p-2 rounded-lg transition-colors relative ${theme === 'light'
+                            ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'
+                            : 'hover:bg-white/10 text-muted-foreground hover:text-white'
+                            }`}
+                        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                    >
+                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                    </button>
+
                     {/* Notifications (placeholder) */}
-                    <button className="p-2 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-white transition-colors relative">
+                    <button className={`p-2 rounded-lg transition-colors relative ${theme === 'light'
+                        ? 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900'
+                        : 'hover:bg-white/10 text-muted-foreground hover:text-white'
+                        }`}>
                         <Bell size={20} />
                     </button>
 
@@ -95,7 +123,7 @@ export default function DashboardLayout({
                         multiple
                     />
 
-                    <div className="w-px h-6 bg-white/10 mx-2" />
+                    <div className={`w-px h-6 mx-2 ${theme === 'light' ? 'bg-zinc-200' : 'bg-white/10'}`} />
 
                     {/* User Menu Dropdown */}
                     <UserMenu user={user} profile={profile} role={role} />
@@ -112,6 +140,7 @@ export default function DashboardLayout({
                     isAdmin={isAdmin}
                     onShowUrlModal={() => setShowUrlModal(true)}
                     onMediaUpload={() => fileInputRef.current?.click()}
+                    theme={theme}
                 />
 
                 {/* Content Area */}

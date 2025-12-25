@@ -16,6 +16,7 @@ interface SidebarProps {
     onShowAddMenu?: () => void;
     onShowUrlModal?: () => void;
     onMediaUpload?: () => void;
+    theme?: 'dark' | 'light';
 }
 
 export default function Sidebar({
@@ -26,33 +27,50 @@ export default function Sidebar({
     isAdmin = false,
     onShowAddMenu,
     onShowUrlModal,
-    onMediaUpload
+    onMediaUpload,
+    theme = 'dark'
 }: SidebarProps) {
     const pathname = usePathname();
     const [collectionsExpanded, setCollectionsExpanded] = useState(false);
     const [showToevoegenMenu, setShowToevoegenMenu] = useState(false);
 
+    // Theme-aware styling helpers
+    const buttonActive = theme === 'light'
+        ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-sm'
+        : 'bg-white/10 text-white font-semibold shadow-sm';
+    const buttonInactive = theme === 'light'
+        ? 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+        : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200';
+    const iconActive = 'text-primary';
+    const iconInactive = 'text-zinc-500';
+    const sectionTitle = theme === 'light'
+        ? 'text-zinc-500'
+        : 'text-muted-foreground';
+
     return (
-        <div className="w-64 bg-zinc-950 border-r border-white/10 flex flex-col h-full">
+        <div className={`w-64 border-r flex flex-col h-full ${theme === 'light'
+            ? 'bg-white border-zinc-200'
+            : 'bg-zinc-950 border-white/10'
+            }`}>
             {/* Dashboard Button - No Title */}
             <div className="p-4 pb-2">
                 {pathname === '/dashboard' ? (
                     <button
                         onClick={() => onFilterChange('overview')}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeFilter === 'overview'
-                            ? 'bg-white/10 text-white font-semibold shadow-sm'
-                            : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                            ? buttonActive
+                            : buttonInactive
                             }`}
                     >
-                        <Home size={18} className={activeFilter === 'overview' ? "text-primary" : "text-zinc-500"} />
+                        <Home size={18} className={activeFilter === 'overview' ? iconActive : iconInactive} />
                         Dashboard
                     </button>
                 ) : (
                     <Link
                         href="/dashboard"
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${buttonInactive}`}
                     >
-                        <Home size={18} className="text-zinc-500" />
+                        <Home size={18} className={iconInactive} />
                         Dashboard
                     </Link>
                 )}
@@ -60,7 +78,7 @@ export default function Sidebar({
 
             {/* Recepten Management Section */}
             <div className="p-4 pt-2">
-                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-3 mb-2">Recepten management</h2>
+                <h2 className={`text-xs font-bold uppercase tracking-widest px-3 mb-2 ${sectionTitle}`}>Recepten management</h2>
                 <div className="space-y-1">
                     {/* Toevoegen Button with Dropdown */}
                     <div className="relative">
@@ -119,19 +137,19 @@ export default function Sidebar({
                         <button
                             onClick={() => onFilterChange('all')}
                             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeFilter === 'all'
-                                ? 'bg-white/10 text-white font-semibold shadow-sm'
-                                : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                                ? buttonActive
+                                : buttonInactive
                                 }`}
                         >
-                            <LayoutGrid size={18} className={activeFilter === 'all' ? "text-primary" : "text-zinc-500"} />
+                            <LayoutGrid size={18} className={activeFilter === 'all' ? iconActive : iconInactive} />
                             Alle recepten
                         </button>
                     ) : (
                         <Link
                             href="/dashboard"
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${buttonInactive}`}
                         >
-                            <LayoutGrid size={18} className="text-zinc-500" />
+                            <LayoutGrid size={18} className={iconInactive} />
                             Alle recepten
                         </Link>
                     )}
@@ -141,11 +159,11 @@ export default function Sidebar({
                         <button
                             onClick={() => setCollectionsExpanded(!collectionsExpanded)}
                             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${collectionsExpanded || collections.some(c => activeFilter === c.id)
-                                ? 'bg-white/10 text-white font-semibold shadow-sm'
-                                : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                                ? buttonActive
+                                : buttonInactive
                                 }`}
                         >
-                            <FolderOpen size={18} className={collectionsExpanded || collections.some(c => activeFilter === c.id) ? "text-primary" : "text-zinc-500"} />
+                            <FolderOpen size={18} className={collectionsExpanded || collections.some(c => activeFilter === c.id) ? iconActive : iconInactive} />
                             <span className="flex-1 text-left">Collections</span>
                             <ChevronDown
                                 size={16}
@@ -171,8 +189,8 @@ export default function Sidebar({
                                                     key={collection.id}
                                                     onClick={() => onFilterChange(collection.id)}
                                                     className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all ${activeFilter === collection.id
-                                                        ? 'bg-white/10 text-white font-semibold'
-                                                        : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                                                        ? buttonActive
+                                                        : buttonInactive
                                                         }`}
                                                 >
                                                     {collection.name}
@@ -190,19 +208,19 @@ export default function Sidebar({
                         <button
                             onClick={() => onFilterChange('drafts')}
                             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeFilter === 'drafts'
-                                ? 'bg-white/10 text-white font-semibold shadow-sm'
-                                : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                                ? buttonActive
+                                : buttonInactive
                                 }`}
                         >
-                            <Clock size={18} className={activeFilter === 'drafts' ? "text-primary" : "text-zinc-500"} />
+                            <Clock size={18} className={activeFilter === 'drafts' ? iconActive : iconInactive} />
                             Processing
                         </button>
                     ) : (
                         <Link
                             href="/dashboard"
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${buttonInactive}`}
                         >
-                            <Clock size={18} className="text-zinc-500" />
+                            <Clock size={18} className={iconInactive} />
                             Processing
                         </Link>
                     )}
@@ -211,27 +229,27 @@ export default function Sidebar({
 
             {/* Administratie Section */}
             <div className="p-4 pt-0">
-                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-3 mb-2">Administratie</h2>
+                <h2 className={`text-xs font-bold uppercase tracking-widest px-3 mb-2 ${sectionTitle}`}>Administratie</h2>
                 <div className="space-y-1">
                     <Link
                         href="/dashboard/profile"
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${pathname === '/dashboard/profile'
-                            ? 'bg-white/10 text-white font-semibold'
-                            : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                            ? buttonActive
+                            : buttonInactive
                             }`}
                     >
-                        <User size={18} className={pathname === '/dashboard/profile' ? "text-primary" : "text-zinc-500"} />
+                        <User size={18} className={pathname === '/dashboard/profile' ? iconActive : iconInactive} />
                         Auteurs profiel
                     </Link>
                     {isAdmin && (
                         <Link
                             href="/dashboard/users"
                             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${pathname === '/dashboard/users'
-                                ? 'bg-white/10 text-white font-semibold'
-                                : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                                ? buttonActive
+                                : buttonInactive
                                 }`}
                         >
-                            <Users size={18} className={pathname === '/dashboard/users' ? "text-primary" : "text-zinc-500"} />
+                            <Users size={18} className={pathname === '/dashboard/users' ? iconActive : iconInactive} />
                             Gebruikersbeheer
                         </Link>
                     )}
@@ -239,13 +257,13 @@ export default function Sidebar({
             </div>
 
             {/* Storage at bottom */}
-            <div className="mt-auto p-4 border-t border-white/10">
-                <div className="bg-zinc-900 rounded-lg p-3">
+            <div className={`mt-auto p-4 border-t ${theme === 'light' ? 'border-zinc-200' : 'border-white/10'}`}>
+                <div className={`rounded-lg p-3 ${theme === 'light' ? 'bg-zinc-100' : 'bg-zinc-900'}`}>
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-white">Storage</span>
+                        <span className={`text-xs font-medium ${theme === 'light' ? 'text-zinc-900' : 'text-white'}`}>Storage</span>
                         <span className="text-xs text-muted-foreground">75%</span>
                     </div>
-                    <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div className={`w-full rounded-full h-1.5 overflow-hidden ${theme === 'light' ? 'bg-zinc-200' : 'bg-white/10'}`}>
                         <div className="bg-primary h-full rounded-full w-3/4" />
                     </div>
                 </div>

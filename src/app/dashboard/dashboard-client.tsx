@@ -25,7 +25,7 @@ export default function DashboardClient({
     initialRecipes,
     initialCollections
 }: DashboardClientProps) {
-    const [activeFilter, setActiveFilter] = useState('all');
+    const [activeFilter, setActiveFilter] = useState('overview');
     const [viewMode, setViewMode] = useState<'split' | 'grid'>('split');
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(initialRecipes[0] || null);
     const [recipes] = useState(initialRecipes);
