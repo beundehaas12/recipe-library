@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import type { Recipe, Collection, UserProfile } from '@/types/database';
 import { Users, Shield, Search, CheckCircle, ChevronDown, UserPlus, Clock, Mail, Trash2, BadgeCheck } from 'lucide-react';
@@ -55,6 +56,7 @@ export default function UsersClient({
     const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
     const supabase = createClient();
+    const router = useRouter();
 
     // Stats
     const admins = users.filter(u => u.role === 'admin');
@@ -100,6 +102,7 @@ export default function UsersClient({
             const result = await inviteWaitlistUser(entry.id, entry.email);
             if (result.success) {
                 setWaitlist(waitlist.map(w => w.id === entry.id ? { ...w, status: 'invited' as const } : w));
+                router.refresh(); // Refresh server data to update sidebar badge
                 alert(`✅ Uitnodiging verzonden naar ${entry.email}`);
             } else {
                 alert(`❌ Fout: ${result.error}`);
@@ -118,6 +121,7 @@ export default function UsersClient({
             const result = await deleteWaitlistEntry(entry.id);
             if (result.success) {
                 setWaitlist(waitlist.filter(w => w.id !== entry.id));
+                router.refresh(); // Refresh server data to update sidebar badge
             } else {
                 alert(`❌ Fout: ${result.error}`);
             }
@@ -157,9 +161,14 @@ export default function UsersClient({
                     </button>
                     <button
                         onClick={() => setActiveTab('waitlist')}
-                        className={`pb-4 text-sm transition-colors ${activeTab === 'waitlist' ? 'text-zinc-900 font-bold' : 'text-zinc-400 font-medium hover:text-zinc-600'}`}
+                        className={`pb-4 text-sm transition-colors flex items-center gap-2 ${activeTab === 'waitlist' ? 'text-zinc-900 font-bold' : 'text-zinc-400 font-medium hover:text-zinc-600'}`}
                     >
-                        Waitlist ({pendingCount})
+                        Waitlist
+                        {pendingCount > 0 && (
+                            <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] text-center">
+                                {pendingCount}
+                            </span>
+                        )}
                     </button>
                 </div>
             </div>

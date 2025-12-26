@@ -13,7 +13,6 @@ interface SidebarProps {
     profile?: UserProfile | null;
     collections?: Collection[];
     onCreateCollection?: () => void;
-    isAdmin?: boolean;
     onShowAddMenu?: () => void;
     onShowUrlModal?: () => void;
     onMediaUpload?: () => void;
@@ -21,7 +20,6 @@ interface SidebarProps {
     theme?: 'dark' | 'light';
     isCollapsed?: boolean;
     onToggleCollapse?: () => void;
-    pendingWaitlistCount?: number;
 }
 
 export default function Sidebar({
@@ -29,15 +27,13 @@ export default function Sidebar({
     profile,
     collections = [],
     onCreateCollection,
-    isAdmin = false,
     onShowAddMenu,
     onShowUrlModal,
     onMediaUpload,
 
-    theme = 'light', // Default to light for this design
+    theme = 'light',
     isCollapsed = false,
     onToggleCollapse,
-    pendingWaitlistCount = 0
 }: SidebarProps) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -53,16 +49,25 @@ export default function Sidebar({
     const activeClass = "bg-zinc-100 text-zinc-900 font-bold";
     const inactiveClass = "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50";
 
-    const NavItem = ({ active, onClick, icon: Icon, label, href, hasBadge }: any) => {
+    const NavItem = ({ active, onClick, icon: Icon, label, href, badgeCount }: any) => {
         const content = (
             <>
-                <div className="relative">
-                    <Icon size={20} className={`shrink-0 w-5 h-5 ${active ? "text-zinc-900" : "text-zinc-400"}`} />
-                    {hasBadge && (
-                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
-                    )}
-                </div>
-                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">{label}</span>}
+                <Icon size={20} className={`shrink-0 w-5 h-5 ${active ? "text-zinc-900" : "text-zinc-400"}`} />
+                {!isCollapsed && (
+                    <>
+                        <span className="whitespace-nowrap overflow-hidden flex-1">{label}</span>
+                        {badgeCount > 0 && (
+                            <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] text-center">
+                                {badgeCount}
+                            </span>
+                        )}
+                    </>
+                )}
+                {isCollapsed && badgeCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] text-center">
+                        {badgeCount}
+                    </span>
+                )}
                 {isCollapsed && (
                     <div className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 bg-zinc-900 text-white text-xs font-bold px-3 py-1.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100]">
                         {label}
@@ -165,15 +170,6 @@ export default function Sidebar({
                     icon={Clock}
                     label="Processing"
                 />
-                {isAdmin && (
-                    <NavItem
-                        href="/dashboard/users"
-                        active={pathname === '/dashboard/users'}
-                        icon={Users}
-                        label="Team"
-                        hasBadge={pendingWaitlistCount > 0}
-                    />
-                )}
                 <NavItem
                     href="/dashboard/profile"
                     active={pathname === '/dashboard/profile'}

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 export default async function Layout({
     children,
@@ -12,14 +12,14 @@ export default async function Layout({
 
     if (!user) redirect('/');
 
-    // Fetch user profile and role
+    // Fetch user profile
     const { data: profile } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-    // Fetch user role
+    // Fetch user role - CRITICAL SECURITY CHECK
     const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
@@ -28,34 +28,25 @@ export default async function Layout({
 
     const role = roleData?.role as 'user' | 'author' | 'admin' | null;
 
-    // Only authors and admins can access the dashboard
-    if (role !== 'author' && role !== 'admin') {
+    // STRICT ADMIN CHECK - Non-admins cannot access
+    if (role !== 'admin') {
         redirect('/');
     }
 
-    // Fetch user's collections
-    const { data: collections } = await supabase
-        .from('collections')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-    // Fetch author profile
-    const { data: authorProfile } = await supabase
-        .from('author_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+    // Fetch pending waitlist count
+    const { count: pendingWaitlistCount } = await supabase
+        .from('waitlist')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
 
     return (
-        <DashboardLayout
+        <AdminLayout
             user={user}
             profile={profile}
             role={role}
-            collections={collections ?? []}
-            authorProfile={authorProfile}
+            pendingWaitlistCount={pendingWaitlistCount || 0}
         >
             {children}
-        </DashboardLayout>
+        </AdminLayout>
     );
 }

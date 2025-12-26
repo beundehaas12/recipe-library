@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, LogOut, LayoutGrid, ChevronDown } from 'lucide-react';
+import { Settings, LogOut, LayoutGrid, ChevronDown, Shield } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import type { UserProfile } from '@/types/database';
 import { getAvatarUrl, getUserDisplayName } from '@/lib/profileService';
@@ -99,7 +99,8 @@ export default function UserMenu({ user, profile, role }: UserMenuProps) {
                             </p>
                         </div>
 
-                        {!isOnDashboard && (
+                        {/* Author Dashboard Link */}
+                        {(role === 'author' || role === 'admin') && !isOnDashboard && (
                             <Link
                                 href="/dashboard"
                                 onClick={() => setIsOpen(false)}
@@ -107,6 +108,18 @@ export default function UserMenu({ user, profile, role }: UserMenuProps) {
                             >
                                 <LayoutGrid size={16} />
                                 Dashboard
+                            </Link>
+                        )}
+
+                        {/* Admin Link - Only for admins */}
+                        {role === 'admin' && !pathname.startsWith('/admin') && (
+                            <Link
+                                href="/admin"
+                                onClick={() => setIsOpen(false)}
+                                className="px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/10 flex items-center gap-2 transition-colors"
+                            >
+                                <Shield size={16} />
+                                Admin
                             </Link>
                         )}
 

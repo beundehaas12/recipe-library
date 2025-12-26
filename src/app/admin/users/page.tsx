@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { redirect } from 'next/navigation';
 import UsersClient from './users-client';
 
-export default async function UsersPage() {
+export default async function AdminUsersPage() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -18,8 +18,9 @@ export default async function UsersPage() {
 
     const role = (roleData?.role as 'user' | 'author' | 'admin') ?? null;
 
+    // STRICT ADMIN CHECK
     if (role !== 'admin') {
-        redirect('/dashboard');
+        redirect('/');
     }
 
     // Use admin client to bypass RLS for fetching all users
