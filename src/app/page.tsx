@@ -9,8 +9,21 @@ export default async function Page() {
 
   // If not authenticated, show login with recipes that have images
   if (!user) {
-    const recipesWithImages = await getRecipesWithImages(20);
-    return <LoginPage initialRecipes={recipesWithImages} />;
+    const [recipesWithImages, { data: siteContentData }] = await Promise.all([
+      getRecipesWithImages(20),
+      supabase
+        .from('site_content')
+        .select('*')
+        .in('key', ['login_about', 'login_author']),
+    ]);
+
+    // Transform to keyed object
+    const siteContent = siteContentData?.reduce((acc: Record<string, { title: string; subtitle?: string; content: Record<string, unknown> }>, item: { key: string; title: string; subtitle?: string; content: Record<string, unknown> }) => {
+      acc[item.key] = item;
+      return acc;
+    }, {}) || {};
+
+    return <LoginPage initialRecipes={recipesWithImages} siteContent={siteContent} />;
   }
 
   // Fetch recipes and collections for authenticated users

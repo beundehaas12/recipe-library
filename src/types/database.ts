@@ -63,3 +63,13 @@ export interface UserProfile {
     avatar_url?: string;
     role?: 'user' | 'author' | 'admin';
 }
+
+export interface SiteContent {
+    id: string;
+    key: string;
+    title: string;
+    subtitle?: string;
+    content: Record<string, unknown>;
+    updated_at?: string;
+    updated_by?: string;
+}

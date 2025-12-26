@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Users, PanelLeftClose } from 'lucide-react';
+import { LayoutGrid, Users, PanelLeftClose, FileEdit } from 'lucide-react';
 
 interface AdminSidebarProps {
     pendingWaitlistCount?: number;
@@ -82,6 +82,13 @@ export default function AdminSidebar({
                     icon={Users}
                     label="Users & Waitlist"
                     badgeCount={pendingWaitlistCount}
+                />
+
+                <NavItem
+                    href="/admin/content"
+                    active={pathname === '/admin/content'}
+                    icon={FileEdit}
+                    label="Content Beheer"
                 />
             </div>
         </div>
