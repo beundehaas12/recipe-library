@@ -100,32 +100,4 @@ export function useDeleteRecipe() {
     });
 }
 
-/**
- * Hook for toggling favorite status
- */
-export function useToggleFavorite() {
-    const supabase = createClient();
-    const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: async ({ recipeId, isFavorite }: { recipeId: string; isFavorite: boolean }) => {
-            if (isFavorite) {
-                // Remove from favorites
-                const { error } = await supabase
-                    .from('favorites')
-                    .delete()
-                    .eq('recipe_id', recipeId);
-                if (error) throw error;
-            } else {
-                // Add to favorites
-                const { error } = await supabase
-                    .from('favorites')
-                    .insert({ recipe_id: recipeId });
-                if (error) throw error;
-            }
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.user.favorites() });
-        },
-    });
-}

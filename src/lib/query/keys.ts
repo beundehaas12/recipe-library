@@ -22,7 +22,6 @@ export const queryKeys = {
     user: {
         all: ['user'] as const,
         profile: () => [...queryKeys.user.all, 'profile'] as const,
-        favorites: () => [...queryKeys.user.all, 'favorites'] as const,
     },
 
     // Author profiles

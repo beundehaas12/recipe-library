@@ -7,7 +7,7 @@ const navItems = [
     { label: 'Ontdek', path: '/' },
     { label: 'Planning', path: '/planning' },
     { label: 'Boodschappen', path: '/shopping' },
-    { label: 'Mijn kookboek', path: '/favorites' },
+    { label: 'Favorieten', path: '/favorites' },
 ];
 
 export default function FloatingMenu() {
