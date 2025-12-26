@@ -13,8 +13,8 @@ const navItems = [
 export default function FloatingMenu() {
     const pathname = usePathname();
 
-    // Hide on dashboard/settings
-    if (pathname.startsWith('/dashboard') || pathname.startsWith('/settings')) return null;
+    // Hide on dashboard/admin/settings
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/settings')) return null;
 
     return (
         <div className="fixed top-4 left-0 right-0 z-[5000] justify-center px-4 pointer-events-none hidden lg:flex">
