@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChefHat, Bell, ChevronDown, ArrowLeft, Plus, Settings, LogOut, User, Search, Menu, X } from 'lucide-react';
+import { ChefHat, Bell, ChevronDown, ArrowLeft, Plus, Settings, LogOut, User, Search, Menu, X, Shield } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { getAvatarUrl, getUserDisplayName } from '@/lib/profileService';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -159,13 +159,24 @@ export default function DashboardLayout({
                                         </p>
                                     </div>
 
+                                    {role === 'admin' && (
+                                        <a
+                                            href="/admin"
+                                            onClick={() => setIsProfileOpen(false)}
+                                            className="px-4 py-2 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 flex items-center gap-2 transition-colors"
+                                        >
+                                            <Shield size={16} />
+                                            Admin Dashboard
+                                        </a>
+                                    )}
+
                                     <a
                                         href="/dashboard/profile"
                                         onClick={() => setIsProfileOpen(false)}
                                         className="px-4 py-2 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 flex items-center gap-2 transition-colors"
                                     >
                                         <Settings size={16} />
-                                        Settings
+                                        Instellingen
                                     </a>
 
                                     <div className="h-px bg-zinc-50 my-1" />
@@ -178,7 +189,7 @@ export default function DashboardLayout({
                                         className="px-4 py-2 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors text-left w-full"
                                     >
                                         <LogOut size={16} />
-                                        Sign Out
+                                        Uitloggen
                                     </button>
                                 </motion.div>
                             )}

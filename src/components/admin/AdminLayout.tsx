@@ -133,7 +133,7 @@ export default function AdminLayout({
                                         className="px-4 py-2 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 flex items-center gap-2 transition-colors"
                                     >
                                         <Settings size={16} />
-                                        Author Dashboard
+                                        Auteurs Dashboard
                                     </a>
 
                                     <div className="h-px bg-zinc-50 my-1" />
@@ -146,7 +146,7 @@ export default function AdminLayout({
                                         className="px-4 py-2 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors text-left w-full"
                                     >
                                         <LogOut size={16} />
-                                        Sign Out
+                                        Uitloggen
                                     </button>
                                 </motion.div>
                             )}

@@ -107,7 +107,7 @@ export default function UserMenu({ user, profile, role }: UserMenuProps) {
                                 className="px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/10 flex items-center gap-2 transition-colors"
                             >
                                 <LayoutGrid size={16} />
-                                Dashboard
+                                Auteurs Dashboard
                             </Link>
                         )}
 
@@ -119,7 +119,7 @@ export default function UserMenu({ user, profile, role }: UserMenuProps) {
                                 className="px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/10 flex items-center gap-2 transition-colors"
                             >
                                 <Shield size={16} />
-                                Admin
+                                Admin Dashboard
                             </Link>
                         )}
 
@@ -142,7 +142,7 @@ export default function UserMenu({ user, profile, role }: UserMenuProps) {
                             className="px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition-colors text-left w-full"
                         >
                             <LogOut size={16} />
-                            Log uit
+                            Uitloggen
                         </button>
                     </motion.div>
                 )}
