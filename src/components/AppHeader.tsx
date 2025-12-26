@@ -35,8 +35,8 @@ export default function AppHeader({
     const initialQuery = searchParams.get('q') || '';
 
 
-    // Hide header on dashboard/settings (they have their own layout)
-    if (pathname.startsWith('/dashboard') || pathname.startsWith('/settings')) return null;
+    // Hide header on dashboard/admin/settings (they have their own layout)
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/settings')) return null;
 
     const isDeepPage = pathname.startsWith('/recipe/') || pathname.startsWith('/collection/') || pathname.startsWith('/author/');
 
