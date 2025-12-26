@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import AccessDenied from '@/components/AccessDenied';
 
 export default async function Layout({
     children,
@@ -10,6 +11,7 @@ export default async function Layout({
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Not logged in - redirect to login
     if (!user) redirect('/');
 
     // Fetch user profile and role
@@ -30,7 +32,13 @@ export default async function Layout({
 
     // Only authors and admins can access the dashboard
     if (role !== 'author' && role !== 'admin') {
-        redirect('/');
+        return (
+            <AccessDenied
+                title="Geen toegang tot Dashboard"
+                message="Het Auteurs Dashboard is alleen beschikbaar voor auteurs en beheerders."
+                requiredRole="Auteur of Admin"
+            />
+        );
     }
 
     // Fetch user's collections
