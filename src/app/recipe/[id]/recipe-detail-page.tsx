@@ -33,6 +33,7 @@ export default function RecipeDetailPage({ recipe: dbRecipe }: RecipeDetailPageP
 
         // Author from joined profile
         author: {
+            user_id: dbRecipe.user_id || null,
             name: dbRecipe.author_profile
                 ? getAuthorDisplayName(dbRecipe.author_profile)
                 : DUMMY_RECIPE.author.name,
@@ -202,16 +203,19 @@ export default function RecipeDetailPage({ recipe: dbRecipe }: RecipeDetailPageP
                     {/* LEFT RAIL: Ingredients & Nutrition */}
                     <div className="max-w-xl">
                         {/* Author - moved here for layout balance */}
-                        <div className="flex items-center gap-4 mb-12 pb-8 border-b border-white/10">
-                            <img src={recipe.author.avatar} alt="Author" className="w-14 h-14 rounded-full object-cover border-2 border-white/10" />
+                        <Link
+                            href={recipe.author.user_id ? `/author/${recipe.author.user_id}` : '#'}
+                            className="flex items-center gap-4 mb-12 pb-8 border-b border-white/10 group hover:border-white/20 transition-colors cursor-pointer"
+                        >
+                            <img src={recipe.author.avatar} alt="Author" className="w-14 h-14 rounded-full object-cover border-2 border-white/10 group-hover:border-white/30 transition-colors" />
                             <div>
                                 <p className="text-sm text-white/50 font-medium uppercase tracking-wider mb-1">Recipe By</p>
-                                <p className="text-lg font-semibold text-white flex items-center gap-2">
+                                <p className="text-lg font-semibold text-white flex items-center gap-2 group-hover:text-primary transition-colors">
                                     {recipe.author.name}
                                     {recipe.author.verified && <span className="text-blue-400" title="Verified">✓</span>}
                                 </p>
                             </div>
-                        </div>
+                        </Link>
 
                         <div className="sticky top-24">
                             <div className="flex items-center justify-between mb-6">
